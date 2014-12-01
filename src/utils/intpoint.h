@@ -87,7 +87,7 @@ public:
 
     int32_t vSize() const
     {
-        return sqrt(vSize2());
+        return std::sqrt(vSize2());
     }
 
     /*! this function is deprecated because it can cause overflows for vectors which easily fit inside a printer. Use FPoint3.cross(a,b) instead. */

@@ -7,6 +7,10 @@
 #include "../utils/logoutput.h"
 #include "../utils/string.h"
 
+
+typedef CGAL::Point_3<CGAL::Simple_cartesian<float>> FPoint3;
+typedef CGAL::Point_3<CGAL::Simple_cartesian<int>> Point3;
+
 FILE* binaryMeshBlob = nullptr;
 
 /* Custom fgets function to support Mac line-ends in Ascii STL files. OpenSCAD produces this when used on Mac */
@@ -25,8 +29,10 @@ void* fgets_(char* ptr, size_t len, FILE* f)
     return nullptr;
 }
 
-bool loadModelSTL_ascii(Mesh* mesh, const char* filename, FMatrix3x3& matrix)
+bool loadModelSTL_ascii(Polyhedron* mesh, const char* filename, FMatrix3x3_new& matrix)
 {
+    PolyhedronLoader pl;
+
     FILE* f = fopen(filename, "rt");
     char buffer[1024];
     FPoint3 vertex;
@@ -34,7 +40,7 @@ bool loadModelSTL_ascii(Mesh* mesh, const char* filename, FMatrix3x3& matrix)
     Point3 v0(0,0,0), v1(0,0,0), v2(0,0,0);
     while(fgets_(buffer, sizeof(buffer), f))
     {
-        if (sscanf(buffer, " vertex %f %f %f", &vertex.x, &vertex.y, &vertex.z) == 3)
+        if (sscanf(buffer, " vertex %f %f %f", &vertex.x(), &vertex.y(), &vertex.z()) == 3)
         {
             n++;
             switch(n)
@@ -47,19 +53,21 @@ bool loadModelSTL_ascii(Mesh* mesh, const char* filename, FMatrix3x3& matrix)
                 break;
             case 3:
                 v2 = matrix.apply(vertex);
-                mesh->addFace(v0, v1, v2);
+                pl.addFace(v0, v1, v2);
                 n = 0;
                 break;
             }
         }
     }
     fclose(f);
-    mesh->finish();
+    pl.construct(*mesh);
     return true;
 }
 
-bool loadModelSTL_binary(Mesh* mesh, const char* filename, FMatrix3x3& matrix)
+bool loadModelSTL_binary(Polyhedron* mesh, const char* filename, FMatrix3x3_new& matrix)
 {
+    PolyhedronLoader pl;
+
     FILE* f = fopen(filename, "rb");
     char buffer[80];
     uint32_t faceCount;
@@ -93,7 +101,7 @@ bool loadModelSTL_binary(Mesh* mesh, const char* filename, FMatrix3x3& matrix)
         Point3 v0 = matrix.apply(FPoint3(v[0], v[1], v[2]));
         Point3 v1 = matrix.apply(FPoint3(v[3], v[4], v[5]));
         Point3 v2 = matrix.apply(FPoint3(v[6], v[7], v[8]));
-        mesh->addFace(v0, v1, v2);
+        pl.addFace(v0, v1, v2);
         if (fread(buffer, sizeof(uint16_t), 1, f) != 1)
         {
             fclose(f);
@@ -101,11 +109,11 @@ bool loadModelSTL_binary(Mesh* mesh, const char* filename, FMatrix3x3& matrix)
         }
     }
     fclose(f);
-    mesh->finish();
+    pl.construct(*mesh);
     return true;
 }
 
-bool loadModelSTL(Mesh* mesh, const char* filename, FMatrix3x3& matrix)
+bool loadModelSTL(Polyhedron* mesh, const char* filename, FMatrix3x3_new& matrix)
 {
     FILE* f = fopen(filename, "r");
     char buffer[6];
@@ -128,7 +136,7 @@ bool loadModelSTL(Mesh* mesh, const char* filename, FMatrix3x3& matrix)
 
         // This logic is used to handle the case where the file starts with
         // "solid" but is a binary file.
-        if (mesh->faces.size() < 1)
+        if (mesh->size_of_vertices() < 1)
         {
             mesh->clear();
             return loadModelSTL_binary(mesh, filename, matrix);
@@ -138,12 +146,12 @@ bool loadModelSTL(Mesh* mesh, const char* filename, FMatrix3x3& matrix)
     return loadModelSTL_binary(mesh, filename, matrix);
 }
 
-bool loadMeshFromFile(PrintObject* object, const char* filename, FMatrix3x3& matrix)
+bool loadPolyhedronFromFile(PrintObject* object, const char* filename, FMatrix3x3_new& matrix)
 {
     const char* ext = strrchr(filename, '.');
     if (ext && strcmp(ext, ".stl") == 0)
     {
-        object->meshes.emplace_back(object);
+        object->meshes.emplace_back();//object);
         return loadModelSTL(&object->meshes[object->meshes.size()-1], filename, matrix);
     }
     return false;

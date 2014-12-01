@@ -27,12 +27,12 @@ CommandSocket::CommandSocket(int portNr)
     object_count = 1;
     current_object_number = 0;
 }
-
 void CommandSocket::handleIncommingData(fffProcessor* processor)
 {
+/*
     std::vector<PrintObject*> object_list;
     PrintObject* object = NULL;
-    Mesh* mesh = NULL;
+    Polyhedron* mesh = NULL;
     FMatrix3x3 matrix;
 
 
@@ -58,11 +58,11 @@ void CommandSocket::handleIncommingData(fffProcessor* processor)
                 if ((value - buffer) < dataSize)
                 {
                     //processor->getSetting(buffer);
-                    if (mesh)
-                        mesh->setSetting(buffer, value);
-                    else if (object)
-                        object->setSetting(buffer, value);
-                    else
+//                    if (mesh)
+//                        mesh->setSetting(buffer, value);
+//                    else if (object)
+//                        object->setSetting(buffer, value);
+//                    else
                         processor->setSetting(buffer, value);
                 }
             }
@@ -85,7 +85,7 @@ void CommandSocket::handleIncommingData(fffProcessor* processor)
                 object->finalize();
                 object_list.push_back(object);
             }
-            object = new PrintObject(processor);
+            object = new PrintObject();//processor);
             mesh = NULL;
             break;
         case CMD_MESH_LIST:
@@ -126,6 +126,7 @@ void CommandSocket::handleIncommingData(fffProcessor* processor)
     }
     if (object)
         delete object;
+        */
 }
 
 

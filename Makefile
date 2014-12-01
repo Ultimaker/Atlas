@@ -10,7 +10,7 @@ BUILD_TYPE = DEBUG
 
 VERSION ?= DEV
 CXX ?= g++
-CFLAGS += -c -Wall -Wextra -Woverloaded-virtual -std=c++11 -DVERSION=\"$(VERSION)\" -isystem libs
+CFLAGS += -c -Wall -Wextra -Woverloaded-virtual -std=c++11 -DVERSION=\"$(VERSION)\" -isystem libs -frounding-math
 
 ifeq ($(BUILD_TYPE),DEBUG)
 	CFLAGS+=-ggdb -Og -g -Wno-sign-compare -Wno-old-style-cast
@@ -22,9 +22,9 @@ ifeq ($(BUILD_TYPE),RELEASE)
 	CFLAGS+= -O3 -fomit-frame-pointer
 endif
 
-LDFLAGS += -L$(BUILD_DIR)/ #-lcgal
+LDFLAGS += -L$(BUILD_DIR)/ -lboost_thread -lboost_system -lpthread -lCGAL_Core -lCGAL  #-Lcgal -Lcgal_core
 
-SOURCES_RAW = halfEdgeMesh.cpp main.cpp optimizedModel.cpp settings.cpp commandSocket.cpp mesh.cpp supportClassification.cpp supportGeneration.cpp 
+SOURCES_RAW = halfEdgeMesh.cpp main.cpp optimizedModel.cpp settings.cpp commandSocket.cpp polyhedra.cpp supportClassification.cpp supportGeneration.cpp  # mesh.cpp 
 SOURCES_RAW += modelFile/modelFile.cpp utils/gettime.cpp utils/logoutput.cpp utils/socket.cpp
 SOURCES = $(addprefix $(SRC_DIR)/,$(SOURCES_RAW))
 
@@ -58,12 +58,12 @@ endif
 ifeq ($(TARGET_OS),WIN32)
 	#For windows make it large address aware, which allows the process to use more then 2GB of memory.
 	EXECUTABLE := $(EXECUTABLE).exe
-	CFLAGS += -march=pentium4 -flto
-	LDFLAGS += -Wl,--large-address-aware -lm -lwsock32 -flto
+	CFLAGS += -march=pentium4 #-flto
+	LDFLAGS += -Wl,--large-address-aware -lm -lwsock32 #-flto
 endif
 ifeq ($(TARGET_OS),LINUX)
-	CFLAGS += -flto
-	LDFLAGS += --static -flto
+	#CFLAGS += -flto
+	#LDFLAGS += --static #-flto
 endif
 ifeq ($(TARGET_OS), MACOS)
 	CFLAGS += -force_cpusubtype_ALL -mmacosx-version-min=10.6 -arch x86_64 -arch i386
@@ -75,7 +75,7 @@ all: $(DIRS) $(SOURCES) $(EXECUTABLE)
 #$(BUILD_DIR)/libclipper.a: $(LIBS_DIR)/clipper/clipper.cpp
 #	$(CXX) $(CFLAGS) -o $(BUILD_DIR)/libclipper.a $(LIBS_DIR)/clipper/clipper.cpp
 
-$(EXECUTABLE): $(OBJECTS) # $(BUILD_DIR)/libclipper.a
+$(EXECUTABLE): $(OBJECTS) #$(BUILD_DIR)/libclipper.a
 	$(CXX) $(OBJECTS) -o $@ $(LDFLAGS)
 
 $(DIRS):

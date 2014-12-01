@@ -5,13 +5,13 @@
 #include <sstream>
 #include "utils/gettime.h"
 #include "utils/logoutput.h"
-#include "modelFile/modelFile.h"
+#include "modelFile/modelFile.h" // loadPolyhedronFromFile
 #include "optimizedModel.h"
 #include "commandSocket.h"
 
 #include "halfEdgeMesh.h"
 
-#include "supportClassification.h"
+#include "supportGeneration.h"
 
 #include <iostream>
 
@@ -46,13 +46,13 @@ public:
         timeKeeper.restart();
         PrintObject* model = nullptr;
 
-        model = new PrintObject(this);
+        model = new PrintObject();//this);
         for(std::string filename : files)
         {
             log("Loading %s from disk...\n", filename.c_str());
 
-            FMatrix3x3 matrix;
-            if (!loadMeshFromFile(model, filename.c_str(), matrix))
+            FMatrix3x3_new matrix;
+            if (!loadPolyhedronFromFile(model, filename.c_str(), matrix))
             {
                 logError("Failed to load model: %s\n", filename.c_str());
                 return false;
@@ -75,9 +75,9 @@ public:
 
 
         std::cerr << "starting new Support Test..." << std::endl;
-        //SupportChecker::testSupportChecker(model);
-        SupportPointsGenerator::testSupportPointsGenerator(model);
-
+        SupportChecker::testSupportChecker(model);
+        //SupportPointsGenerator::testSupportPointsGenerator(model);
+        //SupportBlockGenerator::test(model);
 
 
 

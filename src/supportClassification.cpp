@@ -11,6 +11,7 @@
 
 #include <algorithm> // std::binary_search
 
+
 // enable/disable debug output
 #define ADV_SUP_DEBUG 0
 
@@ -24,38 +25,39 @@
 
 namespace atlas {
 
-SupportChecker SupportChecker::getSupportRequireds(Mesh& mesh, double maxAngle)
+SupportChecker SupportChecker::getSupportRequireds(HE_Mesh& mesh, double maxAngle)
 {
 
-    SupportChecker supporter(mesh, maxAngle);
+    SupportChecker checker(mesh, maxAngle);
     ADV_SUP_DEBUG_DO(
         std::cerr << "-----------------------\n--getSupportRequireds--\n-----------------------" << std::endl;
-        std::cerr << "cosMaxAngle = " << supporter.cosMaxAngle << std::endl;
-        std::cerr << "cosMaxAngleNormal = " << supporter.cosMaxAngleNormal << std::endl;
+        std::cerr << "cosMaxAngle = " << checker.cosMaxAngle << std::endl;
+        std::cerr << "cosMaxAngleNormal = " << checker.cosMaxAngleNormal << std::endl;
     )
 
-    for (int f = 0 ; f < supporter.mesh.faces.size() ; f++)
+    for (int f = 0 ; f < checker.mesh.faces.size() ; f++)
     {
-        supporter.faceIsBad[f] = supporter.faceNeedsSupport(supporter.mesh, f);
+        checker.faceIsBad[f] = checker.faceNeedsSupport(checker.mesh, f);
     }
 
-    for (int e = 0 ; e < supporter.mesh.edges.size() ; e++)
+    for (int e = 0 ; e < checker.mesh.edges.size() ; e++)
     {
-        bool bad = supporter.edgeNeedsSupport(supporter.mesh, e);
-        supporter.edgeIsBad[e] = bad;
-        if (bad)
-        {
-            supporter.edgeIsBad[supporter.mesh.edges[e].converse_edge_idx] = bad;
-        }
+        bool bad = checker.edgeNeedsSupport(checker.mesh, e);
+        checker.edgeIsBad[e] = bad;
+        //  \/ done inside edgeNeedsSupport(...)
+//        if (bad)
+//        {
+//            checker.edgeIsBad[checker.mesh.edges[e].converse_edge_idx] = bad;
+//        }
     }
 
-    for (int v = 0 ; v < supporter.mesh.vertices.size() ; v++)
+    for (int v = 0 ; v < checker.mesh.vertices.size() ; v++)
     {
-        supporter.vertexIsBad[v] = supporter.vertexNeedsSupport(supporter.mesh, v);
+        checker.vertexIsBad[v] = checker.vertexNeedsSupport(checker.mesh, v);
     }
 
     ADV_SUP_DEBUG_DO( std::cerr << "------------------------\n--END SupportRequireds--\n------------------------" << std::endl; )
-    return supporter;
+    return checker;
 }
 
 bool SupportChecker::faceNeedsSupport(const HE_Mesh& mesh, int face_idx)
@@ -188,7 +190,7 @@ bool SupportChecker::edgeIsBelowFacesDiagonal(const HE_Mesh& mesh, const HE_Edge
 int64_t vSize(int32_t x, int32_t y) // TODO: move / remove!
 {
 int64_t vSize2 = x*x +y*y;
-return sqrt(vSize2);
+return std::sqrt(vSize2);
 }
 
 bool SupportChecker::edgeIsBelowSingleFaceDiagonal(const Point3& dab, const Point3& dac, double denom, short sign)
@@ -295,36 +297,37 @@ bool SupportChecker::vertexNeedsSupport(const HE_Mesh& mesh, int vertex_idx)
 
 void SupportChecker::testSupportChecker(PrintObject* model)
 {
+/*
     std::cerr << "=============================================\n" << std::endl;
 
     for (int mi = 0 ; mi < model->meshes.size() ; mi++)
     {
-        //HE_Mesh mesh(model->meshes[mi]);
-        SupportChecker supporter = SupportChecker::getSupportRequireds(model->meshes[mi], .785); // 45/180*M_PI
+        HE_Mesh mesh(model->meshes[mi]);
+        SupportChecker checker = SupportChecker::getSupportRequireds(mesh, .785); // 45/180*M_PI
 
 
         std::cerr << "faces badness:" << std::endl;
-        for (int f = 0 ; f < supporter.mesh.faces.size() ; f++)
+        for (int f = 0 ; f < checker.mesh.faces.size() ; f++)
         {
-            std::cerr << f << " " << (supporter.faceIsBad[f]? "TRUE" : "f") << std::endl;
+            std::cerr << f << " " << (checker.faceIsBad[f]? "TRUE" : "f") << std::endl;
         }
 
         std::cerr << "edges badness:" << std::endl;
-        for (int e = 0 ; e < supporter.mesh.edges.size() ; e++)
+        for (int e = 0 ; e < checker.mesh.edges.size() ; e++)
         {
-            std::cerr << e << " " << (supporter.edgeIsBad[e]? "TRUE" : "f") << std::endl;
+            std::cerr << e << " " << (checker.edgeIsBad[e]? "TRUE" : "f") << std::endl;
         }
 
         std::cerr << "vertices badness:" << std::endl;
-        for (int v = 0 ; v < supporter.mesh.vertices.size() ; v++)
+        for (int v = 0 ; v < checker.mesh.vertices.size() ; v++)
         {
-            std::cerr << v << " " << (supporter.vertexIsBad[v]? "TRUE" : "f") << std::endl;
+            std::cerr << v << " " << (checker.vertexIsBad[v]? "TRUE" : "f") << std::endl;
         }
         //for (int f = 0; f < mesh.faces.size(); f++)
         //    std::cerr << mesh.faces[f].cosAngle() << std::endl;
     }
     std::cerr << "=============================================\n" << std::endl;
-
+*/
 }
 
 SupportChecker::~SupportChecker()
@@ -534,9 +537,9 @@ void SupportPointsGenerator::addSupportPointsFace(int face_idx)
 }
 
 
-
 void SupportPointsGenerator::testSupportPointsGenerator(PrintObject* model)
 {
+/*
     std::cerr << "=============================================\n" << std::endl;
 
     for (int mi = 0 ; mi < model->meshes.size() ; mi++)
@@ -547,30 +550,30 @@ void SupportPointsGenerator::testSupportPointsGenerator(PrintObject* model)
             model->meshes[mi].vertices[p].p -= minn;
         }
 
-        //HE_Mesh mesh(model->meshes[mi]);
-        SupportChecker supporter = SupportChecker::getSupportRequireds(model->meshes[mi], .1);//.785); // 45/180*M_PI
+        HE_Mesh mesh(model->meshes[mi]);
+        SupportChecker checker = SupportChecker::getSupportRequireds(mesh, .1);//.785); // 45/180*M_PI
 
 
         std::cerr << "faces badness:" << std::endl;
-        for (int f = 0 ; f < supporter.mesh.faces.size() ; f++)
+        for (int f = 0 ; f < checker.mesh.faces.size() ; f++)
         {
-            std::cerr << f << " " << (supporter.faceIsBad[f]? "TRUE" : "f") << std::endl;
+            std::cerr << f << " " << (checker.faceIsBad[f]? "TRUE" : "f") << std::endl;
         }
 
         std::cerr << "edges badness:" << std::endl;
-        for (int e = 0 ; e < supporter.mesh.edges.size() ; e++)
+        for (int e = 0 ; e < checker.mesh.edges.size() ; e++)
         {
-            std::cerr << e << " " << (supporter.edgeIsBad[e]? "TRUE" : "f") << std::endl;
+            std::cerr << e << " " << (checker.edgeIsBad[e]? "TRUE" : "f") << std::endl;
         }
 
         std::cerr << "vertices badness:" << std::endl;
-        for (int v = 0 ; v < supporter.mesh.vertices.size() ; v++)
+        for (int v = 0 ; v < checker.mesh.vertices.size() ; v++)
         {
-            std::cerr << v << " " << (supporter.vertexIsBad[v]? "TRUE" : "f") << std::endl;
+            std::cerr << v << " " << (checker.vertexIsBad[v]? "TRUE" : "f") << std::endl;
         }
         std::cerr << "=============================================\n" << std::endl;
 
-        SupportPointsGenerator pg(supporter, 1, 2, 3, 300);
+        SupportPointsGenerator pg(checker, 1, 2, 3, 300);
         std::cerr << "n points generated: " << pg.supportPoints.size() << std::endl;
         std::ofstream out("supportClassification.obj");
         for (int p = 0; p < pg.supportPoints.size() ; p++)
@@ -584,8 +587,8 @@ void SupportPointsGenerator::testSupportPointsGenerator(PrintObject* model)
     }
     std::cerr << "=============================================\n" << std::endl;
 
+*/
 }
-
 
 
 

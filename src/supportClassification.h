@@ -38,15 +38,16 @@ class SupportChecker
         * \param mesh The mesh from which to verify support requirements.
         * \param maxAngle The max angle (0 is vertical) at which a part can reliably be printed. (0 < maxAngle < .5 pi)
         */
-        static SupportChecker getSupportRequireds(Mesh& mesh, double maxAngle);
+        static SupportChecker getSupportRequireds(HE_Mesh& mesh, double maxAngle);
 
         double maxAngle;
 
-        HE_Mesh mesh;
+        HE_Mesh& mesh;
 
         std::vector<bool> faceIsBad;
         std::vector<bool> edgeIsBad;
         std::vector<bool> vertexIsBad;
+
 
         std::vector<Point3> faceNormals;
 
@@ -60,7 +61,7 @@ class SupportChecker
 
         bool edgeOnBoundaryNotBadWhenFullySupported = true; //!< don't classify an edge as bad in case one face is bad, but the other face is pointing upward
 
-        SupportChecker(Mesh mmesh, double maxAngleI)
+        SupportChecker(HE_Mesh& mmesh, double maxAngleI)
         : maxAngle(maxAngleI)
         , mesh(mmesh)
         , faceIsBad(mesh.faces.size())

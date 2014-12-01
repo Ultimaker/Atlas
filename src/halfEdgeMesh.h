@@ -2,8 +2,9 @@
 #define HALFEDGEMESH_H
 
 #include "mesh.h"
+#include "utils/floatpoint.h"
 
-
+using namespace std;
 /**
  "f" is short for face
  "e" is short for edge
@@ -19,6 +20,20 @@
 class HE_Vertex;
 class HE_Face;
 class HE_Edge;
+
+struct Edge
+{
+    int loVertIdx;
+    int hiVertIdx;
+    vector<int> halfEdgeIdx;
+};
+
+struct HE_ConstructionEnv
+{
+    std::map<uint32_t, std::vector<uint32_t> > vertex_hash_map;
+    vector<Edge> edges;
+
+};
 
 /*!
 Half-edge mesh - a more elaborate data structure to store a mesh.
@@ -72,6 +87,8 @@ class HE_Mesh
 
     protected:
     private:
+        int findIndexOfVertex(Point3& v); //!< find index of vertex close to the given point, or create a new vertex and return its index.
+
 };
 
 class HE_Edge {

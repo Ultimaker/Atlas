@@ -2,6 +2,7 @@
 #define MESH_H
 
 #include "settings.h"
+#include "utils/floatpoint.h"
 
 /*!
 Vertex type to be used in a Mesh.
@@ -53,7 +54,7 @@ See MeshFace for the specifics of how/when faces are connected.
 */
 class Mesh : public SettingsBase // inherits settings
 {
-    //! The vertex_hash_map stores a index reference of each vertex for the hash of that location. Allows for quick retrieval of points with the same location.
+    //! The vertex_hash_map stores an index reference of each vertex for the hash of that location. Allows for quick retrieval of points with the same location.
     std::map<uint32_t, std::vector<uint32_t> > vertex_hash_map;
 public:
     std::vector<MeshVertex> vertices;//!< list of all vertices in the mesh
