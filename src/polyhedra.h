@@ -2,12 +2,14 @@
 #define POLYHEDRA_H
 
 #include <CGAL/Simple_cartesian.h>
+#include <CGAL/Polyhedron_traits_with_normals_3.h>
 #include <CGAL/Polyhedron_incremental_builder_3.h>
 #include <CGAL/Polyhedron_3.h>
 
 typedef int prim_data;
 typedef CGAL::Simple_cartesian<prim_data> Kernel;
-typedef CGAL::Polyhedron_3<Kernel> Polyhedron;
+typedef CGAL::Polyhedron_traits_with_normals_3<Kernel> Traits;
+typedef CGAL::Polyhedron_3<Traits> Polyhedron;
 typedef Polyhedron::HalfedgeDS HalfedgeDS;
 typedef HalfedgeDS::Vertex Vertex;
 typedef HalfedgeDS::Vertex_iterator Vertex_iterator;

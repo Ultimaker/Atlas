@@ -56,8 +56,8 @@ vector<HE_Mesh> SupportBlockGenerator::generateSupportBlocks()
 
 void SupportBlockGenerator::test(PrintObject* model)
 {
-
     std::cerr << "=============================================\n" << std::endl;
+/*
 
     for (int mi = 0 ; mi < model->meshes.size() ; mi++)
     {
@@ -99,6 +99,6 @@ void SupportBlockGenerator::test(PrintObject* model)
 
 
     }
+*/
     std::cerr << "=============================================\n" << std::endl;
-
 }
