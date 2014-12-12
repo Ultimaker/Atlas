@@ -20,6 +20,7 @@
 #include "fffProcessor.h"
 
 
+
 /*
 #define ELPP_CUSTOM_COUT std::cerr
 #include "easylogging++.h"
@@ -49,6 +50,18 @@ void signal_FPE(int n)
 }
 
 using namespace atlas;
+
+
+
+#include "AABB_Tree.h"
+int main_test(int argc, char **argv)
+{
+    std::cerr << " Program TEST begin... " << std::endl;
+
+    AABB_Tree<int>::test();
+
+}
+
 
 int main(int argc, char **argv)
 {

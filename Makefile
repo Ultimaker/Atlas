@@ -24,7 +24,7 @@ endif
 
 LDFLAGS += -L$(BUILD_DIR)/ #-lcgal
 
-SOURCES_RAW = halfEdgeMesh.cpp main.cpp optimizedModel.cpp settings.cpp commandSocket.cpp mesh.cpp supportClassification.cpp supportGeneration.cpp 
+SOURCES_RAW = AABB_Tree.cpp BoundingBox.cpp fffProcessor.cpp halfEdgeMesh.cpp main.cpp optimizedModel.cpp settings.cpp commandSocket.cpp mesh.cpp supportClassification.cpp supportGeneration.cpp
 SOURCES_RAW += modelFile/modelFile.cpp utils/gettime.cpp utils/logoutput.cpp utils/socket.cpp
 SOURCES = $(addprefix $(SRC_DIR)/,$(SOURCES_RAW))
 
@@ -70,6 +70,14 @@ ifeq ($(TARGET_OS), MACOS)
 	LDFLAGS += -force_cpusubtype_ALL -mmacosx-version-min=10.6 -arch x86_64 -arch i386
 endif
 
+
+# Recompile source files for which the corresponding header file has changed
+DEPS := $(OBJECTS:.o=.d)
+
+-include $(DEPS)
+
+
+
 all: $(DIRS) $(SOURCES) $(EXECUTABLE)
 
 #$(BUILD_DIR)/libclipper.a: $(LIBS_DIR)/clipper/clipper.cpp
@@ -82,7 +90,7 @@ $(DIRS):
 	-@mkdir -p $(DIRS)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(CXX) $(CFLAGS) $< -o $@
+	$(CXX) $(CFLAGS) $< -MMD -o $@
 
 test: $(EXECUTABLE)
 	python tests/runtest.py $(abspath $(EXECUTABLE))

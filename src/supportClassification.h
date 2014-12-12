@@ -58,9 +58,13 @@ class SupportChecker
         double cosMaxAngle;
         double cosMaxAngleNormal; // == sin maxAngle
 
-        bool edgeOnBoundaryNotBadWhenFullySupported = true; //!< don't classify an edge as bad in case one face is bad, but the other face is pointing upward
+        // wrongly implemented!!! now _\ has a good edge
+        bool edgeOnBoundaryNotBadWhenFullySupported = false; //!< don't classify an edge as bad in case one face is bad, but the other face is pointing upward
 
         SupportChecker(Mesh mmesh, double maxAngleI)
+        : SupportChecker(HE_Mesh(mmesh), maxAngleI) {};
+
+        SupportChecker(HE_Mesh mmesh, double maxAngleI)
         : maxAngle(maxAngleI)
         , mesh(mmesh)
         , faceIsBad(mesh.faces.size())
@@ -77,9 +81,9 @@ class SupportChecker
             faceNormals.resize(mesh.faces.size());
         };
 
-        bool faceNeedsSupport(const HE_Mesh& mesh, int face_idx);
-        bool edgeNeedsSupport(const HE_Mesh& mesh, int edge_idx);
-        bool vertexNeedsSupport(const HE_Mesh& mesh, int vertex_idx);
+        bool faceNeedsSupport(HE_Mesh& mesh, int face_idx);
+        bool edgeNeedsSupport(HE_Mesh& mesh, int edge_idx);
+        bool vertexNeedsSupport(HE_Mesh& mesh, int vertex_idx);
 
 
 
@@ -113,11 +117,11 @@ class SupportChecker
         * \param mesh the mesh
         * \param edge the edge to check
         */
-        inline bool edgeIsBelowFaces(const HE_Mesh& mesh, const HE_Edge& edge);
-        inline bool edgeIsBelowFacesDiagonal(const HE_Mesh& mesh, const HE_Edge& edge, const Point3& a, const Point3& dac); //!< Helper function for the edge case in which a horizontal line through the plane is perfectly diagonal, in which case the denom parameter of edgeIsBelowFacesNonDiagonal is not finite.
-        inline bool edgeIsBelowSingleFaceDiagonal(const Point3& dab, const Point3& dac, double denom, short sign);
-        inline bool edgeIsBelowFacesNonDiagonal(const HE_Mesh& mesh, const HE_Edge& edge, const Point3& a, const Point3& dac, double denom);
-        inline bool edgeIsBelowSingleFaceNonDiagonal(const Point3& dab, const Point3& dac, double denom);
+        inline bool edgeIsBelowFaces(HE_Mesh& mesh, HE_Edge& edge);
+        inline bool edgeIsBelowFacesDiagonal(HE_Mesh& mesh, HE_Edge& edge, Point3& a, Point3& dac); //!< Helper function for the edge case in which a horizontal line through the plane is perfectly diagonal, in which case the denom parameter of edgeIsBelowFacesNonDiagonal is not finite.
+        inline bool edgeIsBelowSingleFaceDiagonal(Point3& dab, Point3& dac, double denom, short sign);
+        inline bool edgeIsBelowFacesNonDiagonal(HE_Mesh& mesh, HE_Edge& edge, Point3& a, Point3& dac, double denom);
+        inline bool edgeIsBelowSingleFaceNonDiagonal(Point3& dab, Point3& dac, double denom);
 };
 
 
@@ -144,7 +148,7 @@ public:
 class SupportPointsGenerator
 {
 public:
-    const SupportChecker& supportChecker;
+    SupportChecker& supportChecker;
 
     int32_t vertexOffset;
     int32_t edgeOffset;
@@ -154,7 +158,7 @@ public:
     std::vector<AdvSupportPoint> supportPoints;
 
 
-    SupportPointsGenerator(const SupportChecker& supportChecker, int32_t vertexOffset, int32_t edgeOffset, int32_t faceOffset, int32_t gridSize);
+    SupportPointsGenerator(SupportChecker& supportChecker, int32_t vertexOffset, int32_t edgeOffset, int32_t faceOffset, int32_t gridSize);
 
     static void testSupportPointsGenerator(PrintObject* model);
 

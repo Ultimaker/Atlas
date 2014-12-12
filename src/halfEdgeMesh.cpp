@@ -19,15 +19,122 @@
 
 
 
-const HE_Edge& HE_Mesh::getNext(const HE_Edge& edge) const { return edges[edge.next_edge_idx]; }
-const HE_Edge& HE_Mesh::getPrev(const HE_Edge& edge) const { return edges[edge.prev_edge_idx]; }
-const HE_Edge& HE_Mesh::getConverse(const HE_Edge& edge) const { return edges[edge.converse_edge_idx]; }
-const HE_Vertex& HE_Mesh::getTo(const HE_Edge& edge) const { return vertices[edge.to_vert_idx]; }
-const HE_Vertex& HE_Mesh::getFrom(const HE_Edge& edge) const { return vertices[edge.from_vert_idx]; }
+HE_Edge* HE_Mesh::getNext(HE_Edge& edge) { return &edges[edge.next_edge_idx]; }
+HE_Edge* HE_Mesh::getPrev(HE_Edge& edge) { return &edges[edge.prev_edge_idx]; }
+HE_Edge* HE_Mesh::getConverse(HE_Edge& edge) { return &edges[edge.converse_edge_idx]; }
+HE_Vertex* HE_Mesh::getTo(HE_Edge& edge) { return &vertices[edge.to_vert_idx]; }
+HE_Vertex* HE_Mesh::getFrom(HE_Edge& edge) { return &vertices[edge.from_vert_idx]; }
 
-const HE_Edge& HE_Mesh::getSomeEdge(const HE_Vertex& vertex) const { return edges[vertex.someEdge_idx]; }
 
-Point3 HE_Mesh::getNormal(const HE_Face& face) const
+HE_Edge* HE_Mesh::getSomeEdge(HE_Face& face) { return &edges[face.edge_index[0]]; }
+HE_Edge* HE_Mesh::getSomeEdge(HE_Vertex& vertex) { return &edges[vertex.someEdge_idx]; }
+
+void HE_Mesh::connectEdgesPrevNext(int prev, int next) { edges[prev].next_edge_idx = next; edges[next].prev_edge_idx = prev; }
+void HE_Mesh::connectEdgesConverse(int e1, int e2) { edges[e1].converse_edge_idx = e2; edges[e2].converse_edge_idx = e1; }
+
+int HE_Mesh::createVertex(Point p)
+{
+    vertices.push_back(HE_Vertex(p, -1));
+    return vertices.size()-1;
+}
+
+int HE_Mesh::createConverse(int e_idx)
+{
+    int v0_idx = edges[e_idx].from_vert_idx;
+    int v1_idx = edges[e_idx].to_vert_idx;
+    HE_Edge e(v1_idx, v0_idx, -1);
+    int new_e_idx = edges.size();
+    edges.push_back(e);
+    connectEdgesConverse(e_idx, new_e_idx);
+    return new_e_idx;
+}
+
+int HE_Mesh::createFace(int v0_idx, int v1_idx, int v2_idx)
+{
+        HE_Face f;
+        int f_idx = faces.size();
+        faces.push_back(f);
+
+        HE_Edge e0 (v0_idx, v1_idx, f_idx);
+        HE_Edge e1 (v1_idx, v2_idx, f_idx);
+        HE_Edge e2 (v2_idx, v0_idx, f_idx);
+
+        int e0_idx = edges.size() + 0;
+        int e1_idx = edges.size() + 1;
+        int e2_idx = edges.size() + 2;
+
+        edges.push_back(e0);
+        edges.push_back(e1);
+        edges.push_back(e2);
+
+        connectEdgesPrevNext(e0_idx, e1_idx);
+        connectEdgesPrevNext(e1_idx, e2_idx);
+        connectEdgesPrevNext(e2_idx, e0_idx);
+
+        vertices[v0_idx].someEdge_idx = e0_idx;
+        vertices[v1_idx].someEdge_idx = e1_idx;
+        vertices[v2_idx].someEdge_idx = e2_idx;
+
+        f.edge_index[0] = e0_idx;
+        f.edge_index[1] = e1_idx;
+        f.edge_index[2] = e2_idx;
+
+        return f_idx;
+}
+
+int HE_Mesh::createFaceWithEdge(int e0_idx, int v2_idx)
+{
+        HE_Face f;
+        int f_idx = faces.size();
+        faces.push_back(f);
+
+        HE_Edge& e0 = edges[e0_idx];
+        int v0_idx = e0.from_vert_idx;
+        int v1_idx = e0.to_vert_idx;
+
+        HE_Edge e1 (v1_idx, v2_idx, f_idx);
+        HE_Edge e2 (v2_idx, v0_idx, f_idx);
+
+        int e1_idx = edges.size() + 0;
+        int e2_idx = edges.size() + 1;
+
+        edges.push_back(e1);
+        edges.push_back(e2);
+
+        connectEdgesPrevNext(e0_idx, e1_idx);
+        connectEdgesPrevNext(e1_idx, e2_idx);
+        connectEdgesPrevNext(e2_idx, e0_idx);
+
+        vertices[v0_idx].someEdge_idx = e0_idx;
+        vertices[v1_idx].someEdge_idx = e1_idx;
+        vertices[v2_idx].someEdge_idx = e2_idx;
+
+        f.edge_index[0] = e0_idx;
+        f.edge_index[1] = e1_idx;
+        f.edge_index[2] = e2_idx;
+
+        return f_idx;
+}
+
+
+BoundingBox HE_Mesh::bbox()
+{
+    BoundingBox ret(vertices[0].p, vertices[0].p);
+    for (HE_Vertex& v : vertices)
+    {
+        ret.min.x = std::min(ret.min.x, v.p.x);
+        ret.min.y = std::min(ret.min.y, v.p.y);
+        ret.min.z = std::min(ret.min.z, v.p.z);
+
+        ret.max.x = std::max(ret.max.x, v.p.x);
+        ret.max.y = std::max(ret.max.y, v.p.y);
+        ret.max.z = std::max(ret.max.z, v.p.z);
+
+    }
+    return ret;
+}
+
+Point3 HE_Mesh::getNormal(HE_Face& face) const
 {
     Point3 p0 = vertices[edges[face.edge_index[0]].from_vert_idx].p;
     Point3 p1 = vertices[edges[face.edge_index[0]].to_vert_idx].p;

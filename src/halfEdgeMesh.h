@@ -1,8 +1,10 @@
 #ifndef HALFEDGEMESH_H
 #define HALFEDGEMESH_H
 
-#include "mesh.h"
+#include "Kernel.h"
 
+#include "mesh.h"
+#include "BoundingBox.h"
 
 /**
  "f" is short for face
@@ -56,22 +58,36 @@ class HE_Mesh
         std::vector<HE_Edge> edges;
 
         HE_Mesh(Mesh& mesh);
+        HE_Mesh() {};
         virtual ~HE_Mesh();
 
 
-        const HE_Edge& getNext(const HE_Edge& edge)  const ;
-        const HE_Edge& getPrev(const HE_Edge& edge)  const ;
-        const HE_Edge& getConverse(const HE_Edge& edge)  const ;
-        const HE_Vertex& getTo(const HE_Edge& edge)  const ;
-        const HE_Vertex& getFrom(const HE_Edge& edge)  const ;
+        HE_Edge* getNext(HE_Edge& edge)   ;
+        HE_Edge* getPrev(HE_Edge& edge)   ;
+        HE_Edge* getConverse(HE_Edge& edge)   ;
+        HE_Vertex* getTo(HE_Edge& edge)   ;
+        HE_Vertex* getFrom(HE_Edge& edge)   ;
 
-        const HE_Edge& getSomeEdge(const HE_Vertex& vertex) const  ;
+        HE_Edge* getSomeEdge(HE_Face& face)   ;
+        HE_Edge* getSomeEdge(HE_Vertex& vertex)   ;
 
 
-        Point3 getNormal(const HE_Face& face) const;
+        Point3 getNormal(HE_Face& face) const;
+
+        void connectEdgesPrevNext(int prev, int next);
+        void connectEdgesConverse(int e1, int e2);
+
+        int createFace(int v0_idx, int v1_idx, int v2_idx);
+        int createFaceWithEdge(int e_idx, int v_idx);
+        int createVertex(Point p);
+        int createConverse(int e_idx);
+
+        BoundingBox bbox();
 
     protected:
     private:
+        //int findIndexOfVertex(Point3& v); //!< find index of vertex close to the given point, or create a new vertex and return its index.
+
 };
 
 class HE_Edge {
@@ -106,8 +122,10 @@ class HE_Face {
     public:
         int edge_index[3];
 
+
         std::string toString() {return "edges: "+std::to_string(edge_index[0])+", "+std::to_string(edge_index[1])+", "+std::to_string(edge_index[2]); };
         HE_Face();
+        HE_Face(int e0, int e1, int e2) { edge_index[0] = e0; edge_index[1] = e1; edge_index[2] = e2; };
 
 //        inline double cosAngle()
 //        {
