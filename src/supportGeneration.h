@@ -22,11 +22,12 @@ class SupportBlockGenerator
     spaceType pillarDx = vertexSupportPillarRadius *0.5;
     spaceType pillarDy = vertexSupportPillarRadius *std::sqrt(.75);
     spaceType dZ_to_object = -100;
+    Point dz;
 
     public:
 
 
-        SupportBlockGenerator(SupportChecker& checker, HE_Mesh& mesh) : checker(checker), mesh(mesh), bbox(mesh.bbox()) {};
+        SupportBlockGenerator(SupportChecker& checker, HE_Mesh& mesh) : dz(0,0,dZ_to_object), checker(checker), mesh(mesh), bbox(mesh.bbox()) {};
         virtual ~SupportBlockGenerator();
 
 
@@ -46,9 +47,9 @@ class SupportBlockGenerator
     private:
         void groupOverhangAreas(vector<HE_Mesh>& result); //!< makes new (incomplete!) meshes for each connected group of overhang
 
-        inline int addVert(int v, vector<VV*>& mapVert, HE_Mesh& connectedOverhang, int group);
-        inline int addEdge(int e, vector<EE*>& mapEdge, vector<VV*>& mapVert, HE_Mesh& connectedOverhang, int group);
-        inline int addFace(int f, vector<FF*>& mapFace, vector<EE*>& mapEdge, vector<VV*>& mapVert, HE_Mesh& connectedOverhang, int group);
+        inline void supportFace(int f, Mesh& result);
+        inline void supportEdge(int e, Mesh& result);
+        inline void supportVert(int v, Mesh& result);
 
 };
 
