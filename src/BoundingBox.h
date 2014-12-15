@@ -29,8 +29,21 @@ struct BoundingBox
     Point min, max; //!< the minimal and maximal coordinates of everything contained within the bounding box.
     //spaceType xmin,xmax,ymin,ymax,zmin,zmax;
 //    BoundingBox(spaceType xmin_,spaceType xmax_,spaceType ymin_,spaceType ymax_,spaceType zmin_,spaceType zmax_)
+
+    BoundingBox(spaceType minx, spaceType miny, spaceType minz, spaceType maxx, spaceType maxy, spaceType maxz)
+    : min(minx, miny, minz)
+    , max(maxx, maxy, maxz)
+    {};
+
+    /*!
+    Returns a bounding box containing both points
+    */
+    BoundingBox(Point& a, Point& b)
+    : min(std::min(a.x, b.x),std::min(a.y, b.y),std::min(a.z, b.z))
+    , max(std::max(a.x, b.x),std::max(a.y, b.y),std::max(a.z, b.z))
+    { };
+
 //        : min(xmin_, xmax_, ymin_) , max(ymax_, zmin_, zmax_) {};
-    BoundingBox(Point min_, Point max_) : min(min_), max(max_) {};
 
     BoundingBox() {};
 
@@ -38,9 +51,20 @@ struct BoundingBox
     Returns a bounding box with coordinates able to contain both this bounding box and bounding box b.
     */
     BoundingBox(BoundingBox& a, BoundingBox& b)
-    : BoundingBox(  Point(std::min(a.min.x, b.min.x),std::min(a.min.y, b.min.y),std::min(a.min.z, b.min.z)),
-                    Point(std::max(a.max.x, b.max.x),std::max(a.max.y, b.max.y),std::max(a.max.z, b.max.z)))
+    : min(std::min(a.min.x, b.min.x),std::min(a.min.y, b.min.y),std::min(a.min.z, b.min.z))
+    , max(std::max(a.max.x, b.max.x),std::max(a.max.y, b.max.y),std::max(a.max.z, b.max.z))
     { };
+
+    BoundingBox operator +(BoundingBox& b)
+    {
+        return BoundingBox(*this, b);
+    }
+
+    BoundingBox operator +(Point& b)
+    {
+    return BoundingBox( std::min(min.x, b.x),std::min(min.y, b.y),std::min(min.z, b.z),
+                        std::max(max.x, b.x),std::max(max.y, b.y),std::max(max.z, b.z)  );
+    }
 
     /*!
     Returns true if the two binding boxes have a voljume as intersection.

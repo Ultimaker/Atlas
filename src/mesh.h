@@ -4,6 +4,8 @@
 #include "settings.h"
 #include <iostream> // ostream
 
+#include "BoundingBox.h"
+
 /*!
 Vertex type to be used in a Mesh.
 
@@ -70,6 +72,8 @@ public:
     Point3 max(); //!< max (in x,y and z) vertex of the bounding box
 
     void debugOuputBasicStats(std::ostream& out);
+
+    BoundingBox computeBbox(int f);
 
 private:
     int findIndexOfVertex(Point3& v); //!< find index of vertex close to the given point, or create a new vertex and return its index.

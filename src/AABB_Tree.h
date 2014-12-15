@@ -25,7 +25,7 @@
 
 /*!
 Axis Aligned Bounding Box search tree.
-
+@param T the type of object to be stored with/in the bounding boxes of leaves.
 */
 template<typename T>
 class AABB_Tree
@@ -41,7 +41,9 @@ public:
 
         for (int i = 0 ; i < 9 ; i++)
         {
-            leaves.push_back(new Node(BoundingBox(Point3(i,i,i), Point3(i+1,i+1,i+1)),&ints[i]));
+            Point p_a(i,i,i);
+            Point3 p_b(i+1,i+1,i+1);
+            leaves.push_back(new Node(BoundingBox(p_a, p_b),&ints[i]));
         }
         std::cerr << " TEST building AABB_Tree... " << std::endl;
 
@@ -54,7 +56,9 @@ public:
         std::cerr << " TEST intersecting AABB_Tree... " << std::endl;
 
         std::vector<int*> intersections;
-        tree.getIntersections(BoundingBox(Point(2,3,4), Point(5,6,7)), intersections);
+        Point p_a(2,3,4);
+        Point3 p_b(5,6,7);
+        tree.getIntersections(BoundingBox(p_a, p_b), intersections);
 
         for (int* i : intersections)
             std::cerr << *i << " ";
@@ -98,6 +102,10 @@ public:
         construct(objects, 0, 0, 0, objects.size()-1);
 
 
+    };
+    ~AABB_Tree()
+    {
+        allnodes.clear();
     };
 
     void debugPrint()
