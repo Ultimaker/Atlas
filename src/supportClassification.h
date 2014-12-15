@@ -51,6 +51,7 @@ class SupportChecker
         std::vector<Point3> faceNormals;
 
         static void testSupportChecker(PrintObject* model);
+        void debugGenerateOverhangMesh(Mesh& result);
 
         virtual ~SupportChecker();
 

@@ -7,6 +7,8 @@
 #include "../utils/logoutput.h"
 #include "../utils/string.h"
 
+#include <fstream> // write to file
+
 FILE* binaryMeshBlob = nullptr;
 
 /* Custom fgets function to support Mac line-ends in Ascii STL files. OpenSCAD produces this when used on Mac */
@@ -148,3 +150,34 @@ bool loadMeshFromFile(PrintObject* object, const char* filename, FMatrix3x3& mat
     }
     return false;
 }
+
+bool saveMeshToFile(Mesh& mesh, const char* filename)
+{
+    std::ofstream out(filename);
+    out << "solid name" << std::endl;
+
+    auto getPoint = [&mesh](int f, int v) { return &mesh.vertices[mesh.faces[f].vertex_index[v]].p; } ;
+
+    Point3* vert;
+    for (int f = 0; f < mesh.faces.size() ; f++)
+    {
+
+        out << "facet normal 0 0 0" << std::endl;
+        out << "    outer loop" << std::endl;
+        vert = getPoint(f,0);
+        out << "        vertex " <<vert->x <<" "<<vert->y<<" "<<vert->z  << std::endl;
+        vert = getPoint(f,1);
+        out << "        vertex " <<vert->x <<" "<<vert->y<<" "<<vert->z  << std::endl;
+        vert = getPoint(f,2);
+        out << "        vertex " <<vert->x <<" "<<vert->y<<" "<<vert->z  << std::endl;
+        out << "    endloop" << std::endl;
+        out << "endfacet" << std::endl;
+
+    }
+
+    out << "endsolid name" << std::endl;
+    out.close();
+
+    return true;
+}
+

@@ -41,6 +41,7 @@ public:
     int32_t x,y,z;
     Point3() {}
     Point3(const int32_t _x, const int32_t _y, const int32_t _z): x(_x), y(_y), z(_z) {}
+    //Point3(Point3& other): Point3(other.x, other.y, other.z) {}
 
     Point3 operator+(const Point3& p) const { return Point3(x+p.x, y+p.y, z+p.z); }
     Point3 operator-(const Point3& p) const { return Point3(x-p.x, y-p.y, z-p.z); }

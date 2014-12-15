@@ -19,6 +19,15 @@
 
 
 
+void HE_Mesh::debugOuputBasicStats(std::ostream& out)
+{
+    out << "faces: " << faces.size() << std::endl;
+    out << "vertices: " << vertices.size() << std::endl;
+    out << "halfedges: " << edges.size() << std::endl;
+
+}
+
+
 HE_Edge* HE_Mesh::getNext(HE_Edge& edge) { return &edges[edge.next_edge_idx]; }
 HE_Edge* HE_Mesh::getPrev(HE_Edge& edge) { return &edges[edge.prev_edge_idx]; }
 HE_Edge* HE_Mesh::getConverse(HE_Edge& edge) { return &edges[edge.converse_edge_idx]; }
@@ -28,6 +37,9 @@ HE_Vertex* HE_Mesh::getFrom(HE_Edge& edge) { return &vertices[edge.from_vert_idx
 
 HE_Edge* HE_Mesh::getSomeEdge(HE_Face& face) { return &edges[face.edge_index[0]]; }
 HE_Edge* HE_Mesh::getSomeEdge(HE_Vertex& vertex) { return &edges[vertex.someEdge_idx]; }
+
+HE_Face* HE_Mesh::getFace(HE_Edge& edge) { return &faces[edge.face_idx]; }
+
 
 void HE_Mesh::connectEdgesPrevNext(int prev, int next) { edges[prev].next_edge_idx = next; edges[next].prev_edge_idx = prev; }
 void HE_Mesh::connectEdgesConverse(int e1, int e2) { edges[e1].converse_edge_idx = e2; edges[e2].converse_edge_idx = e1; }

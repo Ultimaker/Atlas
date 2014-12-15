@@ -13,6 +13,15 @@ Mesh::Mesh(SettingsBase* parent)
 {
 }
 
+
+void Mesh::debugOuputBasicStats(std::ostream& out)
+{
+    out << "faces: " << faces.size() << std::endl;
+    out << "vertices: " << vertices.size() << std::endl;
+
+}
+
+
 void Mesh::addFace(Point3& v0, Point3& v1, Point3& v2)
 {
     int vi0 = findIndexOfVertex(v0);

@@ -71,6 +71,7 @@ class HE_Mesh
         HE_Edge* getSomeEdge(HE_Face& face)   ;
         HE_Edge* getSomeEdge(HE_Vertex& vertex)   ;
 
+        HE_Face* getFace(HE_Edge& edge)   ;
 
         Point3 getNormal(HE_Face& face) const;
 
@@ -83,6 +84,8 @@ class HE_Mesh
         int createConverse(int e_idx);
 
         BoundingBox bbox();
+
+        void debugOuputBasicStats(std::ostream& out);
 
     protected:
     private:

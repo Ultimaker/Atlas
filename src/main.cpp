@@ -54,7 +54,7 @@ using namespace atlas;
 
 
 #include "AABB_Tree.h"
-int main_test(int argc, char **argv)
+void main_test(int argc, char **argv)
 {
     std::cerr << " Program TEST begin... " << std::endl;
 

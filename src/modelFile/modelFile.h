@@ -77,4 +77,6 @@ public:
 
 bool loadMeshFromFile(PrintObject* object, const char* filename, FMatrix3x3& matrix);
 
+bool saveMeshToFile(Mesh& mesh, const char* filename);
+
 #endif//MODELFILE_H

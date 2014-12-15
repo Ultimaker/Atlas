@@ -1,5 +1,8 @@
 #include "supportGeneration.h"
 
+#include "modelFile/modelFile.h"
+
+#include <fstream> // ofstream
 
 SupportBlockGenerator::~SupportBlockGenerator()
 {
@@ -20,7 +23,200 @@ SupportBlockGenerator::~SupportBlockGenerator()
     VV(int f_idx_orr, int g) : vertex(f_idx_orr), group(g) {};
 };
 
-void SupportBlockGenerator::generateSupportBlocks(vector<HE_Mesh>& result)
+void SupportBlockGenerator::test(PrintObject* model)
+{
+    std::cerr << "=============================================\n" << std::endl;
+
+    //for (int mi = 0 ; mi < model->meshes.size() ; mi++)
+    int mi = 0;
+    {
+        Point3 minn = model->meshes[mi].min();
+        for (int p = 0 ; p < model->meshes[mi].vertices.size() ; p++)
+        {
+            model->meshes[mi].vertices[p].p -= minn;
+        }
+
+        std::cerr << " >>>>>>>>>>>>> HE_Mesh generation " << std::endl;
+
+        HE_Mesh mesh(model->meshes[mi]);
+        std::cerr << " >>>>>>>>>>>>> support checker " << std::endl;
+
+        SupportChecker supporter = SupportChecker::getSupportRequireds(model->meshes[mi], .785); // 45/180*M_PI
+
+        mesh.debugOuputBasicStats(std::cerr);
+
+
+
+
+
+        // overhang classification
+
+        std::cerr << "faces badness:" << std::endl;
+        for (int f = 0 ; f < supporter.mesh.faces.size() ; f++)
+        {
+            std::cerr << f << " " << (supporter.faceIsBad[f]? "TRUE" : "f") << std::endl;
+        }
+
+        std::cerr << "edges badness:" << std::endl;
+        for (int e = 0 ; e < supporter.mesh.edges.size() ; e++)
+        {
+            std::cerr << e << " " << (supporter.edgeIsBad[e]? "TRUE" : "f") << std::endl;
+        }
+
+        std::cerr << "vertices badness:" << std::endl;
+        for (int v = 0 ; v < supporter.mesh.vertices.size() ; v++)
+        {
+            std::cerr << v << " " << (supporter.vertexIsBad[v]? "TRUE" : "f") << std::endl;
+        }
+        std::cerr << "=============================================\n" << std::endl;
+
+
+
+
+
+        // support block generation
+
+        SupportBlockGenerator g(supporter, mesh);
+
+        Mesh newMesh(nullptr);
+
+        std::cerr << " >>>>>>>>>>>>> generating support blocks " << std::endl;
+
+        g.generateSupportBlocks(newMesh);
+
+        std::cerr << " >>>>>>>>>>>>> saving to file " << std::endl;
+        saveMeshToFile(newMesh, "blockSupport.stl");
+
+        newMesh.debugOuputBasicStats(std::cerr);
+
+
+
+
+
+        // support points generation
+//        SupportPointsGenerator pg(supporter, 1, 2, 3, 300);
+//        std::cerr << "n points generated: " << pg.supportPoints.size() << std::endl;
+//        std::ofstream out("supportClassification.obj");
+//        for (int p = 0; p < pg.supportPoints.size() ; p++)
+//        {
+//            Point3 pp = pg.supportPoints[p].p;
+//            // std::cerr << "v "<<pp.x<<" "<<pp.y<<" "<<pp.z<<" # " << pg.supportPoints[p].fromType << std::endl;
+//            out << "v "<<pp.x*.001<<" "<<pp.y*.001<<" "<<pp.z*.001<<" # " << pg.supportPoints[p].fromType << " " << pg.supportPoints[p].idx << std::endl;
+//        }
+//        out.close();
+
+    }
+    std::cerr << "=============================================\n" << std::endl;
+
+}
+
+void SupportBlockGenerator::generateSupportBlocks(Mesh& result)
+{
+    Point dz(0,0,dZ_to_object);
+    auto projectDown = [this](Point& p) { return Point(p.x,p.y,bbox.min.z - 10); }; // TODO: remove -10
+
+    for (int f = 0 ; f < mesh.faces.size() ; f++)
+    {
+        if (!checker.faceIsBad[f]) continue; // face is not bad at all
+
+        HE_Face& face = mesh.faces[f];
+
+        Point3 p0_top = mesh.getTo(mesh.edges[face.edge_index[0]])->p + dz;
+        Point3 p1_top = mesh.getTo(mesh.edges[face.edge_index[1]])->p + dz;
+        Point3 p2_top = mesh.getTo(mesh.edges[face.edge_index[2]])->p + dz;
+
+        Point3 p0_bottom = projectDown(p0_top);
+        Point3 p1_bottom = projectDown(p1_top);
+        Point3 p2_bottom = projectDown(p2_top);
+
+        result.addFace(p2_top, p1_top, p0_top); // top is flipped
+        result.addFace(p0_bottom, p1_bottom, p2_bottom);
+
+    }
+
+    for (int e = 0 ; e < mesh.edges.size() ; e++)
+    {
+        HE_Edge& edge = mesh.edges[e];
+        int f0 = edge.face_idx;
+        //int f1 = mesh.getConverse(edge)->face_idx;
+
+        if (checker.faceIsBad[f0]) continue; // edge is boundary edge or halfedge of bad edge
+        if (! checker.edgeIsBad[e] &&
+            ! checker.faceIsBad[mesh.edges[edge.converse_edge_idx].face_idx]) continue;
+
+        // face f0 is good and (converse face bad or edge bad)
+
+        Point3 p0_top = mesh.getFrom(edge)->p + dz;
+        Point3 p1_top = mesh.getTo(edge)->p + dz;
+        Point3 p0_bottom = projectDown(p0_top);
+        Point3 p1_bottom = projectDown(p1_top);
+
+
+        if (p1_top.z < p0_top.z) // draw diagonal along the shortest crosssection of the quadrilateral
+        {
+            result.addFace(p0_top, p1_top, p0_bottom);
+            result.addFace(p1_top, p1_bottom, p0_bottom);
+        } else
+        {
+            result.addFace(p0_top, p1_top, p1_bottom);
+            result.addFace(p0_top, p1_bottom, p0_bottom);
+        }
+
+    }
+    for (int v = 0 ; v < mesh.vertices.size() ; v++)
+    {
+        if (!checker.vertexIsBad[v]) continue; // vertex is not bad at all
+
+
+        bool is_isolated = true;
+        int edge = mesh.vertices[v].someEdge_idx;
+        int startEdge = edge;
+        do {
+            if (checker.edgeIsBad[edge]) { is_isolated = false; break; }
+            if (checker.faceIsBad[mesh.edges[edge].face_idx]) { is_isolated = false; break; }
+            edge = mesh.getConverse(mesh.edges[edge])->next_edge_idx;
+        }   while (edge != startEdge);
+        if (!is_isolated) continue;
+
+
+        Point p0_top (-vertexSupportPillarRadius,0,dZ_to_object);
+        Point p1_top (pillarDx, pillarDy, dZ_to_object);
+        Point p2_top (pillarDx, -pillarDy, dZ_to_object);
+        p0_top += mesh.vertices[v].p;
+        p1_top += mesh.vertices[v].p;
+        p2_top += mesh.vertices[v].p;
+
+
+        Point3 p0_bottom = projectDown(p0_top);
+        Point3 p1_bottom = projectDown(p1_top);
+        Point3 p2_bottom = projectDown(p2_top);
+
+        //pillar creation:
+        result.addFace(p0_top, p1_top, p2_top); // top
+        result.addFace(p2_bottom, p1_bottom, p0_bottom); // bottom
+
+        result.addFace(p0_top, p1_top, p0_bottom); // top diagonal triangles
+        result.addFace(p1_top, p2_top, p1_bottom);
+        result.addFace(p2_top, p0_top, p2_bottom);
+
+        result.addFace(p1_top, p1_bottom, p0_bottom); // bottom diagonal triangles
+        result.addFace(p2_top, p2_bottom, p1_bottom);
+        result.addFace(p0_top, p0_bottom, p2_bottom);
+
+
+    }
+
+    // : \/ inserts the original model in the outputted model!
+    //for (HE_Face face : mesh.faces)
+    //    result.addFace(mesh.vertices[mesh.edges[face.edge_index[0]].to_vert_idx].p, mesh.vertices[mesh.edges[face.edge_index[1]].to_vert_idx].p, mesh.vertices[mesh.edges[face.edge_index[2]].to_vert_idx].p);
+
+    result.finish();
+
+    rebaseSupportBlocksOnModel(result);
+}
+
+/*
+void SupportBlockGenerator::generateSupportBlocks_HE_Mesh(vector<HE_Mesh>& result)
 {
 
     vector<int> badFaceIdxs;
@@ -131,7 +327,7 @@ void SupportBlockGenerator::generateSupportBlocks(vector<HE_Mesh>& result)
 
         HE_Edge* edge = &mesh.edges[e]; // is going to be the edge for which the from-vertex belongs to the group
 
-/*
+
         int from_vert_idx = edge.from_vert_idx;
         int to_vert_idx = edge.to_vert_idx;
 
@@ -140,7 +336,7 @@ void SupportBlockGenerator::generateSupportBlocks(vector<HE_Mesh>& result)
         if (mapVert[from_vert_idx] != nullptr)
         {
             group_idx = mapVert[from_vert_idx].group;
-            group_ptr = &groups.[group_idx]'
+            group_ptr = &groups.[group_idx];
         }
         else if (mapVert[to_vert_idx] != nullptr)
         {
@@ -162,7 +358,7 @@ void SupportBlockGenerator::generateSupportBlocks(vector<HE_Mesh>& result)
 
 
         HE_Mesh& group_mesh = group.connectedOverhang;
-*/
+
         OverhangGroup new_group(AREA);
         HE_Mesh& connectedOverhang = new_group.connectedOverhang;
         int group_idx = groups.size();
@@ -234,8 +430,8 @@ void SupportBlockGenerator::generateSupportBlocks(vector<HE_Mesh>& result)
             HE_Vertex& v0 = overhang.vertices[e0.from_vert_idx];
             HE_Vertex& v1 = overhang.vertices[e0.to_vert_idx];
 
-            int v0p_i = overhang.createVertex(Point(v0.p.x, v0.p.x, bbox.min.z)); // projected down
-            int v1p_i = overhang.createVertex(Point(v1.p.x, v1.p.x, bbox.min.z)); // projected down
+            int v0p_i = overhang.createVertex(Point(v0.p.x, v0.p.x, bbox.min.z - 10)); // projected down TODO remove -10
+            int v1p_i = overhang.createVertex(Point(v1.p.x, v1.p.x, bbox.min.z - 10)); // projected down
 
             int f0_idx = overhang.createFaceWithEdge(0, v0p_i);
             int f1_idx = overhang.createFaceWithEdge(e0.converse_edge_idx, v0p_i);
@@ -268,7 +464,7 @@ void SupportBlockGenerator::generateSupportBlocks(vector<HE_Mesh>& result)
 
     }
 }
-
+*/
 
 int SupportBlockGenerator::addVert(int v, vector<VV*>& mapVert, HE_Mesh& connectedOverhang, int group)
 {
@@ -330,51 +526,10 @@ int SupportBlockGenerator::addFace(int f_idx_orr, vector<FF*>& mapFace, vector<E
 }
 
 
-void SupportBlockGenerator::test(PrintObject* model)
+void SupportBlockGenerator::rebaseSupportBlocksOnModel(Mesh& result)
 {
-    std::cerr << "=============================================\n" << std::endl;
-/*
-
-    for (int mi = 0 ; mi < model->meshes.size() ; mi++)
-    {
-        Point3 minn = model->meshes[mi].min();
-        for (int p = 0 ; p < model->meshes[mi].vertices.size() ; p++)
-        {
-            model->meshes[mi].vertices[p].p -= minn;
-        }
-
-        HE_Mesh mesh(model->meshes[mi]);
-        SupportChecker supporter = SupportChecker::getSupportRequireds(mesh, .1);//.785); // 45/180*M_PI
-
-
-        std::cerr << "faces badness:" << std::endl;
-        for (int f = 0 ; f < supporter.mesh.faces.size() ; f++)
-        {
-            std::cerr << f << " " << (supporter.faceIsBad[f]? "TRUE" : "f") << std::endl;
-        }
-
-        std::cerr << "edges badness:" << std::endl;
-        for (int e = 0 ; e < supporter.mesh.edges.size() ; e++)
-        {
-            std::cerr << e << " " << (supporter.edgeIsBad[e]? "TRUE" : "f") << std::endl;
-        }
-
-        std::cerr << "vertices badness:" << std::endl;
-        for (int v = 0 ; v < supporter.mesh.vertices.size() ; v++)
-        {
-            std::cerr << v << " " << (supporter.vertexIsBad[v]? "TRUE" : "f") << std::endl;
-        }
-        std::cerr << "=============================================\n" << std::endl;
-
-
-        SupportBlockGenerator b(supporter, supporter.mesh);
-
-
-        b.generateSupportBlocks();
 
 
 
-    }
-*/
-    std::cerr << "=============================================\n" << std::endl;
+
 }

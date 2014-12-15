@@ -333,6 +333,74 @@ SupportChecker::~SupportChecker()
 }
 
 
+void SupportChecker::debugGenerateOverhangMesh(Mesh& result)
+{
+   Point dz(0,0,0);
+
+    for (int f = 0 ; f < mesh.faces.size() ; f++)
+    {
+        Point d(15000,0,0);
+        if (!faceIsBad[f]) continue; // face is not bad at all
+
+        HE_Face& face = mesh.faces[f];
+
+        Point3 p0_top = mesh.getTo(mesh.edges[face.edge_index[0]])->p + d;
+        Point3 p1_top = mesh.getTo(mesh.edges[face.edge_index[1]])->p + d;
+        Point3 p2_top = mesh.getTo(mesh.edges[face.edge_index[2]])->p + d;
+
+        result.addFace(p0_top, p1_top, p2_top);
+
+    }
+
+    for (int e = 0 ; e < mesh.edges.size() ; e++)
+    {
+        HE_Edge& edge = mesh.edges[e];
+        int f0 = edge.face_idx;
+        //int f1 = mesh.getConverse(edge)->face_idx;
+
+        //if (!  edgeIsBad[e] ) continue;
+        if (faceIsBad[f0]) continue; // edge is boundary edge or halfedge of bad edge
+        if (! edgeIsBad[e] &&
+            ! faceIsBad[mesh.edges[edge.converse_edge_idx].face_idx]) continue;
+
+        // face f0 is good and (converse face bad or edge bad)
+
+        Point3 p0_top = mesh.getFrom(edge)->p + dz;
+        Point3 p1_top = mesh.getTo(edge)->p + dz;
+
+        Point3 p2 = p0_top + Point(100,100,100);
+        //Point3 p3 = p1_top + Point(100,100,100);
+
+        result.addFace(p0_top, p1_top, p2);
+        //result.addFace(p0_top, p1_top, p3);
+
+
+    }
+    for (int v = 0 ; v < mesh.vertices.size() ; v++)
+    {
+        if (!vertexIsBad[v]) continue; // vertex is not bad at all
+
+        spaceType vertexSupportPillarRadius = 1000;
+        // pillar is triagular!
+        spaceType pillarDx = vertexSupportPillarRadius *0.5;
+        spaceType pillarDy = vertexSupportPillarRadius *std::sqrt(.75);
+
+        Point p0_top (-vertexSupportPillarRadius,0,-15000);
+        Point p1_top (pillarDx, pillarDy, -15000);
+        Point p2_top (pillarDx, -pillarDy, -15000);
+        p0_top += mesh.vertices[v].p;
+        p1_top += mesh.vertices[v].p;
+        p2_top += mesh.vertices[v].p;
+
+        //pillar creation:
+        result.addFace(p0_top, p1_top, p2_top); // top
+
+
+
+    }
+
+    result.finish();
+}
 
 
 

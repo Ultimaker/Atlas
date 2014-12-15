@@ -3,6 +3,7 @@
 
 #include "Kernel.h"
 
+#include "mesh.h"
 
 #include "supportClassification.h"
 #include <math.h>
@@ -16,10 +17,11 @@ struct FF;
 
 class SupportBlockGenerator
 {
-    spaceType vertexSupportPillarRadius = 10;
+    spaceType vertexSupportPillarRadius = 100;
     // pillar is triagular!
     spaceType pillarDx = vertexSupportPillarRadius *0.5;
     spaceType pillarDy = vertexSupportPillarRadius *std::sqrt(.75);
+    spaceType dZ_to_object = -100;
 
     public:
 
@@ -32,9 +34,10 @@ class SupportBlockGenerator
         HE_Mesh mesh;
         BoundingBox bbox;
 
-        void generateSupportBlocks(vector<HE_Mesh>& result); //!< main function of this class
+        void generateSupportBlocks(Mesh& result); //!< main function of this class
+        // void generateSupportBlocks_HE_Mesh(vector<HE_Mesh>& result); //!< main function of this class
 
-        void rebaseSupportBlocksOnModel(vector<HE_Mesh> blocks); //!< does something similar to subtracting the model solid from the support block solid
+        void rebaseSupportBlocksOnModel(Mesh& result); //!< does something similar to subtracting the model solid from the support block solid
 
         static void test(PrintObject* model);
     protected:

@@ -12,6 +12,7 @@
 #include "halfEdgeMesh.h"
 
 #include "supportClassification.h"
+#include "supportGeneration.h"
 
 #include <iostream>
 
@@ -76,8 +77,8 @@ public:
 
         std::cerr << "starting new Support Test..." << std::endl;
         //SupportChecker::testSupportChecker(model);
-        SupportPointsGenerator::testSupportPointsGenerator(model);
-
+        //SupportPointsGenerator::testSupportPointsGenerator(model);
+        SupportBlockGenerator::test(model);
 
 
 
