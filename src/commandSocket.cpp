@@ -32,7 +32,7 @@ void CommandSocket::handleIncommingData(fffProcessor* processor)
 {
     std::vector<PrintObject*> object_list;
     PrintObject* object = NULL;
-    Mesh* mesh = NULL;
+    FVMesh* mesh = NULL;
     FMatrix3x3 matrix;
 
 
@@ -86,7 +86,7 @@ void CommandSocket::handleIncommingData(fffProcessor* processor)
                 object_list.push_back(object);
             }
             object = new PrintObject(processor);
-            mesh = NULL;
+            mesh = nullptr;
             break;
         case CMD_MESH_LIST:
             socket.recvInt32(); //Number of following CMD_?_LIST commands that fill this mesh with data

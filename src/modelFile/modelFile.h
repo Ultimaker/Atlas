@@ -7,13 +7,13 @@ modelFile contains the model loaders for the slicer. The model loader turns any 
 The format returned is a Model class with an array of faces, which have integer points with a resolution of 1 micron. Giving a maximum object size of 4 meters.
 **/
 
-#include "../mesh.h"
+#include "../FVMesh.h"
 
 //A PrintObject is a 3D model with 1 or more 3D meshes.
 class PrintObject : public SettingsBase
 {
 public:
-    std::vector<Mesh> meshes;
+    std::vector<FVMesh> meshes;
 
     PrintObject(SettingsBase* settings_base)
     : SettingsBase(settings_base)
@@ -51,14 +51,14 @@ public:
 
     void clear()
     {
-        for(Mesh& m : meshes)
+        for(FVMesh& m : meshes)
             m.clear();
     }
 
     void offset(Point3 offset)
     {
-        for(Mesh& m : meshes)
-            for(MeshVertex& v : m.vertices)
+        for(FVMesh& m : meshes)
+            for(FVMeshVertex& v : m.vertices)
                 v.p += offset;
     }
 
@@ -75,8 +75,8 @@ public:
     }
 };
 
-bool loadMeshFromFile(PrintObject* object, const char* filename, FMatrix3x3& matrix);
+bool loadFVMeshFromFile(PrintObject* object, const char* filename, FMatrix3x3& matrix);
 
-bool saveMeshToFile(Mesh& mesh, const char* filename);
+bool saveFVMeshToFile(FVMesh& mesh, const char* filename);
 
 #endif//MODELFILE_H

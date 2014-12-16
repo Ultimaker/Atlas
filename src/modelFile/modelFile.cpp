@@ -9,7 +9,7 @@
 
 #include <fstream> // write to file
 
-FILE* binaryMeshBlob = nullptr;
+FILE* binaryFVMeshBlob = nullptr;
 
 /* Custom fgets function to support Mac line-ends in Ascii STL files. OpenSCAD produces this when used on Mac */
 void* fgets_(char* ptr, size_t len, FILE* f)
@@ -27,7 +27,7 @@ void* fgets_(char* ptr, size_t len, FILE* f)
     return nullptr;
 }
 
-bool loadModelSTL_ascii(Mesh* mesh, const char* filename, FMatrix3x3& matrix)
+bool loadModelSTL_ascii(FVMesh* mesh, const char* filename, FMatrix3x3& matrix)
 {
     FILE* f = fopen(filename, "rt");
     char buffer[1024];
@@ -60,7 +60,7 @@ bool loadModelSTL_ascii(Mesh* mesh, const char* filename, FMatrix3x3& matrix)
     return true;
 }
 
-bool loadModelSTL_binary(Mesh* mesh, const char* filename, FMatrix3x3& matrix)
+bool loadModelSTL_binary(FVMesh* mesh, const char* filename, FMatrix3x3& matrix)
 {
     FILE* f = fopen(filename, "rb");
     char buffer[80];
@@ -107,7 +107,7 @@ bool loadModelSTL_binary(Mesh* mesh, const char* filename, FMatrix3x3& matrix)
     return true;
 }
 
-bool loadModelSTL(Mesh* mesh, const char* filename, FMatrix3x3& matrix)
+bool loadModelSTL(FVMesh* mesh, const char* filename, FMatrix3x3& matrix)
 {
     FILE* f = fopen(filename, "r");
     char buffer[6];
@@ -140,7 +140,7 @@ bool loadModelSTL(Mesh* mesh, const char* filename, FMatrix3x3& matrix)
     return loadModelSTL_binary(mesh, filename, matrix);
 }
 
-bool loadMeshFromFile(PrintObject* object, const char* filename, FMatrix3x3& matrix)
+bool loadFVMeshFromFile(PrintObject* object, const char* filename, FMatrix3x3& matrix)
 {
     const char* ext = strrchr(filename, '.');
     if (ext && strcmp(ext, ".stl") == 0)
@@ -151,7 +151,7 @@ bool loadMeshFromFile(PrintObject* object, const char* filename, FMatrix3x3& mat
     return false;
 }
 
-bool saveMeshToFile(Mesh& mesh, const char* filename)
+bool saveFVMeshToFile(FVMesh& mesh, const char* filename)
 {
     std::ofstream out(filename);
     out << "solid name" << std::endl;

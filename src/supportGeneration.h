@@ -3,7 +3,7 @@
 
 #include "Kernel.h"
 
-#include "mesh.h"
+#include "FVMesh.h"
 
 #include "supportClassification.h"
 #include <math.h>
@@ -35,10 +35,10 @@ class SupportBlockGenerator
         HE_Mesh mesh;
         BoundingBox bbox;
 
-        void generateSupportBlocks(Mesh& result); //!< main function of this class
+        void generateSupportBlocks(FVMesh& result); //!< main function of this class
         // void generateSupportBlocks_HE_Mesh(vector<HE_Mesh>& result); //!< main function of this class
 
-        void rebaseSupportBlocksOnModel(Mesh& result); //!< does something similar to subtracting the model solid from the support block solid
+        void rebaseSupportBlocksOnModel(FVMesh& result); //!< does something similar to subtracting the model solid from the support block solid
 
         static void test(PrintObject* model);
     protected:
@@ -47,9 +47,9 @@ class SupportBlockGenerator
     private:
         void groupOverhangAreas(vector<HE_Mesh>& result); //!< makes new (incomplete!) meshes for each connected group of overhang
 
-        inline void supportFace(int f, Mesh& result);
-        inline void supportEdge(int e, Mesh& result);
-        inline void supportVert(int v, Mesh& result);
+        inline void supportFace(int f, FVMesh& result);
+        inline void supportEdge(int e, FVMesh& result);
+        inline void supportVert(int v, FVMesh& result);
 
 };
 

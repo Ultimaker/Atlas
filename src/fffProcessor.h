@@ -33,7 +33,7 @@ public:
     {
         fileNr = 1;
         maxObjectHeight = 0;
-        commandSocket = NULL;
+        commandSocket = nullptr;
     }
 
     void setCommandSocket(CommandSocket* socket)
@@ -53,7 +53,7 @@ public:
             log("Loading %s from disk...\n", filename.c_str());
 
             FMatrix3x3 matrix;
-            if (!loadMeshFromFile(model, filename.c_str(), matrix))
+            if (!loadFVMeshFromFile(model, filename.c_str(), matrix))
             {
                 logError("Failed to load model: %s\n", filename.c_str());
                 return false;

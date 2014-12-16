@@ -24,7 +24,7 @@
 
 namespace atlas {
 
-SupportChecker SupportChecker::getSupportRequireds(Mesh& mesh, double maxAngle)
+SupportChecker SupportChecker::getSupportRequireds(FVMesh& mesh, double maxAngle)
 {
 
     SupportChecker supporter(mesh, maxAngle);
@@ -333,7 +333,7 @@ SupportChecker::~SupportChecker()
 }
 
 
-void SupportChecker::debugGenerateOverhangMesh(Mesh& result)
+void SupportChecker::debugGenerateOverhangFVMesh(FVMesh& result)
 {
    Point dz(0,0,0);
 

@@ -78,16 +78,16 @@ void SupportBlockGenerator::test(PrintObject* model)
 
         SupportBlockGenerator g(supporter, mesh);
 
-        Mesh newMesh(nullptr);
+        FVMesh newFVMesh(nullptr);
 
         std::cerr << " >>>>>>>>>>>>> generating support blocks " << std::endl;
 
-        g.generateSupportBlocks(newMesh);
+        g.generateSupportBlocks(newFVMesh);
 
         std::cerr << " >>>>>>>>>>>>> saving to file " << std::endl;
-        saveMeshToFile(newMesh, "blockSupport.stl");
+        saveFVMeshToFile(newFVMesh, "blockSupport.stl");
 
-        newMesh.debugOuputBasicStats(std::cerr);
+        newFVMesh.debugOuputBasicStats(std::cerr);
 
 
 
@@ -112,7 +112,7 @@ void SupportBlockGenerator::test(PrintObject* model)
 
 
 
-void SupportBlockGenerator::generateSupportBlocks(Mesh& result)
+void SupportBlockGenerator::generateSupportBlocks(FVMesh& result)
 {
 
     for (int f = 0 ; f < mesh.faces.size() ; f++)
@@ -158,7 +158,7 @@ void SupportBlockGenerator::generateSupportBlocks(Mesh& result)
 
 
 
-void SupportBlockGenerator::supportFace(int f, Mesh& result)
+void SupportBlockGenerator::supportFace(int f, FVMesh& result)
 {
 
     auto projectDown = [this](Point& p) { return Point(p.x,p.y,bbox.min.z + dZ_to_object); }; // TODO: remove everything below bbox.min.z
@@ -177,7 +177,7 @@ void SupportBlockGenerator::supportFace(int f, Mesh& result)
     result.addFace(p0_bottom, p1_bottom, p2_bottom);
 }
 
-void SupportBlockGenerator::supportEdge(int e, Mesh& result)
+void SupportBlockGenerator::supportEdge(int e, FVMesh& result)
 {
     auto projectDown = [this](Point& p) { return Point(p.x,p.y,bbox.min.z + dZ_to_object); }; // TODO: remove everything below bbox.min.z
     // face f0 is good and (converse face bad or edge bad)
@@ -202,7 +202,7 @@ void SupportBlockGenerator::supportEdge(int e, Mesh& result)
     }
 }
 
-void SupportBlockGenerator::supportVert(int v, Mesh& result)
+void SupportBlockGenerator::supportVert(int v, FVMesh& result)
 {
 
     auto projectDown = [this](Point& p) { return Point(p.x,p.y,bbox.min.z + dZ_to_object); }; // TODO: remove everything below bbox.min.z
@@ -259,7 +259,7 @@ void SupportBlockGenerator::supportVert(int v, Mesh& result)
 
 
 
-void SupportBlockGenerator::rebaseSupportBlocksOnModel(Mesh& result)
+void SupportBlockGenerator::rebaseSupportBlocksOnModel(FVMesh& result)
 {
 
 

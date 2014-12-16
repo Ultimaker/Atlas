@@ -145,6 +145,14 @@ BoundingBox HE_Mesh::bbox()
     }
     return ret;
 }
+BoundingBox HE_Mesh::computeFaceBbox(int f)
+{
+    HE_Vertex& v0 = *getTo(edges[faces[f].edge_index[0]]);
+    HE_Vertex& v1 = *getTo(edges[faces[f].edge_index[1]]);
+    HE_Vertex& v2 = *getTo(edges[faces[f].edge_index[2]]);
+
+    return BoundingBox(v0.p, v1.p) + v2.p;
+}
 
 Point3 HE_Mesh::getNormal(HE_Face& face) const
 {
@@ -168,7 +176,7 @@ HE_Edge::HE_Edge(int from_vert_idx, int to_vert_idx, int face_idx)
 HE_Face::HE_Face()
     {};
 
-HE_Mesh::HE_Mesh(Mesh& mesh)
+HE_Mesh::HE_Mesh(FVMesh& mesh)
 {
 
     for (int vIdx = 0 ; vIdx < mesh.vertices.size() ; vIdx++)
@@ -178,7 +186,7 @@ HE_Mesh::HE_Mesh(Mesh& mesh)
 
     for (int fIdx = 0 ; fIdx < mesh.faces.size() ; fIdx++)
     {
-        MeshFace& face = mesh.faces[fIdx];
+        FVMeshFace& face = mesh.faces[fIdx];
         HE_Face heFace;
         HE_Edge edge0(face.vertex_index[0], face.vertex_index[1], fIdx); // vertices in face are ordered counter-clockwise
         HE_Edge edge1(face.vertex_index[1], face.vertex_index[2], fIdx);
@@ -218,7 +226,7 @@ HE_Mesh::HE_Mesh(Mesh& mesh)
     // for each edge of each face : if it doesn't have a converse then find the converse in the edges of the opposite face
     for (int fIdx = 0 ; fIdx < mesh.faces.size() ; fIdx++)
     {
-        MeshFace& face = mesh.faces[fIdx];
+        FVMeshFace& face = mesh.faces[fIdx];
 
         for (int eIdx = 0; eIdx < 3; eIdx++)
         {

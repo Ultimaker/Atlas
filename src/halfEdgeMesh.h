@@ -3,7 +3,7 @@
 
 #include "Kernel.h"
 
-#include "mesh.h"
+#include "FVMesh.h"
 #include "BoundingBox.h"
 
 /**
@@ -57,7 +57,7 @@ class HE_Mesh
         std::vector<HE_Face> faces;
         std::vector<HE_Edge> edges;
 
-        HE_Mesh(Mesh& mesh);
+        HE_Mesh(FVMesh& mesh);
         HE_Mesh() {};
         virtual ~HE_Mesh();
 
@@ -84,6 +84,7 @@ class HE_Mesh
         int createConverse(int e_idx);
 
         BoundingBox bbox();
+        BoundingBox computeFaceBbox(int f);
 
         void debugOuputBasicStats(std::ostream& out);
 

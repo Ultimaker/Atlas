@@ -58,7 +58,8 @@ public:
         std::vector<int*> intersections;
         Point p_a(2,3,4);
         Point3 p_b(5,6,7);
-        tree.getIntersections(BoundingBox(p_a, p_b), intersections);
+        BoundingBox bbox(p_a, p_b);
+        tree.getIntersections(bbox, intersections);
 
         for (int* i : intersections)
             std::cerr << *i << " ";
@@ -211,12 +212,12 @@ public:
         else return allnodes[(c.pos - 1)/2];
     }
 
-    void getIntersections(BoundingBox bbox, std::vector<T*>& result)
+    void getIntersections(BoundingBox& bbox, std::vector<T*>& result)
     {
         getIntersections(bbox, result, getRoot());
     }
 protected:
-    void getIntersections(BoundingBox bbox, std::vector<T*>& result, Node* node)
+    void getIntersections(BoundingBox& bbox, std::vector<T*>& result, Node* node)
     {
         if (node->object == nullptr && node->box.intersectsWith(bbox))
         {

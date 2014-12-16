@@ -6,7 +6,7 @@
 #include "settings.h"
 
 SettingsBase::SettingsBase()
-: parent(NULL)
+: parent(nullptr)
 {
 }
 SettingsBase::SettingsBase(SettingsBase* parent)

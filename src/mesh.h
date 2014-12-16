@@ -1,87 +1,102 @@
 #ifndef MESH_H
 #define MESH_H
 
+#include <boost/type_traits.hpp>
+#include <boost/static_assert.hpp> // is_base_of<BaseClass, DerivedClass>::value
+
 #include "settings.h"
 #include <iostream> // ostream
+
+#include "Kernel.h"
 
 #include "BoundingBox.h"
 
 /*!
 Vertex type to be used in a Mesh.
-
-Keeps track of which faces connect to it.
 */
 class MeshVertex
 {
 public:
-    Point3 p; //!< location of the vertex
-    std::vector<uint32_t> connected_faces; //!< list of the indices of connected faces
-
-    MeshVertex(Point3 p) : p(p) {} //!< doesn't set connected_faces
+    Point p; //!< location of the vertex
+    MeshVertex(Point p) : p(p) {} //!< doesn't set connected_faces
 };
 
-/*! A MeshFace is a 3 dimensional model triangle with 3 points. These points are already converted to integers
+template<typename Vertex, typename VertexHandle, typename Face, typename FaceHandle>
+class Mesh;
 
-A face has 3 connected faces, corresponding to its 3 edges.
+template<typename V, typename F, typename FH, typename M>
+struct MeshVertexHandle
+{
+    typedef MeshVertexHandle<V,F,FH,M> VH;
+    BOOST_STATIC_ASSERT((boost::is_base_of<MeshVertex, V>::value));
+    BOOST_STATIC_ASSERT((boost::is_base_of<Mesh<V,VH,F,FH>, M>::value));
+    V* v;
+    M* m;
+};
 
-Note that a correct model may have more than 2 faces connected via a single edge!
-In such a case the face_index stored in connected_face_index is the one connected via the outside; see ASCII art below:
-
-: horizontal slice through vertical edge connected to four faces :
-
-\verbatim
-[inside] x|
-         x| <--+--- faces which contain each other in their connected_face_index fiels
-   xxxxxxx|   \|/
-   -------+-------
-      ^   |xxxxxxx
-      +-->|x
-      |   |x [inside]
-      |
-    faces which contain each other in their connected_face_index fiels
-\endverbatim
-*/
+template<typename Vertex>
 class MeshFace
 {
+    BOOST_STATIC_ASSERT((boost::is_base_of<MeshVertex, Vertex>::value));
 public:
-    int vertex_index[3] = {-1}; //!< counter-clockwise ordering
-    int connected_face_index[3]; //!< same ordering as vertex_index (connected_face 0 is connected via vertex 0 and 1, etc.)
+    virtual Vertex v0() =0;
+    virtual Vertex v1() =0;
+    virtual Vertex v2() =0;
+    Point p0() { return v0().p; };
+    Point p1() { return v1().p; };
+    Point p2() { return v2().p; };
+};
+
+template<typename V, typename VH, typename F, typename M>
+struct MeshFaceHandle
+{
+    typedef MeshFaceHandle<V,VH,F,M> FH;
+    BOOST_STATIC_ASSERT((boost::is_base_of<MeshFace<V>, F>::value));
+    BOOST_STATIC_ASSERT((boost::is_base_of<Mesh<V,VH,F,FH>, M>::value));
+    F* f;
+    M* m;
 };
 
 
 /*!
-A Mesh is the most basic representation of a 3D model. It contains all the faces as MeshFaces.
+A Mesh represents the most basic requirements of a 3D model.
 
-See MeshFace for the specifics of how/when faces are connected.
+It contains (a list of) all vertices and faces.
+
+A vertex has a location, p.
+A face can access its three vertices (indirectly).
+
+
 */
+
+template<typename Vertex, typename VertexHandle, typename Face, typename FaceHandle>
 class Mesh : public SettingsBase // inherits settings
 {
-    //! The vertex_hash_map stores a index reference of each vertex for the hash of that location. Allows for quick retrieval of points with the same location.
-    std::map<uint32_t, std::vector<uint32_t> > vertex_hash_map;
+    typedef Vertex V;
+    typedef VertexHandle VH;
+    typedef Face F;
+    typedef FaceHandle FH;
+    typedef Mesh<V,VH,F,FH> M;
+    BOOST_STATIC_ASSERT((boost::is_base_of<MeshVertex, Vertex>::value));
+    BOOST_STATIC_ASSERT((boost::is_base_of<MeshVertexHandle<V,F,FH,M>, VertexHandle>::value));
+    BOOST_STATIC_ASSERT((boost::is_base_of<MeshFace<Vertex>, Face>::value));
+    BOOST_STATIC_ASSERT((boost::is_base_of<MeshFaceHandle<V,VH,F,M>, FaceHandle>::value));
 public:
-    std::vector<MeshVertex> vertices;//!< list of all vertices in the mesh
-    std::vector<MeshFace> faces; //!< list of all faces in the mesh
+    std::vector<Vertex> vertices;//!< list of all vertices in the mesh
+    std::vector<Face> faces; //!< list of all faces in the mesh
 
     Mesh(SettingsBase* parent); //!< initializes the settings
 
-    void addFace(Point3& v0, Point3& v1, Point3& v2); //!< add a face to the mesh without settings it's connected_faces.
-    void clear(); //!< clears all data
-    void finish(); //!< complete the model : set the connected_face_index fields of the faces.
+    virtual void addFace(Point& p0, Point& p1, Point& p2) =0; //!< add a face to the mesh without settings it's traits.
+    virtual void clear() =0; //!< clears all data
+    virtual void finish() =0; //!< complete the model : compute all traits.
 
-    Point3 min(); //!< min (in x,y and z) vertex of the bounding box
-    Point3 max(); //!< max (in x,y and z) vertex of the bounding box
+    BoundingBox bbox;
 
-    void debugOuputBasicStats(std::ostream& out);
+    virtual BoundingBox computeFaceBbox(FaceHandle& fh) =0;
 
-    BoundingBox computeBbox(int f);
+    virtual VertexHandle findVert(Point& p) =0;
 
-private:
-    int findIndexOfVertex(Point3& v); //!< find index of vertex close to the given point, or create a new vertex and return its index.
-    /*!
-    Get the index of the face connected to the face with index \p notFaceIdx, via vertices \p idx0 and \p idx1.
-    In case multiple faces connect with the same edge, return the next counter-clockwise face when viewing from \p idx1 to \p idx0.
-    */
-    int getFaceIdxWithPoints(int idx0, int idx1, int notFaceIdx);
 };
 
 
