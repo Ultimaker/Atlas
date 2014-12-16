@@ -9,7 +9,7 @@
 #include "optimizedModel.h"
 #include "commandSocket.h"
 
-#include "halfEdgeMesh.h"
+#include "mesh/HalfEdgeMesh.h"
 
 #include "supportClassification.h"
 #include "supportGeneration.h"

@@ -30,7 +30,7 @@ void SupportBlockGenerator::test(PrintObject* model)
     //for (int mi = 0 ; mi < model->meshes.size() ; mi++)
     int mi = 0;
     {
-        Point3 minn = model->meshes[mi].min();
+        Point3 minn = model->meshes[mi].bbox.min;
         for (int p = 0 ; p < model->meshes[mi].vertices.size() ; p++)
         {
             model->meshes[mi].vertices[p].p -= minn;

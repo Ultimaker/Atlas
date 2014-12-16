@@ -4,7 +4,7 @@
 
 #include "modelFile/modelFile.h"
 
-#include "halfEdgeMesh.h"
+#include "mesh/HalfEdgeMesh.h"
 #include <iostream>
 
 namespace atlas {

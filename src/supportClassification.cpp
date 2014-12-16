@@ -609,7 +609,7 @@ void SupportPointsGenerator::testSupportPointsGenerator(PrintObject* model)
 
     for (int mi = 0 ; mi < model->meshes.size() ; mi++)
     {
-        Point3 minn = model->meshes[mi].min();
+        Point3 minn = model->meshes[mi].bbox.min;
         for (int p = 0 ; p < model->meshes[mi].vertices.size() ; p++)
         {
             model->meshes[mi].vertices[p].p -= minn;

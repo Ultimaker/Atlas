@@ -6,8 +6,8 @@
 #include "Kernel.h"
 
 #include "AABB_Tree.h"
-#include "FVMesh.h"
-#include "halfEdgeMesh.h"
+#include "mesh/FVMesh.h"
+#include "mesh/HalfEdgeMesh.h"
 
 // enable/disable debug output
 #define BOOL_MESH_DEBUG 1

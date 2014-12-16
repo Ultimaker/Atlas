@@ -3,7 +3,7 @@
 
 #include "Kernel.h"
 
-#include "FVMesh.h"
+#include "mesh/FVMesh.h"
 
 #include "supportClassification.h"
 #include <math.h>
