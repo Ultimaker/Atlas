@@ -76,6 +76,11 @@ public:
 //            a.x*b.y-a.y*b.x);
     }
 
+    float dot(const FPoint3& p)
+    {
+        return x*p.x + y*p.y + z*p.z;
+    }
+
     Point3 toPoint3()
     {
         return Point3(x*1000, y*1000, z*1000);
@@ -83,17 +88,11 @@ public:
 };
 
 
-//inline FPoint3 operator+(FPoint3 lhs, const FPoint3& rhs) {
-//  lhs += rhs;
-//  return lhs;
-//}
+
 inline float operator*(FPoint3 lhs, const FPoint3& rhs) {
-    return lhs.x*rhs.x + lhs.y*rhs.y + lhs.z*rhs.z;
+    return double(lhs.x)*rhs.x + double(lhs.y)*rhs.y + double(lhs.z)*rhs.z;
 }
-//inline FPoint3 operator*(FPoint3 lhs, const float f) {
-//  lhs *= f;
-//  return lhs;
-//}
+
 
 class FMatrix3x3
 {

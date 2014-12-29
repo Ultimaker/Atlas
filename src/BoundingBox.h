@@ -11,7 +11,7 @@
 
 #if BBOX_DEBUG == 1
 #   define BBOX_DEBUG_DO(x) do { x } while (0);
-#   define BBOX_DEBUG_SHOW(x) do { std::cerr << #x << ": " << x << std::endl; } while (0)
+#   define BBOX_DEBUG_SHOW(x) do { std::cerr << #x << " = " << x << std::endl; } while (0)
 #   define BBOX_DEBUG_PRINTLN(x) do { std::cerr <<  x << std::endl; } while (0)
 #else
 #   define BBOX_DEBUG_DO(x)

@@ -118,10 +118,10 @@ class SupportChecker
         * \param mesh the mesh
         * \param edge the edge to check
         */
-        inline bool edgeIsBelowFaces(HE_Mesh& mesh, HE_Edge& edge);
-        inline bool edgeIsBelowFacesDiagonal(HE_Mesh& mesh, HE_Edge& edge, Point3& a, Point3& dac); //!< Helper function for the edge case in which a horizontal line through the plane is perfectly diagonal, in which case the denom parameter of edgeIsBelowFacesNonDiagonal is not finite.
+        inline bool edgeIsBelowFaces(HE_Mesh& mesh, HE_EdgeHandle& edge);
+        inline bool edgeIsBelowFacesDiagonal(HE_Mesh& mesh, HE_EdgeHandle& edge, Point3& a, Point3& dac); //!< Helper function for the edge case in which a horizontal line through the plane is perfectly diagonal, in which case the denom parameter of edgeIsBelowFacesNonDiagonal is not finite.
         inline bool edgeIsBelowSingleFaceDiagonal(Point3& dab, Point3& dac, double denom, short sign);
-        inline bool edgeIsBelowFacesNonDiagonal(HE_Mesh& mesh, HE_Edge& edge, Point3& a, Point3& dac, double denom);
+        inline bool edgeIsBelowFacesNonDiagonal(HE_Mesh& mesh, HE_EdgeHandle& edge, Point3& a, Point3& dac, double denom);
         inline bool edgeIsBelowSingleFaceNonDiagonal(Point3& dab, Point3& dac, double denom);
 };
 

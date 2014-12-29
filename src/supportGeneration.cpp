@@ -147,7 +147,7 @@ void SupportBlockGenerator::generateSupportBlocks(FVMesh& result)
 
     // : \/ inserts the original model in the outputted model!
     //for (HE_Face face : mesh.faces)
-    //    result.addFace(mesh.vertices[mesh.edges[face.edge_index[0]].to_vert_idx].p, mesh.vertices[mesh.edges[face.edge_index[1]].to_vert_idx].p, mesh.vertices[mesh.edges[face.edge_index[2]].to_vert_idx].p);
+    //    result.addFace(mesh.vertices[mesh.edges[face.edge_idx[0]].to_vert_idx].p, mesh.vertices[mesh.edges[face.edge_idx[1]].to_vert_idx].p, mesh.vertices[mesh.edges[face.edge_idx[2]].to_vert_idx].p);
 
     result.finish();
 
@@ -165,9 +165,9 @@ void SupportBlockGenerator::supportFace(int f, FVMesh& result)
 
     HE_Face& face = mesh.faces[f];
 
-    Point3 p0_top = mesh.getTo(mesh.edges[face.edge_index[0]])->p + dz;
-    Point3 p1_top = mesh.getTo(mesh.edges[face.edge_index[1]])->p + dz;
-    Point3 p2_top = mesh.getTo(mesh.edges[face.edge_index[2]])->p + dz;
+    Point3 p0_top = mesh.getTo(mesh.edges[face.edge_idx[0]])->p + dz;
+    Point3 p1_top = mesh.getTo(mesh.edges[face.edge_idx[1]])->p + dz;
+    Point3 p2_top = mesh.getTo(mesh.edges[face.edge_idx[2]])->p + dz;
 
     Point3 p0_bottom = projectDown(p0_top);
     Point3 p1_bottom = projectDown(p1_top);

@@ -11,10 +11,12 @@
 
 #include <algorithm> // std::binary_search
 
+#include "mesh/HalfEdgeMesh.h"
+
 // enable/disable debug output
 #define ADV_SUP_DEBUG 0
 
-#define ADV_SUP_DEBUG_SHOW(x) do { std::cerr << #x << ": " << x << std::endl; } while (0)
+#define ADV_SUP_DEBUG_SHOW(x) do { std::cerr << #x << " = " << x << std::endl; } while (0)
 #define ADV_SUP_DEBUG_PRINTLN(x) do { std::cerr <<  x << std::endl; } while (0)
 #if ADV_SUP_DEBUG == 1
 #  define ADV_SUP_DEBUG_DO(x) do { x } while (0);
@@ -60,8 +62,7 @@ SupportChecker SupportChecker::getSupportRequireds(FVMesh& mesh, double maxAngle
 
 bool SupportChecker::faceNeedsSupport(HE_Mesh& mesh, int face_idx)
 {
-    HE_Face& face = mesh.faces[face_idx];
-    Point3 normal = mesh.getNormal(face);
+    Point3 normal = mesh.getNormal(face_idx);
 
     faceNormals[face_idx] = normal;
 
@@ -78,20 +79,24 @@ bool debug_support_edges_only = false;
 bool SupportChecker::edgeNeedsSupport(HE_Mesh& mesh, int edge_idx)
 {
     ADV_SUP_DEBUG_DO( std::cerr << "edge " << edge_idx << " : "; )
-    HE_Edge& edge = mesh.edges[edge_idx];
-    HE_Edge& backEdge = mesh.edges[edge.converse_edge_idx];
 
-    if (edgeIsBad[edge.converse_edge_idx])
+    HE_EdgeHandle edge(mesh, edge_idx);
+    HE_EdgeHandle backEdge(edge); edge.converse();
+
+//    HE_Edge& edge = mesh.edges[edge_idx];
+//    HE_Edge& backEdge = mesh.edges[edge.converse_edge_idx];
+
+    if (edgeIsBad[backEdge.idx])
     {
         ADV_SUP_DEBUG_DO( std::cerr << " converse is bad" << std::endl; )
         return true;
     }
 
-    bool bad1 = faceIsBad[edge.face_idx];
-    bool bad2 = faceIsBad[backEdge.face_idx];
+    bool bad1 = faceIsBad[edge.face().idx];
+    bool bad2 = faceIsBad[backEdge.face().idx];
 
-    Point3 face_1_normal = faceNormals[edge.face_idx];
-    Point3 face_2_normal = faceNormals[mesh.getConverse(edge)->face_idx];
+    Point3 face_1_normal = faceNormals[edge.face().idx];
+    Point3 face_2_normal = faceNormals[backEdge.face().idx];
 
 
     if (bad1 != bad2) // xor : one bad one not... the edge of a bad area is always bad
@@ -107,7 +112,7 @@ bool SupportChecker::edgeNeedsSupport(HE_Mesh& mesh, int edge_idx)
 
     if (!bad1 && !bad2) // == !(bad1 && bad2) , since (bad1 != bad2) is already checked above
     { // check if angle with Z-axis is great enough to require support
-        Point3 vect = mesh.getTo(edge)->p - mesh.getFrom(edge)->p;
+        Point3 vect = edge.p1() - edge.p0();
         double absCosAngle = fabs( (double)vect.z / (double)vect.vSize() );
 
 
@@ -138,10 +143,10 @@ bool SupportChecker::edgeNeedsSupport(HE_Mesh& mesh, int edge_idx)
 
 }
 
-bool SupportChecker::edgeIsBelowFaces(HE_Mesh& mesh, HE_Edge& edge)
+bool SupportChecker::edgeIsBelowFaces(HE_Mesh& mesh, HE_EdgeHandle& edge)
 {
-    Point3 a = mesh.getFrom(edge)->p;
-    Point3 dac =  mesh.getTo(edge)->p - a;
+    Point3 a = edge.p0();
+    Point3 dac =  edge.p1() - a;
     if (dac.x ==0 && dac.y ==0)
     {
         ADV_SUP_DEBUG_DO(                 if (debug_support_edges_only) std::cerr << "edge is vertical" << std::endl; )
@@ -161,7 +166,7 @@ bool SupportChecker::edgeIsBelowFaces(HE_Mesh& mesh, HE_Edge& edge)
 
 double distanceWhichIsBasicallyZero = .01; // cos of angle which still counts as vertical. 0 < a << 1
 
-bool SupportChecker::edgeIsBelowFacesDiagonal(HE_Mesh& mesh, HE_Edge& edge, Point3& a, Point3& dac)
+bool SupportChecker::edgeIsBelowFacesDiagonal(HE_Mesh& mesh, HE_EdgeHandle& edge, Point3& a, Point3& dac)
 {
     assert(dac.x == dac.y || dac.x == -dac.y);
 
@@ -171,12 +176,12 @@ bool SupportChecker::edgeIsBelowFacesDiagonal(HE_Mesh& mesh, HE_Edge& edge, Poin
     double denom = 1. / (2 * dac.x);
 
     // first face
-    Point3 b = mesh.getTo(*mesh.getNext(edge))->p;
+    Point3 b = edge.next().p1(); // mesh.getTo(*mesh.getNext(edge))->p;
     Point3 dab =  b - a;
     if (!edgeIsBelowSingleFaceDiagonal(dab, dac, denom, sign)) return false;
 
     // second face
-    Point3 b2 = mesh.getTo(*mesh.getNext(*mesh.getConverse(edge)))->p;
+    Point3 b2 = edge.converse().next().p1(); //mesh.getTo(*mesh.getNext(*mesh.getConverse(edge)))->p;
     Point3 dab2 =  b2 - a;
     if (!edgeIsBelowSingleFaceDiagonal(dab2, dac, denom, sign)) return false;
 
@@ -214,10 +219,10 @@ bool SupportChecker::edgeIsBelowSingleFaceDiagonal(Point3& dab, Point3& dac, dou
 
 
 
-bool SupportChecker::edgeIsBelowFacesNonDiagonal(HE_Mesh& mesh, HE_Edge& edge, Point3& a, Point3& dac, double denom)
+bool SupportChecker::edgeIsBelowFacesNonDiagonal(HE_Mesh& mesh, HE_EdgeHandle& edge, Point3& a, Point3& dac, double denom)
 {
     // first face
-    Point3 b = mesh.getTo(*mesh.getNext(edge))->p;
+    Point3 b = edge.next().p1(); // mesh.getTo(*mesh.getNext(edge))->p;
     Point3 dab =  b - a;
     if (!edgeIsBelowSingleFaceNonDiagonal(dab, dac, denom))
     {
@@ -225,7 +230,7 @@ bool SupportChecker::edgeIsBelowFacesNonDiagonal(HE_Mesh& mesh, HE_Edge& edge, P
     }
 
     // second face
-    Point3 b2 = mesh.getTo(*mesh.getNext(*mesh.getConverse(edge)))->p;
+    Point3 b2 = edge.converse().next().p1(); // mesh.getTo(*mesh.getNext(*mesh.getConverse(edge)))->p;
     Point3 dab2 =  b2 - a;
     if (!edgeIsBelowSingleFaceNonDiagonal(dab2, dac, denom))
     {
@@ -264,20 +269,24 @@ bool SupportChecker::edgeIsBelowSingleFaceNonDiagonal(Point3& dab, Point3& dac, 
 bool SupportChecker::vertexNeedsSupport(HE_Mesh& mesh, int vertex_idx)
 {
     ADV_SUP_DEBUG_DO( std::cerr << "vertex " << vertex_idx << " : "; )
-    HE_Vertex& vertex = mesh.vertices[vertex_idx];
-    HE_Edge& someEdge = *mesh.getSomeEdge(vertex);
+//    HE_Vertex& vertex = mesh.vertices[vertex_idx];
+//    HE_Edge& someEdge = *mesh.getSomeEdge(vertex);
+    HE_VertexHandle vertex = HE_VertexHandle(mesh, vertex_idx);
+    HE_EdgeHandle someEdge = vertex.someEdge();
 
-    if (faceNormals[someEdge.face_idx].z > 0)
+    if (faceNormals[someEdge.face().idx].z > 0)
     {
         return false; // vertex can at most be the bottom of a concave dimple
     }
 
     bool first = true;
     int wtfCounter = 0;
-    for (HE_Edge* departing_edge = &someEdge ; first || departing_edge != &someEdge ; departing_edge = mesh.getNext(*mesh.getConverse(*departing_edge)) )
+
+    HE_EdgeHandle* departing_edge = new HE_EdgeHandle(someEdge);
+    do
+    //for (HE_Edge* departing_edge = &someEdge ; first || departing_edge != &someEdge ; departing_edge = mesh.getNext(*mesh.getConverse(*departing_edge)) )
     {
-        ADV_SUP_DEBUG_DO( std::cerr << " v" << departing_edge->to_vert_idx << "(f" << departing_edge->face_idx <<")"; )
-        if (mesh.getTo(*departing_edge)->p.z < vertex.p.z) return false;
+        if (departing_edge->p1().z < vertex.p().z) return false;
         first = false;
         wtfCounter++;
         if (wtfCounter>200)
@@ -285,7 +294,9 @@ bool SupportChecker::vertexNeedsSupport(HE_Mesh& mesh, int vertex_idx)
             atlas::logError("Cannot find starting edge when moving along all edges connected to a vertex.\n");
             std::exit(EXIT_FAILURE);
         }
-    }
+        HE_EdgeHandle nxt = departing_edge->converse().next();
+        departing_edge->set(nxt);
+    } while (*departing_edge != someEdge);
     ADV_SUP_DEBUG_DO( std::cerr << std::endl; )
 
     ADV_SUP_DEBUG_DO( std::cerr << " vertex is bad" << std::endl; )
@@ -344,9 +355,9 @@ void SupportChecker::debugGenerateOverhangFVMesh(FVMesh& result)
 
         HE_Face& face = mesh.faces[f];
 
-        Point3 p0_top = mesh.getTo(mesh.edges[face.edge_index[0]])->p + d;
-        Point3 p1_top = mesh.getTo(mesh.edges[face.edge_index[1]])->p + d;
-        Point3 p2_top = mesh.getTo(mesh.edges[face.edge_index[2]])->p + d;
+        Point3 p0_top = mesh.getTo(mesh.edges[face.edge_idx[0]])->p + d;
+        Point3 p1_top = mesh.getTo(mesh.edges[face.edge_idx[1]])->p + d;
+        Point3 p2_top = mesh.getTo(mesh.edges[face.edge_idx[2]])->p + d;
 
         result.addFace(p0_top, p1_top, p2_top);
 
@@ -500,10 +511,10 @@ void SupportPointsGenerator::addSupportPointsEdge(int edge_idx)
 void SupportPointsGenerator::addSupportPointsFace(int face_idx)
 {
     HE_Face& face = supportChecker.mesh.faces[face_idx];
-    Point3 minXv = supportChecker.mesh.getTo(supportChecker.mesh.edges[face.edge_index[0]])->p;
-    Point3 maxXv = supportChecker.mesh.getTo(supportChecker.mesh.edges[face.edge_index[1]])->p;
+    Point3 minXv = supportChecker.mesh.getTo(supportChecker.mesh.edges[face.edge_idx[0]])->p;
+    Point3 maxXv = supportChecker.mesh.getTo(supportChecker.mesh.edges[face.edge_idx[1]])->p;
     if (minXv.x > maxXv.x) std::swap(minXv, maxXv);
-    Point3 midXv = supportChecker.mesh.getTo(supportChecker.mesh.edges[face.edge_index[2]])->p;
+    Point3 midXv = supportChecker.mesh.getTo(supportChecker.mesh.edges[face.edge_idx[2]])->p;
     if (midXv.x < minXv.x) std::swap (minXv, midXv);
     else if (midXv.x > maxXv.x) std::swap(maxXv, midXv);
 

@@ -13,7 +13,7 @@
 
 #if AABB_DEBUG == 1
 #   define AABB_DEBUG_DO(x) do { x } while (0);
-#   define AABB_DEBUG_SHOW(x) do { std::cerr << #x << ": " << x << std::endl; } while (0)
+#   define AABB_DEBUG_SHOW(x) do { std::cerr << #x << " = " << x << std::endl; } while (0)
 #   define AABB_DEBUG_PRINTLN(x) do { std::cerr <<  x << std::endl; } while (0)
 #else
 #   define AABB_DEBUG_DO(x)

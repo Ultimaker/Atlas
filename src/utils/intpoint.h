@@ -35,20 +35,24 @@ Integer points are used to avoid floating point rounding errors.
 #define DEPRECATED(func) func
 #endif
 
+
 class Point3
 {
 public:
     int32_t x,y,z;
     Point3() {}
     Point3(const int32_t _x, const int32_t _y, const int32_t _z): x(_x), y(_y), z(_z) {}
-    //Point3(Point3& other): Point3(other.x, other.y, other.z) {}
+    //Point3(Point3d& other): Point3(other.x, other.y, other.z) {} //!< down-casting
 
     Point3 operator+(const Point3& p) const { return Point3(x+p.x, y+p.y, z+p.z); }
     Point3 operator-(const Point3& p) const { return Point3(x-p.x, y-p.y, z-p.z); }
     Point3 operator/(const int32_t i) const { return Point3(x/i, y/i, z/i); }
+    Point3 operator*(const int32_t i) const { return Point3(x*i, y*i, z*i); }
 
     Point3& operator += (const Point3& p) { x += p.x; y += p.y; z += p.z; return *this; }
     Point3& operator -= (const Point3& p) { x -= p.x; y -= p.y; z -= p.z; return *this; }
+    Point3& operator *= (int32_t c) { x *= c; y *= c; z *= c; return *this; }
+    Point3& operator /= (int32_t c) { x /= c; y /= c; z /= c; return *this; }
 
     bool operator==(const Point3& p) const { return x==p.x&&y==p.y&&z==p.z; }
     bool operator!=(const Point3& p) const { return x!=p.x||y!=p.y||z!=p.z; }
@@ -91,18 +95,109 @@ public:
         return sqrt(vSize2());
     }
 
-    /*! this function is deprecated because it can cause overflows for vectors which easily fit inside a printer. Use FPoint3.cross(a,b) instead. */
-    DEPRECATED(Point3 cross(const Point3& p))
+    /* this function WAS deprecated because it COULD cause overflows for vectors which easily fit inside a printer. Use FPoint3.cross(a,b) instead. */
+    Point3 cross(const Point3& p)
     {
         return Point3(
-            y*p.z-z*p.y, /// dangerous for vectors longer than 4.6 cm !!!!!
-            z*p.x-x*p.z, /// can cause overflows
-            x*p.y-y*p.x);
+            int64_t(y)*p.z - int64_t(z)*p.y,
+            int64_t(z)*p.x - int64_t(x)*p.z,
+            int64_t(x)*p.y - int64_t(y)*p.x  );
+    }
+
+    int64_t dot(const Point3& p)
+    {
+        return x*p.x + y*p.y + z*p.z;
+    }
+
+};
+
+inline Point3 operator*(const int32_t i, const Point3& rhs) {
+    return rhs * i;
+}
+
+
+class Point3d
+{
+public:
+    int64_t x,y,z;
+    Point3d() {}
+    Point3d(const int64_t _x, const int64_t _y, const int64_t _z): x(_x), y(_y), z(_z) {}
+    Point3d(Point3& other): Point3d(other.x, other.y, other.z) {} //!< up-casting
+    Point3 downCast() { return Point3(x,y,z); };
+
+    Point3d operator+(const Point3d& p) const { return Point3d(x+p.x, y+p.y, z+p.z); }
+    Point3d operator-(const Point3d& p) const { return Point3d(x-p.x, y-p.y, z-p.z); }
+    Point3d operator/(const int64_t i) const { return Point3d(x/i, y/i, z/i); }
+    Point3d operator*(const int64_t i) const { return Point3d(x*i, y*i, z*i); }
+
+    Point3d& operator += (const Point3d& p) { x += p.x; y += p.y; z += p.z; return *this; }
+    Point3d& operator -= (const Point3d& p) { x -= p.x; y -= p.y; z -= p.z; return *this; }
+    Point3d& operator *= (int64_t c) { x *= c; y *= c; z *= c; return *this; }
+    Point3d& operator /= (int64_t c) { x /= c; y /= c; z /= c; return *this; }
+
+    bool operator==(const Point3d& p) const { return x==p.x&&y==p.y&&z==p.z; }
+    bool operator!=(const Point3d& p) const { return x!=p.x||y!=p.y||z!=p.z; }
+
+
+    template<class CharT, class TraitsT>
+    friend
+    std::basic_ostream<CharT, TraitsT>&
+    operator <<(std::basic_ostream<CharT, TraitsT>& os, const Point3d& p)
+    {
+        return os << "(" << p.x << ", " << p.y << ", " << p.z << ")";
     }
 
 
+    int64_t max()
+    {
+        if (x > y && x > z) return x;
+        if (y > z) return y;
+        return z;
+    }
+
+//    bool testLength(int64_t len)
+//    {
+//        if (x > len || x < -len)
+//            return false;
+//        if (y > len || y < -len)
+//            return false;
+//        if (z > len || z < -len)
+//            return false;
+//        return vSize2() <= len*len;
+//    }
+
+//    int128_t vSize2() const
+//    {
+//        return int128_t(x)*int128_t(x)+int128_t(y)*int128_t(y)+int128_t(z)*int128_t(z);
+//    }
+
+//    int64_t vSize() const
+//    {
+//        return sqrt(vSize2());
+//    }
+
+    /* this function WAS deprecated because it COULD cause overflows */
+    Point3d cross(const Point3d& p)
+    {
+        return Point3d(
+            (long long)(y)*p.z - (long long)(z)*p.y,
+            (long long)(z)*p.x - (long long)(x)*p.z,
+            (long long)(x)*p.y - (long long)(y)*p.x  );
+    }
+
+
+    /*! this function is deprecated because it can cause overflows */
+    DEPRECATED(int64_t dot(const Point3& p))
+    {
+        return x*p.x + y*p.y + z*p.z;
+    }
 
 };
+
+
+inline Point3d operator*(const int64_t i, const Point3d& rhs) {
+    return rhs * i;
+}
 
 /*
 // 64bit Points are used mostly troughout the code, these are the 2D points

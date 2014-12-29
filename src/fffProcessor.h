@@ -14,6 +14,8 @@
 #include "supportClassification.h"
 #include "supportGeneration.h"
 
+#include "boolMesh.h"
+
 #include <iostream>
 
 
@@ -78,7 +80,8 @@ public:
         std::cerr << "starting new Support Test..." << std::endl;
         //SupportChecker::testSupportChecker(model);
         //SupportPointsGenerator::testSupportPointsGenerator(model);
-        SupportBlockGenerator::test(model);
+        //SupportBlockGenerator::test(model);
+        BooleanFVMeshOps::test();
 
 
 
