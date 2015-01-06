@@ -148,28 +148,28 @@ protected:
     A line segment corresponding to an edge of the one triangle crossing the halfplane of the other triangle.
     The intersection point at which the line intersects the halfplane is also stored.
     */
-    struct IntersectingLine //!< edge of one triangle intersecting the halfplane of the other triangle
+    struct LinePlaneIntersection //!< edge of one triangle intersecting the halfplane of the other triangle
     {
         FPoint3* from;
         FPoint3* to;
 
         IntersectionPoint* intersection;
 
-        IntersectingLine(const IntersectingLine& old) { //!< also copies objects pointed to (from, to, intersection)
+        LinePlaneIntersection(const LinePlaneIntersection& old) { //!< also copies objects pointed to (from, to, intersection)
             *this = old;
         }
-        IntersectingLine& operator=(const IntersectingLine& old) { //!< also copies objects pointed to (from, to, intersection)
+        LinePlaneIntersection& operator=(const LinePlaneIntersection& old) { //!< also copies objects pointed to (from, to, intersection)
             from = new FPoint3(*old.from);
             to = new FPoint3(*old.to);
             intersection = old.intersection->copy();
         };
 
-        ~IntersectingLine() { //!< also deletes objects pointed to (from, to, intersection)
+        ~LinePlaneIntersection() { //!< also deletes objects pointed to (from, to, intersection)
             delete from;
             delete to;
             delete intersection;
         };
-        IntersectingLine()
+        LinePlaneIntersection()
         : from(nullptr)
         , to(nullptr)
         , intersection(nullptr) {};
@@ -184,12 +184,12 @@ protected:
     Keeps track of which side of the triangle falls below the halfplane.
 
     */
-    class IntersectionEnv
+    class TrianglePlaneIntersection
     {
         friend class TriangleIntersectionComputation; // make computeIntersectingEdges visible
     public:
-        IntersectingLine line1; //!< one edge of the triangle crossing the intersection line between the two triangles planes
-        IntersectingLine line2; //!< the other edge of the triangle crossing the plane of the second triangle [equivalent description]
+        LinePlaneIntersection line1; //!< one edge of the triangle crossing the intersection line between the two triangles planes
+        LinePlaneIntersection line2; //!< the other edge of the triangle crossing the plane of the second triangle [equivalent description]
 
         bool isDirectionOfInnerFacePart; //!< whether the direction of the line segment from the intersection of line1 to the intersection of line2 is in the direction of the halfEdge belonging to part of the face which is below the halfplane
 
@@ -199,32 +199,36 @@ protected:
 
         FPoint* O; //!< any point on the line of the intersection between the two halfplanes. >> as 'O' in Tomas Moller - A Fast Triangle-Triangle Intersection Test
 
-        IntersectionEnv()
+        TrianglePlaneIntersection()
         : isCorrect(false)
         , intersectionType(UNKNOWN)
         , O(nullptr)
         {  };
 
-        IntersectionEnv(const IntersectionEnv& old) { //!< also copies objects pointed to (O)
+        TrianglePlaneIntersection(const TrianglePlaneIntersection& old) { //!< also copies objects pointed to (O)
             *this = old;
         };
-        IntersectionEnv& operator=(const IntersectionEnv& old) { //!< also copies objects pointed to (O)
+        TrianglePlaneIntersection& operator=(const TrianglePlaneIntersection& old) { //!< also copies objects pointed to (O)
             if (old.O != nullptr)
                 O = new FPoint(*old.O);
         };
-        ~IntersectionEnv() { if (O != nullptr) delete O; }; //!< also deletes objects pointed to (O)
+        ~TrianglePlaneIntersection() { if (O != nullptr) delete O; }; //!< also deletes objects pointed to (O)
     protected:
         /*!
         Set the [from] and [to] of [line1] and [line2], and if at hand, set the information of O and the actual intersection points.
         When a vertex intersects the triangle, don't set the [from] and [to], but set the vertex as intersections point itself instead.
         In such a case we can use the vertex as [O].
+
+        The parameters are the vertex points, the orientation of these points wrt the halfplane and the face handle of the original triangle.
          */
         void computeIntersectingEdges(FPoint3& a, FPoint3& b, FPoint3& c, char sa, char sb, char sc, HE_FaceHandle fh);
     };
     /*!
-    Returns a new IntersectionEnv on which computeIntersectingEdges(.) is performed.
+    Returns a new TrianglePlaneIntersection on which computeIntersectingEdges(.) is performed.
+
+    The parameters are the vertex points, the orientation of these points wrt the halfplane and the face handle of the original triangle.
     */
-    static IntersectionEnv getIntersectingEdges(FPoint3& a, FPoint3& b, FPoint3& c, char sa, char sb, char sc, HE_FaceHandle fh);
+    static TrianglePlaneIntersection getIntersectingEdges(FPoint3& a, FPoint3& b, FPoint3& c, char sa, char sb, char sc, HE_FaceHandle fh);
     static xType divide(FPoint a, FPoint& b); //!< divide two vectors, assuming they are in the same direction
 };
 

@@ -102,7 +102,7 @@ TriangleIntersection TriangleIntersectionComputation::intersect(HE_FaceHandle& f
 
     auto sign = [](float a) { return char((0<a) - (a<0)); };
 
-    char sa1 = sign(dp2(a1));
+    char sa1 = sign(dp2(a1)); // sign of the distance
     char sb1 = sign(dp2(b1));
     char sc1 = sign(dp2(c1));
 
@@ -133,31 +133,30 @@ TriangleIntersection TriangleIntersectionComputation::intersect(HE_FaceHandle& f
 
 
 
+    TrianglePlaneIntersection tri1_plane2_ints = getIntersectingEdges(a1,b1,c1,sa1,sb1,sc1, fh1);
+    if (! tri1_plane2_ints.isCorrect) return TriangleIntersection(nullptr, nullptr, false, false, tri1_plane2_ints.intersectionType);
 
-    TRIANGLE_INTERSECT_DEBUG_PRINTLN("edges1 getIntersectingEdges");
-    IntersectionEnv edges1 = getIntersectingEdges(a1,b1,c1,sa1,sb1,sc1, fh1);
-    if (! edges1.isCorrect) return TriangleIntersection(nullptr, nullptr, false, false, edges1.intersectionType);
-    TRIANGLE_INTERSECT_DEBUG_PRINTLN("edges2 getIntersectingEdges");
-    IntersectionEnv edges2 = getIntersectingEdges(a2,b2,c2,sa2,sb2,sc2, fh2);
-    if (! edges2.isCorrect) return TriangleIntersection(nullptr, nullptr, false, false, edges2.intersectionType);
+    TrianglePlaneIntersection tri2_plane1_ints = getIntersectingEdges(a2,b2,c2,sa2,sb2,sc2, fh2);
+    if (! tri2_plane1_ints.isCorrect) return TriangleIntersection(nullptr, nullptr, false, false, tri2_plane1_ints.intersectionType);
 
-    TRIANGLE_INTERSECT_DEBUG_PRINTLN("getIntersectingEdges finished");
 
 
 
     FPoint n3u = n1.cross(n2); // unnormalized
     FPoint n3 = n3u.normalized(); // normal of a plane through the origin and perpendicular to plane 1 and 2. >> as 'D' in Tomas Moller - A Fast Triangle-Triangle Intersection Test
+    // also: direction of the intersection between the two halfplanes
+
     TRIANGLE_INTERSECT_DEBUG_SHOW(n3.vSize2());
 //    resizeNormal(n3);
 
 TRIANGLE_INTERSECT_DEBUG_SHOW(n3);
 
 
-    TRIANGLE_INTERSECT_DEBUG_PRINTLN(" O1 exists " << (edges1.O != nullptr));
-    TRIANGLE_INTERSECT_DEBUG_PRINTLN(" O2 exists " << (edges2.O != nullptr));
+    TRIANGLE_INTERSECT_DEBUG_PRINTLN(" O1 exists " << (tri1_plane2_ints.O != nullptr));
+    TRIANGLE_INTERSECT_DEBUG_PRINTLN(" O2 exists " << (tri2_plane1_ints.O != nullptr));
 
-    if (edges1.O != nullptr)        O = *edges1.O;
-    else if (edges2.O != nullptr)   O = *edges2.O;
+    if (tri1_plane2_ints.O != nullptr)        O = *tri1_plane2_ints.O;
+    else if (tri2_plane1_ints.O != nullptr)   O = *tri2_plane1_ints.O;
     else
     {
         FPoint d2n1 = d2 * n1 ;
@@ -198,71 +197,71 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ");
     xType x21;
     xType x22;
 
-    if (edges2.line1.to == edges2.line2.from && edges2.line1.to != nullptr)
+    if (tri2_plane1_ints.line1.to == tri2_plane1_ints.line2.from && tri2_plane1_ints.line1.to != nullptr)
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("WTF!");
 
-    if (edges1.line1.intersection->getType() == NEW) {
-        x11 = i1(*edges1.line1.from, *edges1.line1.to);
+    if (tri1_plane2_ints.line1.intersection->getType() == NEW) {
+        x11 = i1(*tri1_plane2_ints.line1.from, *tri1_plane2_ints.line1.to);
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(O << " + " << x11 << " * "<<n3<<" = "<< (O + x11 * n3));
-        static_cast<NewIntersectionPoint*> (edges1.line1.intersection )->location = (O + x11 * n3 /n3.vSize()).toPoint3();
-        TRIANGLE_INTERSECT_DEBUG_PRINTLN(edges1.line1.intersection->p());
+        static_cast<NewIntersectionPoint*> (tri1_plane2_ints.line1.intersection )->location = (O + x11 * n3 /n3.vSize()).toPoint3();
+        TRIANGLE_INTERSECT_DEBUG_PRINTLN(tri1_plane2_ints.line1.intersection->p());
     } else {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("using intersection x11 from given vertex ");
-        x11 = divide(FPoint(edges1.line1.intersection->p()) - O , n3);
+        x11 = divide(FPoint(tri1_plane2_ints.line1.intersection->p()) - O , n3);
     }
-    if (edges1.line2.intersection->getType() == NEW) {
-        x12 = i1(*edges1.line2.from, *edges1.line2.to);
+    if (tri1_plane2_ints.line2.intersection->getType() == NEW) {
+        x12 = i1(*tri1_plane2_ints.line2.from, *tri1_plane2_ints.line2.to);
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(O << " + " << x12 << " * "<<n3<<" = "<< (O + x12 * n3));
-        static_cast<NewIntersectionPoint*> (edges1.line2.intersection )->location = (O + x12 * n3 /n3.vSize()).toPoint3();
-        TRIANGLE_INTERSECT_DEBUG_PRINTLN(edges1.line2.intersection->p());
+        static_cast<NewIntersectionPoint*> (tri1_plane2_ints.line2.intersection )->location = (O + x12 * n3 /n3.vSize()).toPoint3();
+        TRIANGLE_INTERSECT_DEBUG_PRINTLN(tri1_plane2_ints.line2.intersection->p());
     } else {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("using intersection x12 from given vertex ");
-        x12 = divide(FPoint(edges1.line2.intersection->p()) - O , n3);
+        x12 = divide(FPoint(tri1_plane2_ints.line2.intersection->p()) - O , n3);
     }
-    TRIANGLE_INTERSECT_DEBUG_SHOW(edges2.line1.intersection);
-    if (edges2.line1.intersection == nullptr)
+    TRIANGLE_INTERSECT_DEBUG_SHOW(tri2_plane1_ints.line1.intersection);
+    if (tri2_plane1_ints.line1.intersection == nullptr)
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(" is null pointer!!!!@!! OMFG");
 
-    if (edges2.line1.intersection->getType() == NEW) {
-        x21 = i2(*edges2.line1.from, *edges2.line1.to);
-        static_cast<NewIntersectionPoint*> (edges2.line1.intersection )->location = (O + x21 * n3 /n3.vSize()).toPoint3();
+    if (tri2_plane1_ints.line1.intersection->getType() == NEW) {
+        x21 = i2(*tri2_plane1_ints.line1.from, *tri2_plane1_ints.line1.to);
+        static_cast<NewIntersectionPoint*> (tri2_plane1_ints.line1.intersection )->location = (O + x21 * n3 /n3.vSize()).toPoint3();
     } else {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("using intersection x21 from given vertex ");
-        x21 = divide(FPoint(edges2.line1.intersection->p()) - O , n3);
+        x21 = divide(FPoint(tri2_plane1_ints.line1.intersection->p()) - O , n3);
     }
-    if (edges2.line2.intersection->getType() == NEW) {
-        x22 = i2(*edges2.line2.from, *edges2.line2.to);
-        static_cast<NewIntersectionPoint*> (edges2.line2.intersection )->location = (O + x22 * n3 /n3.vSize()).toPoint3();
+    if (tri2_plane1_ints.line2.intersection->getType() == NEW) {
+        x22 = i2(*tri2_plane1_ints.line2.from, *tri2_plane1_ints.line2.to);
+        static_cast<NewIntersectionPoint*> (tri2_plane1_ints.line2.intersection )->location = (O + x22 * n3 /n3.vSize()).toPoint3();
     } else {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("using intersection x22 from given vertex ");
-        x22 = divide(FPoint(edges2.line2.intersection->p()) - O , n3);
+        x22 = divide(FPoint(tri2_plane1_ints.line2.intersection->p()) - O , n3);
     }
 
 
 TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ");
 TRIANGLE_INTERSECT_DEBUG_PRINTLN("x11 = " << x11);
-TRIANGLE_INTERSECT_DEBUG_PRINTLN("p11 = " << edges1.line1.intersection->p());
+TRIANGLE_INTERSECT_DEBUG_PRINTLN("p11 = " << tri1_plane2_ints.line1.intersection->p());
 TRIANGLE_INTERSECT_DEBUG_PRINTLN("x12 = " << x12);
-TRIANGLE_INTERSECT_DEBUG_PRINTLN("p12 = " << edges1.line2.intersection->p());
+TRIANGLE_INTERSECT_DEBUG_PRINTLN("p12 = " << tri1_plane2_ints.line2.intersection->p());
 TRIANGLE_INTERSECT_DEBUG_PRINTLN("x21 = " << x21);
-TRIANGLE_INTERSECT_DEBUG_PRINTLN("p21 = " << edges2.line1.intersection->p());
+TRIANGLE_INTERSECT_DEBUG_PRINTLN("p21 = " << tri2_plane1_ints.line1.intersection->p());
 TRIANGLE_INTERSECT_DEBUG_PRINTLN("x22 = " << x22);
-TRIANGLE_INTERSECT_DEBUG_PRINTLN("p22 = " << edges2.line2.intersection->p());
+TRIANGLE_INTERSECT_DEBUG_PRINTLN("p22 = " << tri2_plane1_ints.line2.intersection->p());
 
 
     if (x11 > x12)
     {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("first intersections swapped");
         std::swap(x11,x12);
-        std::swap(edges1.line1, edges1.line2);
-        edges1.isDirectionOfInnerFacePart = ! edges1.isDirectionOfInnerFacePart;
+        std::swap(tri1_plane2_ints.line1, tri1_plane2_ints.line2);
+        tri1_plane2_ints.isDirectionOfInnerFacePart = ! tri1_plane2_ints.isDirectionOfInnerFacePart;
     }
     if (x21 > x22)
     {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("second intersections swapped");
         std::swap(x21,x22);
-        std::swap(edges2.line1, edges2.line2);
-        edges2.isDirectionOfInnerFacePart = ! edges2.isDirectionOfInnerFacePart;
+        std::swap(tri2_plane1_ints.line1, tri2_plane1_ints.line2);
+        tri2_plane1_ints.isDirectionOfInnerFacePart = ! tri2_plane1_ints.isDirectionOfInnerFacePart;
     }
 
     if (x12 < x21 || x22 < x11)
@@ -273,12 +272,12 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN("p22 = " << edges2.line2.intersection->p());
 
 
 
-    //return TriangleIntersection((x11 > x21)? edges1.line1.intersection : edges2.line1.intersection, (x12 < x22)? edges1.line2.intersection : edges2.line2.intersection);
+    //return TriangleIntersection((x11 > x21)? tri1_plane2_ints.line1.intersection : tri2_plane1_ints.line1.intersection, (x12 < x22)? tri1_plane2_ints.line2.intersection : tri2_plane1_ints.line2.intersection);
     TriangleIntersection ret(
-            ( (x11 > x21)? edges1 : edges2 ).line1.intersection->copy()
-            , ( (x12 < x22)? edges1 : edges2 ).line2.intersection->copy()
-            , edges1.isDirectionOfInnerFacePart
-            , edges2.isDirectionOfInnerFacePart
+            ( (x11 > x21)? tri1_plane2_ints : tri2_plane1_ints ).line1.intersection->copy()
+            , ( (x12 < x22)? tri1_plane2_ints : tri2_plane1_ints ).line2.intersection->copy()
+            , tri1_plane2_ints.isDirectionOfInnerFacePart
+            , tri2_plane1_ints.isDirectionOfInnerFacePart
             , LINE_SEGMENT
         );
 
@@ -327,14 +326,14 @@ xType TriangleIntersectionComputation::divide(FPoint a, FPoint& b) //!< assumes 
 
 
 
-TriangleIntersectionComputation::IntersectionEnv TriangleIntersectionComputation::getIntersectingEdges(FPoint3& a, FPoint3& b, FPoint3& c, char sa, char sb, char sc, HE_FaceHandle fh)
+TriangleIntersectionComputation::TrianglePlaneIntersection TriangleIntersectionComputation::getIntersectingEdges(FPoint3& a, FPoint3& b, FPoint3& c, char sa, char sb, char sc, HE_FaceHandle fh)
 {
 
-    IntersectionEnv ret;
+    TrianglePlaneIntersection ret;
     ret.computeIntersectingEdges(a,b,c,sa,sb,sc, fh);
     return ret;
 }
-void TriangleIntersectionComputation::IntersectionEnv::computeIntersectingEdges(FPoint3& a, FPoint3& b, FPoint3& c, char sa, char sb, char sc, HE_FaceHandle fh)
+void TriangleIntersectionComputation::TrianglePlaneIntersection::computeIntersectingEdges(FPoint3& a, FPoint3& b, FPoint3& c, char sa, char sb, char sc, HE_FaceHandle fh)
 {
     isCorrect=false;
 
