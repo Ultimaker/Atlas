@@ -9,6 +9,8 @@ They represent millimeters in 3D space.
 
 #include "intpoint.h"
 
+#include <iostream> // auto-serialization / auto-toString()
+
 #include <stdint.h>
 #include <math.h>
 
@@ -31,6 +33,14 @@ public:
 
     bool operator==(FPoint3& p) const { return x==p.x&&y==p.y&&z==p.z; }
     bool operator!=(FPoint3& p) const { return x!=p.x||y!=p.y||z!=p.z; }
+
+    template<class CharT, class TraitsT>
+    friend
+    std::basic_ostream<CharT, TraitsT>&
+    operator <<(std::basic_ostream<CharT, TraitsT>& os, const FPoint3& p)
+    {
+        return os << "(" << p.x << ", " << p.y << ", " << p.z << ")";
+    }
 
     float max()
     {
@@ -87,6 +97,10 @@ public:
     }
 };
 
+
+inline FPoint3 operator*(const float i, const FPoint3& rhs) {
+    return rhs * i;
+}
 
 
 inline float operator*(FPoint3 lhs, const FPoint3& rhs) {

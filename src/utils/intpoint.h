@@ -15,6 +15,9 @@ Integer points are used to avoid floating point rounding errors.
 
 #include <iostream> // auto-serialization / auto-toString()
 
+#include <string>       // std::string
+#include <sstream>      // std::stringstream
+
 #define INT2MM(n) (double(n) / 1000.0)
 #define MM2INT(n) (int64_t((n) * 1000))
 
@@ -64,6 +67,13 @@ public:
     operator <<(std::basic_ostream<CharT, TraitsT>& os, const Point3& p)
     {
         return os << "(" << p.x << ", " << p.y << ", " << p.z << ")";
+    }
+
+    std::string toString()
+    {
+        std::stringstream ss;
+        ss << this;
+        return ss.str();
     }
 
 

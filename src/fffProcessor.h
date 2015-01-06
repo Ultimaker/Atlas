@@ -77,13 +77,13 @@ public:
 
 
 
-        std::cerr << "starting new Support Test..." << std::endl;
+        std::cerr << "starting Test..." << std::endl;
         //SupportChecker::testSupportChecker(model);
         //SupportPointsGenerator::testSupportPointsGenerator(model);
         //SupportBlockGenerator::test(model);
         BooleanFVMeshOps::test();
 
-
+        std::cerr << std::endl << " Test finished!" << std::endl << std::endl;
 
 
 
