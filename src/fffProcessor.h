@@ -15,6 +15,7 @@
 #include "supportGeneration.h"
 
 #include "boolMesh.h"
+#include "triangleIntersect.h"
 
 #include <iostream>
 
@@ -81,7 +82,7 @@ public:
         //SupportChecker::testSupportChecker(model);
         //SupportPointsGenerator::testSupportPointsGenerator(model);
         //SupportBlockGenerator::test(model);
-        BooleanFVMeshOps::test();
+        TriangleIntersectionComputation::test();
 
         std::cerr << std::endl << " Test finished!" << std::endl << std::endl;
 
