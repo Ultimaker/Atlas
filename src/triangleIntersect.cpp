@@ -9,7 +9,7 @@ void TriangleIntersectionComputation::test()
     mesh.vertices.emplace_back(Point(100000,100000,00), -1);
     mesh.vertices.emplace_back(Point(100000,0  ,00), -1);
 
-    mesh.vertices.emplace_back(Point(0  ,0  ,-1000), -1);
+    mesh.vertices.emplace_back(Point(0  ,0  ,1000), -1);
     mesh.vertices.emplace_back(Point(100000,100000,1000), -1);
     mesh.vertices.emplace_back(Point(100000,0  ,1000), -1);
 
@@ -22,36 +22,37 @@ void TriangleIntersectionComputation::test()
 
     TRIANGLE_INTERSECT_DEBUG_DO(mesh.debugOutputWholeMesh();)
 
-    TriangleIntersection* intersection = TriangleIntersectionComputation::intersect(fh1, fh2);
+    TriangleIntersection intersection = TriangleIntersectionComputation::intersect(fh1, fh2);
     TRIANGLE_INTERSECT_DEBUG_PRINTLN(" test finished ");
 
     TRIANGLE_INTERSECT_DEBUG_DO(
-        if (intersection != nullptr)
+        if (intersection.intersectionType == LINE_SEGMENT)
         {
             TRIANGLE_INTERSECT_DEBUG_SHOW(EXISTING);
             TRIANGLE_INTERSECT_DEBUG_SHOW(NEW);
-            if (intersection->from != nullptr)
+            if (intersection.from != nullptr)
             {
-                TRIANGLE_INTERSECT_DEBUG_SHOW(intersection->from->getType());
-                TRIANGLE_INTERSECT_DEBUG_SHOW(intersection->from->getLocation());
-                if (intersection->from->getType() == NEW)
-                    TRIANGLE_INTERSECT_DEBUG_SHOW(static_cast<NewIntersectionPoint*>(intersection->from)->edge.from_vert().p() );
+                TRIANGLE_INTERSECT_DEBUG_SHOW(intersection.from->getType());
+                TRIANGLE_INTERSECT_DEBUG_SHOW(intersection.from->getLocation());
+                if (intersection.from->getType() == NEW)
+                    TRIANGLE_INTERSECT_DEBUG_SHOW(static_cast<NewIntersectionPoint*>(intersection.from)->edge.from_vert().p() );
             }
 
-            if (intersection->to != nullptr)
+            if (intersection.to != nullptr)
             {
-                TRIANGLE_INTERSECT_DEBUG_SHOW(intersection->to->getType());
-                TRIANGLE_INTERSECT_DEBUG_SHOW(intersection->to->getLocation());
-                if (intersection->to->getType() == NEW)
-                    TRIANGLE_INTERSECT_DEBUG_SHOW(static_cast<NewIntersectionPoint*>(intersection->to)->edge.from_vert().p() );
+                TRIANGLE_INTERSECT_DEBUG_SHOW(intersection.to->getType());
+                TRIANGLE_INTERSECT_DEBUG_SHOW(intersection.to->getLocation());
+                if (intersection.to->getType() == NEW)
+                    TRIANGLE_INTERSECT_DEBUG_SHOW(static_cast<NewIntersectionPoint*>(intersection.to)->edge.from_vert().p() );
             }
-            TRIANGLE_INTERSECT_DEBUG_SHOW(intersection->isDirectionOfInnerPartOfTriangle1);
-            TRIANGLE_INTERSECT_DEBUG_SHOW(intersection->isDirectionOfInnerPartOfTriangle2);
-        }
+            TRIANGLE_INTERSECT_DEBUG_SHOW(intersection.isDirectionOfInnerPartOfTriangle1);
+            TRIANGLE_INTERSECT_DEBUG_SHOW(intersection.isDirectionOfInnerPartOfTriangle2);
+        } else
+            TRIANGLE_INTERSECT_DEBUG_PRINTLN(toString(intersection.intersectionType));
     )
 }
 
-TriangleIntersection* TriangleIntersectionComputation::intersect(HE_FaceHandle& fh1, HE_FaceHandle& fh2)
+TriangleIntersection TriangleIntersectionComputation::intersect(HE_FaceHandle& fh1, HE_FaceHandle& fh2)
 {
     TRIANGLE_INTERSECT_DEBUG_PRINTLN("intersecting");
     //! see Tomas Moller - A Fast Triangle-Triangle Intersection Test
@@ -87,7 +88,7 @@ TriangleIntersection* TriangleIntersectionComputation::intersect(HE_FaceHandle& 
     if (n1==n2)
     {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("parallel triangles! (or coplanar) ");
-        return nullptr; // parallel triangles! (also in the coplanar case we don't do anything)
+        return TriangleIntersection(nullptr, nullptr, false, false, PARALLEL); // parallel triangles! (also in the coplanar case we don't do anything)
     }
 
 
@@ -120,12 +121,12 @@ TriangleIntersection* TriangleIntersectionComputation::intersect(HE_FaceHandle& 
     {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(" no intersection, or coplanar! " << sa1);
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(dp2(a1) << "," << dp2(b1) << ","<< dp2(c1));
-        return nullptr; // no intersection (sign >0 or <0), or coplanar (sign=0)!
+        return TriangleIntersection(nullptr, nullptr, false, false, NON_TOUCHING_PLANES); // no intersection (sign >0 or <0), or coplanar (sign=0)!
     }
     if (sa2 == sb2 && sb2 == sc2)
     {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(" no intersection! ");
-        return nullptr; // no intersection
+        return TriangleIntersection(nullptr, nullptr, false, false, NON_TOUCHING_PLANES); // no intersection
     }
 
     FPoint O;
@@ -135,10 +136,10 @@ TriangleIntersection* TriangleIntersectionComputation::intersect(HE_FaceHandle& 
 
     TRIANGLE_INTERSECT_DEBUG_PRINTLN("edges1 getIntersectingEdges");
     IntersectionEnv edges1 = getIntersectingEdges(a1,b1,c1,sa1,sb1,sc1, fh1);
-    if (! edges1.isCorrect) return nullptr;
+    if (! edges1.isCorrect) return TriangleIntersection(nullptr, nullptr, false, false, edges1.intersectionType);
     TRIANGLE_INTERSECT_DEBUG_PRINTLN("edges2 getIntersectingEdges");
     IntersectionEnv edges2 = getIntersectingEdges(a2,b2,c2,sa2,sb2,sc2, fh2);
-    if (! edges2.isCorrect) return nullptr;
+    if (! edges2.isCorrect) return TriangleIntersection(nullptr, nullptr, false, false, edges2.intersectionType);
 
     TRIANGLE_INTERSECT_DEBUG_PRINTLN("getIntersectingEdges finished");
 
@@ -267,28 +268,30 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN("p22 = " << edges2.line2.intersection->p());
     if (x12 < x21 || x22 < x11)
     {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("no overlap between line segments of intersections of triangles in the plane of the other !");
-        return nullptr; // no overlap!
+        return TriangleIntersection(nullptr, nullptr, false, false, NON_TOUCHING); // no overlap!
     }
 
 
 
     //return TriangleIntersection((x11 > x21)? edges1.line1.intersection : edges2.line1.intersection, (x12 < x22)? edges1.line2.intersection : edges2.line2.intersection);
-    TriangleIntersection* ret = new TriangleIntersection(
+    TriangleIntersection ret(
             ( (x11 > x21)? edges1 : edges2 ).line1.intersection->copy()
             , ( (x12 < x22)? edges1 : edges2 ).line2.intersection->copy()
             , edges1.isDirectionOfInnerFacePart
             , edges2.isDirectionOfInnerFacePart
+            , LINE_SEGMENT
         );
 
-    if ( ( ret->from->p() - ret->to->p() ) .testLength(MELD_DISTANCE))
+    if ( ( ret.from->p() - ret.to->p() ) .testLength(MELD_DISTANCE))
     { // only return resulting line segment if it contains a vertex and another point (which is not the same vertex)
-        if (ret->to->getType() == NEW && ret->from->getType() == NEW)
-            return nullptr;
-        if (ret->to->getType() == EXISTING && ret->from->getType() == EXISTING)
-            if (static_cast<ExistingVertexIntersectionPoint*>(ret->to)->vh == static_cast<ExistingVertexIntersectionPoint*>(ret->from)->vh  )
-                return nullptr;
+        if (ret.to->getType() == NEW && ret.from->getType() == NEW)
+            return TriangleIntersection(nullptr, nullptr, false, false, TOUCHING);
+        if (ret.to->getType() == EXISTING && ret.from->getType() == EXISTING)
+            if (static_cast<ExistingVertexIntersectionPoint*>(ret.to)->vh == static_cast<ExistingVertexIntersectionPoint*>(ret.from)->vh  )
+                return TriangleIntersection(nullptr, nullptr, false, false, TOUCHING);
 
     }
+
     TRIANGLE_INTERSECT_DEBUG_PRINTLN("finished!");
 
     return ret;
@@ -339,11 +342,17 @@ void TriangleIntersectionComputation::IntersectionEnv::computeIntersectingEdges(
     {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("Triangle doesn't intersect plane of other triangle, or is coplanar!");
         if (sa > 0)
+        {
+            intersectionType = NON_TOUCHING_PLANES;
             TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ... triangle lies above");
-        else if (sa < 0)
+        } else if (sa < 0)
+        {
+            intersectionType = NON_TOUCHING_PLANES;
             TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ... triangle lies below");
-        else
+        } else {
+            intersectionType = COPLANAR;
             TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ... triangle is coplanar");
+        }
         return; // triangle doesn't intersect the plane of the other
     }
 
@@ -363,6 +372,7 @@ void TriangleIntersectionComputation::IntersectionEnv::computeIntersectingEdges(
             if (sc == 0)
             {
                 TRIANGLE_INTERSECT_DEBUG_PRINTLN(" triangle doesn't cross the plane (only touches it)");
+                intersectionType = TOUCHING;
                 return; // triangle doesn't cross the plane (only touches it)
             }
             line1.intersection = new NewIntersectionPoint(Point(0,0,0), fh.edge1());
@@ -390,6 +400,7 @@ void TriangleIntersectionComputation::IntersectionEnv::computeIntersectingEdges(
             if (sa == 0)
             {
                 TRIANGLE_INTERSECT_DEBUG_PRINTLN(" triangle doesn't cross the plane (only touches it)");
+                intersectionType = TOUCHING;
                 return; // triangle doesn't cross the plane (only touches it)
             }            line1.intersection = new NewIntersectionPoint(Point(0,0,0), fh.edge2());
             line1.from  = new FPoint3(c);
@@ -416,6 +427,7 @@ void TriangleIntersectionComputation::IntersectionEnv::computeIntersectingEdges(
             if (sb == 0)
             {
                 TRIANGLE_INTERSECT_DEBUG_PRINTLN(" triangle doesn't cross the plane (only touches it)");
+                intersectionType = TOUCHING;
                 return; // triangle doesn't cross the plane (only touches it)
             }            line1.intersection = new NewIntersectionPoint(Point(0,0,0), fh.edge0());
             line1.from  = new FPoint3(a);
