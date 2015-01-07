@@ -6,11 +6,20 @@ void BooleanFVMeshOps::subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& res
 //! is more efficient when keep is smaller than subtracted.
 
 /*
-1) Find every pair of triangles that intersect
-2) Compute the intersections as segments
-3) For each intersected triangle, store the intersection segments and orient them
-4) Triangulate the intersected facets and add to the solution the triangles that belong to it.
-5) Propagate the result to the whole polyhedra, using the connectivity of the facets
+1) For every pair of triangles that intersect (of which the intersection hasn't already been computed):
+    - Compute the intersection as line segment
+    - Do a depth-first exhaustive search along the fracture line (mind that the fracture line may split when multiple faces connect to the same edge)
+        Have two current-triangle-watchers for each mesh
+            Convert new line segments into vertices and (connected) edges into a 'poly-edge'
+        Map face of both meshes to a set of thus obtained poly-edges
+            Add poly-edge to set of poly-edges of the face of each mesh
+
+2) For each intersected face of both meshes:
+    - Triangulate the part of the triangle we want to keep
+    - Map original face to all resulting triangles
+    - Add triangles to new mesh
+
+3) Do 2 breadth-first exhaustive searches starting from the fracture, copying all triangles to the new mesh.
 */
 
     // : \/ construct an AABB tree from the keep-mesh
