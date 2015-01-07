@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="Atlas" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title=" build/Atlas">
+				<Option output="bin/Debug/Atlas" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option parameters='-v &quot;/home/tim/Dropbox/3D_models/aapje_correct.stl&quot; ' />
+				<Compiler>
+					<Add option="-Wzero-as-null-pointer-constant" />
+					<Add option="-std=c++11" />
+					<Add option="-Wextra" />
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-Wno-sign-compare" />
+					<Add directory="include" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/Atlas" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add directory="include" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-fexceptions" />
+		</Compiler>
+		<Unit filename="src/AABB_Tree.cpp" />
+		<Unit filename="src/AABB_Tree.h">
+			<Option compile="1" />
+		</Unit>
+		<Unit filename="src/BoundingBox.cpp" />
+		<Unit filename="src/BoundingBox.h" />
+		<Unit filename="src/Kernel.cpp" />
+		<Unit filename="src/Kernel.h" />
+		<Unit filename="src/boolMesh.cpp" />
+		<Unit filename="src/boolMesh.h" />
+		<Unit filename="src/commandSocket.cpp" />
+		<Unit filename="src/commandSocket.h" />
+		<Unit filename="src/errorHandling.h" />
+		<Unit filename="src/fffProcessor.cpp" />
+		<Unit filename="src/fffProcessor.h" />
+		<Unit filename="src/main.cpp" />
+		<Unit filename="src/mesh/FVMesh.cpp" />
+		<Unit filename="src/mesh/FVMesh.h" />
+		<Unit filename="src/mesh/FVMeshFace.cpp" />
+		<Unit filename="src/mesh/FVMeshFace.h" />
+		<Unit filename="src/mesh/FVMeshVertex.cpp" />
+		<Unit filename="src/mesh/FVMeshVertex.h" />
+		<Unit filename="src/mesh/HalfEdgeMesh.cpp" />
+		<Unit filename="src/mesh/HalfEdgeMesh.h" />
+		<Unit filename="src/mesh/HalfEdgeMeshEdge.cpp" />
+		<Unit filename="src/mesh/HalfEdgeMeshEdge.h" />
+		<Unit filename="src/mesh/HalfEdgeMeshFace.cpp" />
+		<Unit filename="src/mesh/HalfEdgeMeshFace.h" />
+		<Unit filename="src/mesh/HalfEdgeMeshVertex.cpp" />
+		<Unit filename="src/mesh/HalfEdgeMeshVertex.h" />
+		<Unit filename="src/mesh/Mesh.cpp" />
+		<Unit filename="src/mesh/Mesh.h" />
+		<Unit filename="src/mesh/MeshFace.cpp" />
+		<Unit filename="src/mesh/MeshFace.h" />
+		<Unit filename="src/mesh/MeshVertex.cpp" />
+		<Unit filename="src/mesh/MeshVertex.h" />
+		<Unit filename="src/modelFile/modelFile.cpp" />
+		<Unit filename="src/modelFile/modelFile.h" />
+		<Unit filename="src/optimizedModel.cpp" />
+		<Unit filename="src/optimizedModel.h" />
+		<Unit filename="src/pathOrderOptimizer.cpp.orig" />
+		<Unit filename="src/settings.cpp" />
+		<Unit filename="src/settings.h" />
+		<Unit filename="src/supportClassification.cpp" />
+		<Unit filename="src/supportClassification.h" />
+		<Unit filename="src/supportGeneration.cpp" />
+		<Unit filename="src/supportGeneration.h" />
+		<Unit filename="src/triangleIntersect.cpp" />
+		<Unit filename="src/triangleIntersect.h" />
+		<Unit filename="src/utils/floatpoint.h" />
+		<Unit filename="src/utils/gettime.cpp" />
+		<Unit filename="src/utils/gettime.h" />
+		<Unit filename="src/utils/intpoint.h" />
+		<Unit filename="src/utils/logoutput.cpp" />
+		<Unit filename="src/utils/logoutput.h" />
+		<Unit filename="src/utils/socket.cpp" />
+		<Unit filename="src/utils/socket.h" />
+		<Unit filename="src/utils/string.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
