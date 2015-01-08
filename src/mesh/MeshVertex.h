@@ -37,8 +37,8 @@ struct MeshVertexHandle
     V& vertex() { return m.vertices[idx]; };
     Point& p() { return m.vertices[idx].p; };
 
-    bool operator==(const MeshVertexHandle& b) { return idx==b.idx; }; // TODO: more sophisticated check
-    bool operator!=(const MeshVertexHandle &other) const {
+    virtual bool operator==(const MeshVertexHandle& b) const { return idx==b.idx; }; // TODO: more sophisticated check
+    virtual bool operator!=(const MeshVertexHandle &other) const {
         return !(*this == other);
     }
 };

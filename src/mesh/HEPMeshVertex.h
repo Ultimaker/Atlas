@@ -24,7 +24,7 @@ class HEP_Vertex : public MeshVertex
         {};
 
 
-//        std::string toString() { return "p"+std::to_string(p.x)+","+std::to_string(p.y)+","+std::to_string(p.z) + " - someEdge: "+std::to_string(someEdge_idx); };
+        std::string toString() { return "p"+std::to_string(p.x)+","+std::to_string(p.y)+","+std::to_string(p.z) + " - someEdge: "+std::to_string(long(someEdge)); };
 };
 
 
@@ -33,8 +33,11 @@ class HEP_Face;
 class HEP_FaceHandle;
 class HEP_EdgeHandle;
 
-struct HEP_VertexHandle : public MeshVertexHandle<HEP_Vertex, HEP_Face, HEP_FaceHandle, HEP_Mesh>
+class FVMeshVertexHandle;
+
+class HEP_VertexHandle : public MeshVertexHandle<HEP_Vertex, HEP_Face, HEP_FaceHandle, HEP_Mesh>
 {
+public:
     HEP_Vertex& v;
     HEP_VertexHandle(HEP_Mesh& m, HEP_Vertex* vertex) : MeshVertexHandle(m, -1), v(*vertex) {};
 
@@ -43,6 +46,23 @@ struct HEP_VertexHandle : public MeshVertexHandle<HEP_Vertex, HEP_Face, HEP_Face
     HEP_EdgeHandle someEdge();
 
     Point p();
+
+    bool operator==(const HEP_VertexHandle& b) const { return &v==&b.v; };
+    bool operator!=(const HEP_VertexHandle &other) const {
+        return !(*this == other);
+    }
+
+    bool isManifold(FVMeshVertexHandle& correspondingFVMeshVertex);
+
+    void getConnectedEdgeGroups(FVMeshVertexHandle& correspondingFVMeshVertex, std::vector<std::vector<HEP_EdgeHandle>> & result);
+
+    static void testGetConnectedEdgeGroups();
+
+    /*!
+    Split a nonmanifold vertex and move new vertices along some edge of the corresponding manifold part.
+    */
+    void splitWhenNonManifold(FVMeshVertexHandle& correspondingFVMeshVertex);
+
 };
 
 

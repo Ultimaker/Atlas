@@ -45,3 +45,11 @@ HEP_VertexHandle HEP_FaceHandle::v2()
 {
     return edge2().from_vert();
 }
+HEP_EdgeHandle HEP_FaceHandle::getEdgeFrom(HEP_VertexHandle& v)
+{
+    if (edge0().from_vert() == v) return edge0();
+    if (edge1().from_vert() == v) return edge1();
+    if (edge2().from_vert() == v) return edge2();
+    HEP_MESH_DEBUG_PRINTLN("getEdgeFrom returning nullptr!!!");
+    return HEP_EdgeHandle(m, nullptr); // face is not connected to the vertex!!
+}

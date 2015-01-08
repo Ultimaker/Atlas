@@ -1,6 +1,7 @@
 #include "HalfEdgeMesh.h"
 #include "../utils/logoutput.h"
 
+#include "../modelFile/modelFile.h" // PrintObject
 
 // enable/disable debug output
 #define HE_MESH_DEBUG 0
@@ -217,10 +218,6 @@ HE_Mesh::HE_Mesh(FVMesh& mesh)
         edge1.next_edge_idx = newEdgeIndex+2;
         edge2.next_edge_idx = newEdgeIndex+0;
 
-//        edge0.prev_edge_idx = newEdgeIndex+2;
-//        edge1.prev_edge_idx = newEdgeIndex+0;
-//        edge2.prev_edge_idx = newEdgeIndex+1;
-
         edges.push_back(edge0);
         edges.push_back(edge1);
         edges.push_back(edge2);
@@ -312,3 +309,33 @@ void HE_Mesh::debugOutputWholeMesh()
 }
 
 
+void HE_Mesh::makeManifold(FVMesh& correspondingFVMesh)
+{
+    int size = vertices.size();
+    for (int v = 0; v < size; v++)
+    {
+        FVMeshVertexHandle fvvh(correspondingFVMesh, v);
+        HE_VertexHandle(*this, v).splitWhenNonManifold(fvvh);
+    }
+
+}
+
+
+void HE_Mesh::testMakeManifold(PrintObject* model)
+{
+    std::cerr << "=============================================\n" << std::endl;
+
+    for (int mi = 0 ; mi < model->meshes.size() ; mi++)
+    {
+        FVMesh& fvMesh = model->meshes[mi];
+        HE_Mesh mesh(fvMesh);
+        mesh.makeManifold(fvMesh);
+
+        mesh.debugOutputWholeMesh();
+
+        //for (int f = 0; f < mesh.faces.size(); f++)
+        //    std::cerr << mesh.faces[f].cosAngle() << std::endl;
+    }
+    std::cerr << "=============================================\n" << std::endl;
+
+}

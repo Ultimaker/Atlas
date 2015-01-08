@@ -62,6 +62,14 @@
 		<Unit filename="src/mesh/FVMeshFace.h" />
 		<Unit filename="src/mesh/FVMeshVertex.cpp" />
 		<Unit filename="src/mesh/FVMeshVertex.h" />
+		<Unit filename="src/mesh/HEPMesh.cpp" />
+		<Unit filename="src/mesh/HEPMesh.h" />
+		<Unit filename="src/mesh/HEPMeshEdge.cpp" />
+		<Unit filename="src/mesh/HEPMeshEdge.h" />
+		<Unit filename="src/mesh/HEPMeshFace.cpp" />
+		<Unit filename="src/mesh/HEPMeshFace.h" />
+		<Unit filename="src/mesh/HEPMeshVertex.cpp" />
+		<Unit filename="src/mesh/HEPMeshVertex.h" />
 		<Unit filename="src/mesh/HalfEdgeMesh.cpp" />
 		<Unit filename="src/mesh/HalfEdgeMesh.h" />
 		<Unit filename="src/mesh/HalfEdgeMeshEdge.cpp" />

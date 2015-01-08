@@ -33,7 +33,7 @@ class HE_Edge {
              "from vertex "+ std::to_string(from_vert_idx) +
             //" to "+ std::to_string(to_vert_idx)
             // +" from edge " + std::to_string(prev_edge_idx)
-            +" to "+std::to_string(next_edge_idx)+" of face"+std::to_string(face_idx)+"; converse of "+std::to_string(converse_edge_idx) ;
+            +" to edge "+std::to_string(next_edge_idx)+" of face"+std::to_string(face_idx)+"; converse of "+std::to_string(converse_edge_idx) ;
             };
 
 };
@@ -66,6 +66,7 @@ struct HE_EdgeHandle
     };
 
     void set(HE_EdgeHandle& b);
+    HE_EdgeHandle& operator =(const HE_EdgeHandle& other);
 };
 
 

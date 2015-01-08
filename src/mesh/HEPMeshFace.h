@@ -29,6 +29,7 @@ class HEP_Face : public MeshFace<HEP_Vertex>
 
         HEP_Face(HEP_Edge* e0, HEP_Edge* e1, HEP_Edge* e2) { edge[0] = e0; edge[1] = e1; edge[2] = e2; };
 
+        std::string toString() {return "edges: "+std::to_string(long(edge[0]))+", "+std::to_string(long(edge[1]))+", "+std::to_string(long(edge[2])); };
 
 
 //        inline double cosAngle()
@@ -54,6 +55,12 @@ struct HEP_FaceHandle : public MeshFaceHandle<HEP_Vertex, HEP_VertexHandle, HEP_
     HEP_EdgeHandle edge1();
     HEP_EdgeHandle edge2();
 
+    bool operator==(const HEP_FaceHandle& b) const { return &f==&b.f; };
+    bool operator!=(const HEP_FaceHandle &other) const {
+        return !(*this == other);
+    };
+
+    HEP_EdgeHandle getEdgeFrom(HEP_VertexHandle& v);
 };
 
 #endif // HEPMESHFACE_H
