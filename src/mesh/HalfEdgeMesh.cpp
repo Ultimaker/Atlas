@@ -291,6 +291,7 @@ void HE_Mesh::debugOutputWholeMesh()
     std::cerr <<  "============================" << std::endl;
     std::cerr <<  "mesh: " << std::endl;
     std::cerr <<  "faces: "+ std::to_string(faces.size()) << std::endl;
+    std::cerr <<  "edges: "+ std::to_string(edges.size()) << std::endl;
     std::cerr << "vertices: "+std::to_string(vertices.size()) << std::endl;
 
 
@@ -315,6 +316,7 @@ void HE_Mesh::makeManifold(FVMesh& correspondingFVMesh)
     for (int v = 0; v < size; v++)
     {
         FVMeshVertexHandle fvvh(correspondingFVMesh, v);
+        //HE_MESH_DEBUG_SHOW(v);
         HE_VertexHandle(*this, v).splitWhenNonManifold(fvvh);
     }
 
@@ -329,6 +331,10 @@ void HE_Mesh::testMakeManifold(PrintObject* model)
     {
         FVMesh& fvMesh = model->meshes[mi];
         HE_Mesh mesh(fvMesh);
+        mesh.debugOutputWholeMesh();
+
+        std::cerr << "=============================================\n" << std::endl;
+
         mesh.makeManifold(fvMesh);
 
         mesh.debugOutputWholeMesh();

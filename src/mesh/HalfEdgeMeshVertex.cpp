@@ -11,7 +11,7 @@
 #include <set>
 
 // enable/disable debug output
-#define HE_MESH_DEBUG 0
+#define HE_MESH_DEBUG 1
 
 #define HE_MESH_DEBUG_SHOW(x) do { std::cerr << #x << " = " << x << std::endl; } while (0)
 #define HE_MESH_DEBUG_PRINTLN(x) do { std::cerr <<  x << std::endl; } while (0)
@@ -53,7 +53,7 @@ void HE_VertexHandle::getConnectedEdgeGroups(FVMeshVertexHandle& correspondingFV
 
     for (int f = 0; f < connected_faces_idx.size(); f++)
     {
-        if (checkedFaces.find(f) != checkedFaces.end()) continue;
+        if (checkedFaces.find(connected_faces_idx[f]) != checkedFaces.end()) continue;
 
         std::vector<HE_EdgeHandle> currentGroup;
 
@@ -137,6 +137,7 @@ void HE_VertexHandle::splitWhenNonManifold(FVMeshVertexHandle& correspondingFVMe
 
     if (groups.size() == 1) return;
 
+
     for (int g = 1; g < groups.size(); g++)
     {
         std::vector<HE_EdgeHandle>& group = groups[g];
@@ -153,6 +154,7 @@ void HE_VertexHandle::splitWhenNonManifold(FVMeshVertexHandle& correspondingFVMe
         });
 
     }
+
 
 }
 
