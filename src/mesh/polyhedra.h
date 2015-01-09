@@ -6,34 +6,36 @@
 #include <CGAL/Polyhedron_incremental_builder_3.h>
 #include <CGAL/Polyhedron_3.h>
 
-typedef int prim_data;
+#include "../Kernel.h"
+
+typedef int32_t prim_data;
 typedef CGAL::Simple_cartesian<prim_data> Kernel;
 typedef CGAL::Polyhedron_traits_with_normals_3<Kernel> Traits;
 typedef CGAL::Polyhedron_3<Traits> Polyhedron;
 typedef Polyhedron::HalfedgeDS HalfedgeDS;
-typedef HalfedgeDS::Vertex Vertex;
+typedef HalfedgeDS::Vertex PhVertex;
 typedef HalfedgeDS::Vertex_iterator Vertex_iterator;
-typedef Vertex::Point Point;
+typedef PhVertex::Point PhPoint;
 //typedef Point Point3;
 
-class PointUtils
+class PhPointUtils
 {
 public:
-    static bool testLength(Point& p, int32_t len);
-    static int64_t vSize2(Point& p);
+    static bool testLength(PhPoint& p, int32_t len);
+    static int64_t vSize2(PhPoint& p);
 };
 
 class PolyhedraUtils
 {
 public:
-    static Point min(Polyhedron& p);
-    static Point max(Polyhedron& p);
+    static PhPoint min(Polyhedron& p);
+    static PhPoint max(Polyhedron& p);
 };
 
 struct TempFace
 {
-    int vert_ids[3];
-    TempFace(int x, int y, int z)
+    spaceType vert_ids[3];
+    TempFace(spaceType x, spaceType y, spaceType z)
     {
         vert_ids[0] = x;
         vert_ids[1] = y;
@@ -48,17 +50,20 @@ class PolyhedronLoader
 {
     friend class Builder;
     public:
-        void addFace(Point& v0, Point& v1, Point& v2); //!< automatically inserts vertex if points don't correspond to any existing vertex
+        void addFace(PhPoint& v0, PhPoint& v1, PhPoint& v2); //!< automatically inserts vertex if points don't correspond to any existing vertex
 
-        //void addVertex(Point&
+        void addVertex(Point& p);
+        void addVertex(PhPoint& p);
+
+        void addFace(int v0_idx, int v1_idx, int v2_idx);
 
         Polyhedron construct();
         void construct(Polyhedron& p);
-        std::vector<Point> vertices;
+        std::vector<PhPoint> vertices;
         std::vector<TempFace> faces;
     protected:
         std::map<uint32_t, std::vector<uint32_t> > vertex_hash_map;
-        int findIndexOfVertex(Point& v);
+        int findIndexOfVertex(PhPoint& v);
 
     private:
 

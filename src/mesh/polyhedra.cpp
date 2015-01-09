@@ -5,13 +5,13 @@
 
 
 
-static inline uint32_t pointHash(Point& p)
+static inline uint32_t pointHash(PhPoint& p)
 {
     return ((p.x() + MELD_DISTANCE/2) / MELD_DISTANCE) ^ (((p.y() + MELD_DISTANCE/2) / MELD_DISTANCE) << 10) ^ (((p.z() + MELD_DISTANCE/2) / MELD_DISTANCE) << 20);
 }
 
 
-bool PointUtils::testLength(Point& p, int32_t len)
+bool PhPointUtils::testLength(PhPoint& p, int32_t len)
 {
     if (p.x() > len || p.x() < -len)
         return false;
@@ -21,19 +21,19 @@ bool PointUtils::testLength(Point& p, int32_t len)
         return false;
     return vSize2(p) <= len*len;
 }
-int64_t PointUtils::vSize2(Point& p)
+int64_t PhPointUtils::vSize2(PhPoint& p)
 {
     return int64_t(p.x())*int64_t(p.x())+int64_t(p.y())*int64_t(p.y())+int64_t(p.z())*int64_t(p.z());
 }
 
 
 
-Point PolyhedraUtils::min(Polyhedron& p)
+PhPoint PolyhedraUtils::min(Polyhedron& p)
 {
     if (p.size_of_vertices() < 1)
-        return Point(0, 0, 0);
+        return PhPoint(0, 0, 0);
 
-    Point first = p.vertices_begin()->point();
+    PhPoint first = p.vertices_begin()->point();
     prim_data x = first.x();
     prim_data y = first.y();
     prim_data z = first.z();
@@ -44,15 +44,15 @@ Point PolyhedraUtils::min(Polyhedron& p)
         y = std::min(y, i->point().y());
         z = std::min(z, i->point().z());
     }
-    return Point(x,y,z);
+    return PhPoint(x,y,z);
 }
 
-Point PolyhedraUtils::max(Polyhedron& p)
+PhPoint PolyhedraUtils::max(Polyhedron& p)
 {
     if (p.size_of_vertices() < 1)
-        return Point(0, 0, 0);
+        return PhPoint(0, 0, 0);
 
-    Point first = p.vertices_begin()->point();
+    PhPoint first = p.vertices_begin()->point();
     prim_data x = first.x();
     prim_data y = first.y();
     prim_data z = first.z();
@@ -63,14 +63,30 @@ Point PolyhedraUtils::max(Polyhedron& p)
         y = std::max(y, i->point().y());
         z = std::max(z, i->point().z());
     }
-    return Point(x,y,z);
+    return PhPoint(x,y,z);
+}
+
+
+
+void PolyhedronLoader::addVertex(Point& p)
+{
+    PhPoint php(p.x, p.y, p.z);
+    addVertex(php);
+}
+void PolyhedronLoader::addVertex(PhPoint& p)
+{
+    vertices.emplace_back(p);
+}
+
+void PolyhedronLoader::addFace(int v0_idx, int v1_idx, int v2_idx)
+{
+    faces.push_back(TempFace(v0_idx, v1_idx, v2_idx));
 }
 
 
 
 
-
-void PolyhedronLoader::addFace(Point& v0, Point& v1, Point& v2)
+void PolyhedronLoader::addFace(PhPoint& v0, PhPoint& v1, PhPoint& v2)
 {
     int i0 = findIndexOfVertex(v0);
     int i1 = findIndexOfVertex(v1);
@@ -79,7 +95,7 @@ void PolyhedronLoader::addFace(Point& v0, Point& v1, Point& v2)
 }
 
 
-int PolyhedronLoader::findIndexOfVertex(Point& v)
+int PolyhedronLoader::findIndexOfVertex(PhPoint& v)
 {
     uint32_t hash = pointHash(v);
 
@@ -102,12 +118,12 @@ void Builder::operator()( HalfedgeDS& hds)
     CGAL::Polyhedron_incremental_builder_3<HalfedgeDS> B( hds, true);
     B.begin_surface( loader.vertices.size(), loader.faces.size(), loader.faces.size()*3);
 //    typedef typename HalfedgeDS::Vertex Vertex;
-//    typedef typename Vertex::Point Point;
+//    typedef typename Vertex::Point PhPoint;
 
     // vertices
-    for (Point& vert : loader.vertices)
+    for (PhPoint& vert : loader.vertices)
     {
-        //B.add_vertex( Point( vert.x, vert.y, vert.z));
+        //B.add_vertex( PhPoint( vert.x, vert.y, vert.z));
         B.add_vertex(vert);
     }
 
