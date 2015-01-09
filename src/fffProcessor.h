@@ -17,6 +17,9 @@
 #include "boolMesh.h"
 #include "triangleIntersect.h"
 
+#include "mesh/HalfEdgeMeshVertex.h" // testGetConnectedEdgeGroups
+#include "mesh/HEPMeshVertex.h" // testGetConnectedEdgeGroups
+
 #include <iostream>
 
 
@@ -82,8 +85,12 @@ public:
         //SupportChecker::testSupportChecker(model);
         //SupportPointsGenerator::testSupportPointsGenerator(model);
         //SupportBlockGenerator::test(model);
-        TriangleIntersectionComputation::test();
+//        TriangleIntersectionComputation::test();
 
+//        HE_VertexHandle::testGetConnectedEdgeGroups();
+//        HEP_VertexHandle::testGetConnectedEdgeGroups();
+
+        HE_Mesh::testMakeManifold(model);
         std::cerr << std::endl << " Test finished!" << std::endl << std::endl;
 
 

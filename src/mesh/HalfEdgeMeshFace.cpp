@@ -45,3 +45,11 @@ HE_VertexHandle HE_FaceHandle::v2()
 {
     return edge2().from_vert();
 }
+
+HE_EdgeHandle HE_FaceHandle::getEdgeFrom(HE_VertexHandle& v)
+{
+    if (edge0().from_vert() == v) return edge0();
+    if (edge1().from_vert() == v) return edge1();
+    if (edge2().from_vert() == v) return edge2();
+    return HE_EdgeHandle(m, -1); // face is not connected to the vertex!!
+}

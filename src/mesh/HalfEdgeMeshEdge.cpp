@@ -20,6 +20,9 @@
 
 #include <iostream>
 
+HE_EdgeHandle& HE_EdgeHandle:: operator =(const HE_EdgeHandle& other)
+{ m = other.m; idx= other.idx; };
+
 HE_Edge& HE_EdgeHandle::edge() { return m.edges[idx]; };
 
 HE_EdgeHandle HE_EdgeHandle::next()

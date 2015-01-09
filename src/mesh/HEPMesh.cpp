@@ -173,9 +173,44 @@ HEP_Mesh::~HEP_Mesh()
     clear();
 }
 
+HEP_Mesh::HEP_Mesh(HE_Mesh& mesh)
+: Mesh(nullptr)
+{
+    for (int eIdx = 0 ; eIdx < mesh.edges.size() ; eIdx++)
+    {
+        edges.push_back(HEP_Edge()); // fully uninitialized edge!
+    }
+
+    for (int vIdx = 0 ; vIdx < mesh.vertices.size() ; vIdx++)
+    {
+        vertices.push_back(HEP_Vertex(mesh.vertices[vIdx].p, &edges[mesh.vertices[vIdx].someEdge_idx])); // fully initialized vertex (as of yet...)
+    }
+
+    for (int fIdx = 0 ; fIdx < mesh.faces.size() ; fIdx++)
+    {
+        faces.push_back(HEP_Face(
+              &edges[mesh.faces[fIdx].edge_idx[0]]
+            , &edges[mesh.faces[fIdx].edge_idx[1]]
+            , &edges[mesh.faces[fIdx].edge_idx[2]]
+        )); // fully initialized face
+    }
+
+    for (int eIdx = 0 ; eIdx < mesh.edges.size() ; eIdx++)
+    {
+        HE_Edge& hee = mesh.edges[eIdx];
+        edges[eIdx].from_vert = &vertices[hee.from_vert_idx];
+        edges[eIdx].next_edge = &edges[hee.next_edge_idx];
+        edges[eIdx].converse_edge = &edges[hee.converse_edge_idx];
+        edges[eIdx].face = & faces[hee.face_idx];
+    }
+
+}
 HEP_Mesh::HEP_Mesh(FVMesh& mesh)
 : Mesh(nullptr)
 {
+    std::cerr << " HEP_Mesh(FVMesh& mesh)   seems to be not working! maybe use HEP_Mesh(HE_Mesh(FvMesh& mesh)) instead! " << std::endl;
+    std::exit(1);
+
     for (int vIdx = 0 ; vIdx < mesh.vertices.size() ; vIdx++)
     {
         vertices.push_back(HEP_Vertex(mesh.vertices[vIdx].p, nullptr));
@@ -285,6 +320,27 @@ HEP_Mesh::HEP_Mesh(FVMesh& mesh)
         std::cerr <<  "============================" << std::endl;
      )
 
+}
+void HEP_Mesh::debugOutputWholeMesh()
+{
+    std::cerr <<  "============================" << std::endl;
+    std::cerr <<  "mesh: " << std::endl;
+    std::cerr <<  "faces: "+ std::to_string(faces.size()) << std::endl;
+    std::cerr << "vertices: "+std::to_string(vertices.size()) << std::endl;
+
+
+    std::cerr <<  "============================" << std::endl;
+    std::cerr <<  ("half-edge mesh: ") << std::endl;
+    std::cerr <<  ("faces: ") << std::endl;
+    for (int f = 0; f < faces.size(); f++)
+        std::cerr << long(&faces[f]) << " " <<(faces[f].toString()) << std::endl;
+    std::cerr << ("edges: ") << std::endl;
+    for (int f = 0; f < edges.size(); f++)
+        std::cerr << long(&edges[f]) << " " <<(edges[f].toString()) << std::endl;
+    std::cerr << ("vertices: ") << std::endl;
+    for (int f = 0; f < vertices.size(); f++)
+        std::cerr << long(&vertices[f]) << " " <<(vertices[f].toString()) << std::endl;
+    std::cerr <<  "============================" << std::endl;
 }
 
 

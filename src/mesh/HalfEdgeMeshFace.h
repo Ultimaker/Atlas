@@ -52,6 +52,8 @@ struct HE_FaceHandle : public MeshFaceHandle<HE_Vertex, HE_VertexHandle, HE_Face
     HE_EdgeHandle edge1();
     HE_EdgeHandle edge2();
 
+    HE_EdgeHandle getEdgeFrom(HE_VertexHandle& v);
+
 };
 
 #endif // HALFEDGEMESHFACE_H

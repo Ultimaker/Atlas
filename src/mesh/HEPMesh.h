@@ -6,6 +6,8 @@
 #include "FVMesh.h"
 #include "../BoundingBox.h"
 
+#include "HalfEdgeMesh.h"
+
 #include "HEPMesh.h"
 #include "HEPMeshFace.h"
 #include "HEPMeshEdge.h"
@@ -38,13 +40,15 @@ The converse of a half-edge of such an edge belonging to face F is given by the 
 : horizontal slice through vertical edge connected to four faces :
 
 \verbatim
-[inside] x|
-         x| <--+--- faces with half-edges being each others converse
-   xxxxxxx|   \|/
-   -------+-------
-      ^   |xxxxxxx
-      +-->|x
-      |   |x [inside]
+[outside]  |x
+           |x <--+--- faces with half-edges being each others converse
+           |x   \|/
+           |xxxxxxx
+   --------+-------
+   xxxxxxxx|
+      ^   x|
+      +-->x|
+      |   x|  [outside]
       |
     faces with half-edges being each others converse
 \endverbatim
@@ -65,6 +69,7 @@ class HEP_Mesh : public Mesh<HEP_Vertex, HEP_VertexHandle, HEP_Face, HEP_FaceHan
         std::vector<HEP_Edge> edges;
 
         HEP_Mesh(FVMesh& mesh);
+        HEP_Mesh(HE_Mesh& mesh);
         HEP_Mesh() : Mesh(nullptr) {};
         virtual ~HEP_Mesh();
 
@@ -91,6 +96,7 @@ class HEP_Mesh : public Mesh<HEP_Vertex, HEP_VertexHandle, HEP_Face, HEP_FaceHan
 
 
 
+        void debugOutputWholeMesh();
     protected:
     private:
         //int findIndexOfVertex(Point3& v); //!< find index of vertex close to the given point, or create a new vertex and return its index.

@@ -30,6 +30,7 @@ class HE_Mesh;
 class HE_Face;
 class HE_FaceHandle;
 class HE_EdgeHandle;
+class FVMeshVertexHandle;
 
 struct HE_VertexHandle : public MeshVertexHandle<HE_Vertex, HE_Face, HE_FaceHandle, HE_Mesh>
 {
@@ -40,6 +41,16 @@ struct HE_VertexHandle : public MeshVertexHandle<HE_Vertex, HE_Face, HE_FaceHand
     HE_EdgeHandle someEdge();
 
     Point p();
+
+    bool isManifold(FVMeshVertexHandle& correspondingFVMeshVertex);
+
+    void getConnectedEdgeGroups(FVMeshVertexHandle& correspondingFVMeshVertex, std::vector<std::vector<HE_EdgeHandle>> & result);
+
+    static void testGetConnectedEdgeGroups();
+    /*!
+    Split a nonmanifold vertex and move new vertices along some edge of the corresponding manifold part.
+    */
+    void splitWhenNonManifold(FVMeshVertexHandle& correspondingFVMeshVertex);
 
 };
 

@@ -13,11 +13,25 @@
 A face has 3 connected faces, corresponding to its 3 edges.
 
 Note that a correct model may have more than 2 faces connected via a single edge!
-In such a case the face_index stored in connected_face_index is the one connected via the outside; see ASCII art below:
+In such a case the face_index stored in connected_face_index is the one connected via the inside; see ASCII art below:
 
 : horizontal slice through vertical edge connected to four faces :
 
 \verbatim
+[outside]  |x
+           |x <--+--- faces which contain each other in their connected_face_index fiels
+           |x   \|/
+           |xxxxxxx
+   --------+-------
+   xxxxxxxx|
+      ^   x|
+      +-->x|
+      |   x|  [outside]
+      |
+    faces which contain each other in their connected_face_index fiels
+\endverbatim
+*/
+/*
 [inside] x|
          x| <--+--- faces which contain each other in their connected_face_index fiels
    xxxxxxx|   \|/
@@ -27,7 +41,6 @@ In such a case the face_index stored in connected_face_index is the one connecte
       |   |x [inside]
       |
     faces which contain each other in their connected_face_index fiels
-\endverbatim
 */
 class FVMeshFace : public MeshFace<FVMeshVertex>
 {

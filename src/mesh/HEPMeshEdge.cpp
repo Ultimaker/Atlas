@@ -22,6 +22,15 @@
 
 //HEP_Edge& HEP_EdgeHandle::edge() { return edge; };
 
+//
+//HEP_EdgeHandle& HEP_EdgeHandle:: operator =(const HEP_EdgeHandle& other)
+//{
+//      ! impossible due to the fact that the edge is a reference!
+//    m = other.m;
+//    idx= other.idx;
+//    &e = &other.e;
+//};
+
 HEP_EdgeHandle HEP_EdgeHandle::next()
 {
     return HEP_EdgeHandle(m, e.next_edge) ;

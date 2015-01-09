@@ -39,8 +39,8 @@ struct MeshFaceHandle
     Point p1() { return v1().vertex().p; };
     Point p2() { return v2().vertex().p; };
 
-    bool operator==(const MeshFaceHandle& b) { return idx==b.idx; }; // TODO: more sophisticated check
-    bool operator!=(const MeshFaceHandle &other) const {
+    virtual bool operator==(const MeshFaceHandle& b) const { return idx==b.idx; }; // TODO: more sophisticated check
+    virtual bool operator!=(const MeshFaceHandle &other) const {
         return !(*this == other);
     };
 };

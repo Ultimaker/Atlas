@@ -11,6 +11,9 @@
 #include "HalfEdgeMeshEdge.h"
 #include "HalfEdgeMeshVertex.h"
 
+
+class PrintObject;
+
 /**
  "f" is short for face
  "e" is short for edge
@@ -33,18 +36,20 @@ The next and prev edge are the other edges within the face.
 The converse is the half-edge directed in the opposite direction, belonging to the face on the other side of the edge.
 
 Note that a correct model may have more than 2 faces connected to a single edge!
-The converse of a half-edge of such an edge belonging to face F is given by the half-edge belonging to face F2, connected to F via the outside; see ASCII art below:
+The converse of a half-edge of such an edge belonging to face F is given by the half-edge belonging to face F2, connected to F via the inside; see ASCII art below:
 
 : horizontal slice through vertical edge connected to four faces :
 
 \verbatim
-[inside] x|
-         x| <--+--- faces with half-edges being each others converse
-   xxxxxxx|   \|/
-   -------+-------
-      ^   |xxxxxxx
-      +-->|x
-      |   |x [inside]
+[outside]  |x
+           |x <--+--- faces with half-edges being each others converse
+           |x   \|/
+           |xxxxxxx
+   --------+-------
+   xxxxxxxx|
+      ^   x|
+      +-->x|
+      |   x|  [outside]
       |
     faces with half-edges being each others converse
 \endverbatim
@@ -103,6 +108,9 @@ class HE_Mesh : public Mesh<HE_Vertex, HE_VertexHandle, HE_Face, HE_FaceHandle> 
         void debugOuputBasicStats(std::ostream& out);
         void debugOutputWholeMesh();
 
+        void makeManifold(FVMesh& correspondingFVMesh);
+
+        static void testMakeManifold(PrintObject* model);
 
     protected:
     private:
