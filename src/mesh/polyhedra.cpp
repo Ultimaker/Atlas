@@ -156,6 +156,26 @@ Polyhedron PolyhedronLoader::construct()
     return ph;
 }
 
+
+template<class MeshT, class VH, class FH>
+void MeshToPolyhedronConverter::convert(MeshT& mesh, Polyhedron& result)
+{
+    PolyhedronLoader pl;
+
+    for (int v = 0; v < mesh.vertices.size(); v++)
+    {
+        pl.addVertex(VH(mesh, v).p());
+    }
+
+    for (int f = 0; f < mesh.faces.size(); f++)
+    {
+        FH fh(mesh, f);
+        pl.addFace(fh.v0().idx, fh.v1().idx, fh.v2().idx);
+    }
+
+    pl.construct(result);
+}
+
 //
 //int main_polyhedra_loader()
 //{

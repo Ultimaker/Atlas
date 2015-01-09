@@ -79,4 +79,18 @@ protected:
     PolyhedronLoader loader;
 };
 
+
+
+
+class MeshToPolyhedronConverter
+{
+public:
+    template<class MeshT, class VH, class FH>
+    void convert(MeshT& mesh, Polyhedron& result);
+
+
+
+
+};
+
 #endif // POLYHEDRA_H
