@@ -50,7 +50,7 @@ class PolyhedronLoader
     public:
         void addFace(Point& v0, Point& v1, Point& v2); //!< automatically inserts vertex if points don't correspond to any existing vertex
 
-        void addVertex(Point&
+        //void addVertex(Point&
 
         Polyhedron construct();
         void construct(Polyhedron& p);
