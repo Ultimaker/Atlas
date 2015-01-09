@@ -86,8 +86,24 @@ class MeshToPolyhedronConverter
 {
 public:
     template<class MeshT, class VH, class FH>
-    void convert(MeshT& mesh, Polyhedron& result);
+    static void convert(MeshT& mesh, Polyhedron& result)
+    {
+        PolyhedronLoader pl;
 
+        for (int v = 0; v < mesh.vertices.size(); v++)
+        {
+            Point p = (VH(mesh, v).p());
+            pl.addVertex(p);
+        }
+
+        for (int f = 0; f < mesh.faces.size(); f++)
+        {
+            FH fh(mesh, f);
+            pl.addFace(fh.v0().idx, fh.v1().idx, fh.v2().idx);
+        }
+
+        pl.construct(result);
+    }
 
 
 

@@ -3,6 +3,8 @@
 
 #include "../modelFile/modelFile.h" // PrintObject
 
+#include "polyhedra.h" // for in testMakeManifold
+
 // enable/disable debug output
 #define HE_MESH_DEBUG 0
 
@@ -338,6 +340,9 @@ void HE_Mesh::testMakeManifold(PrintObject* model)
         mesh.makeManifold(fvMesh);
 
         mesh.debugOutputWholeMesh();
+
+        Polyhedron polyhedron;
+        MeshToPolyhedronConverter::convert<HE_Mesh, HE_VertexHandle, HE_FaceHandle>(mesh, polyhedron);
 
         //for (int f = 0; f < mesh.faces.size(); f++)
         //    std::cerr << mesh.faces[f].cosAngle() << std::endl;
