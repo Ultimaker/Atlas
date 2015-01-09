@@ -21,6 +21,13 @@
 					<Add option="-Wno-sign-compare" />
 					<Add directory="include" />
 				</Compiler>
+				<Linker>
+					<Add option="-lboost_thread" />
+					<Add option="-lboost_system" />
+					<Add option="-lpthread" />
+					<Add option="-lCGAL_Core" />
+					<Add option="-lCGAL" />
+				</Linker>
 			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/Atlas" prefix_auto="1" extension_auto="1" />
@@ -76,6 +83,8 @@
 		<Unit filename="src/mesh/MeshFace.h" />
 		<Unit filename="src/mesh/MeshVertex.cpp" />
 		<Unit filename="src/mesh/MeshVertex.h" />
+		<Unit filename="src/mesh/polyhedra.cpp" />
+		<Unit filename="src/mesh/polyhedra.h" />
 		<Unit filename="src/modelFile/modelFile.cpp" />
 		<Unit filename="src/modelFile/modelFile.h" />
 		<Unit filename="src/optimizedModel.cpp" />
