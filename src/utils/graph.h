@@ -13,6 +13,7 @@ public:
     {
         NodeT data;
         Arrow *first_in, *last_in, *first_out, *last_out;
+        bool points() { return first_out != nullptr; }
     };
 
     struct Arrow
@@ -33,13 +34,29 @@ public:
         newArrow.from = &a;
         newArrow.to = &b;
 
-        a.last_out->next_same_from = newArrow;
         newArrow.prev_same_from = a.last_out;
-        a.last_out = newArrow;
+        if (a.last_out == nullptr)
+        {
+            a.first_out = newArrow;
+            a.last_out = newArrow;
+        }
+        else
+        {
+            a.last_out->next_same_from = newArrow;
+            a.last_out = newArrow;
+        }
 
-        b.last_in->next_same_to = newArrow;
         newArrow.prev_same_to = b.last_in;
-        b.last_in = newArrow;
+        if (b.last_in == nullptr)
+        {
+            b.first_in = newArrow;
+            b.last_in = newArrow;
+        }
+        else
+        {
+            b.last_in->next_same_to = newArrow;
+            b.last_in = newArrow;
+        }
     };
 
 };
