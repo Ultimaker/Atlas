@@ -1,15 +1,28 @@
 #ifndef POLYHEDRA_H
 #define POLYHEDRA_H
 
+#include <CGAL/Exact_integer.h>
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Simple_cartesian.h>
+#include <CGAL/Simple_homogeneous.h>
 #include <CGAL/Polyhedron_traits_with_normals_3.h>
 #include <CGAL/Polyhedron_incremental_builder_3.h>
 #include <CGAL/Polyhedron_3.h>
 
 #include "../Kernel.h"
 
-typedef int32_t prim_data;
-typedef CGAL::Simple_cartesian<prim_data> Kernel;
+typedef CGAL::Exact_integer prim_data;
+//typedef int prim_data;
+//typedef CGAL::Simple_cartesian<prim_data> Kernel;
+//typedef CGAL::Simple_homogeneous<prim_data> Kernel;
+
+typedef CGAL::Exact_integer NT;
+//instead of
+//typedef CGAL::Extended_homogeneous<NT> Kernel;
+// workaround for VC++
+struct Kernel : public CGAL::Simple_homogeneous<NT> {};
+
+//typedef CGAL::Exact_predicates_inexact_constructions_kernel Kernel;
 typedef CGAL::Polyhedron_traits_with_normals_3<Kernel> Traits;
 typedef CGAL::Polyhedron_3<Traits> Polyhedron;
 typedef Polyhedron::HalfedgeDS HalfedgeDS;

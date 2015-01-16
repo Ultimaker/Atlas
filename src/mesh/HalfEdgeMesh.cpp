@@ -341,8 +341,9 @@ void HE_Mesh::testMakeManifold(PrintObject* model)
 
         mesh.debugOutputWholeMesh();
 
-        Polyhedron polyhedron;
-        MeshToPolyhedronConverter::convert<HE_Mesh, HE_VertexHandle, HE_FaceHandle>(mesh, polyhedron);
+
+
+
 
         //for (int f = 0; f < mesh.faces.size(); f++)
         //    std::cerr << mesh.faces[f].cosAngle() << std::endl;

@@ -7,7 +7,7 @@
 
 static inline uint32_t pointHash(PhPoint& p)
 {
-    return ((p.x() + MELD_DISTANCE/2) / MELD_DISTANCE) ^ (((p.y() + MELD_DISTANCE/2) / MELD_DISTANCE) << 10) ^ (((p.z() + MELD_DISTANCE/2) / MELD_DISTANCE) << 20);
+    return ((p.x() + MELD_DISTANCE/2) / MELD_DISTANCE) ^ (MM2INT((p.y() + MELD_DISTANCE/2).to_double() / MELD_DISTANCE) << 10) ^ (MM2INT(((p.z() + MELD_DISTANCE/2)).to_double() / MELD_DISTANCE) << 20);
 }
 
 

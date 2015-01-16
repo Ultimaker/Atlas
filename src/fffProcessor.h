@@ -17,6 +17,10 @@
 #include "boolMesh.h"
 #include "triangleIntersect.h"
 
+//#include "mesh/polyhedra.h"
+
+#include <CGAL/Nef_polyhedron_3.h>
+
 #include "mesh/HalfEdgeMeshVertex.h" // testGetConnectedEdgeGroups
 #include "mesh/HEPMeshVertex.h" // testGetConnectedEdgeGroups
 
@@ -90,9 +94,41 @@ public:
 //        HE_VertexHandle::testGetConnectedEdgeGroups();
 //        HEP_VertexHandle::testGetConnectedEdgeGroups();
 
-        HE_Mesh::testMakeManifold(model);
-        std::cerr << std::endl << " Test finished!" << std::endl << std::endl;
+//        HE_Mesh::testMakeManifold(model);
 
+
+/*
+        FVMesh& fvMesh = model->meshes[0];
+        HE_Mesh heMesh(model->meshes[0]);
+
+        SupportChecker supporter = SupportChecker::getSupportRequireds(fvMesh, .785); // 45/180*M_PI
+
+        SupportBlockGenerator g(supporter, heMesh);
+
+        FVMesh supportFVMesh(nullptr);
+
+        std::cerr << " >>>>>>>>>>>>> generating support blocks " << std::endl;
+
+        g.generateSupportBlocks(supportFVMesh);
+
+        HE_Mesh supportHeMesh(supportFVMesh);
+
+
+//        Polyhedron polyhedron;
+//        MeshToPolyhedronConverter::convert<HE_Mesh, HE_VertexHandle, HE_FaceHandle>(supportHeMesh, polyhedron);
+//
+//
+//        CGAL::Nef_polyhedron_3<Kernel> nef(polyhedron);
+
+
+
+        std::cerr << " >>>>>>>>>>>>> saving to file " << std::endl;
+        saveFVMeshToFile(supportFVMesh, "blockSupport.stl");
+
+*/
+        TriangleIntersectionComputation::test();
+
+        std::cerr << std::endl << " Test finished!" << std::endl << std::endl;
 
 
 

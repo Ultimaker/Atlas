@@ -35,9 +35,31 @@ struct MeshFaceHandle
     virtual VH v0() =0;
     virtual VH v1() =0;
     virtual VH v2() =0;
+
+    VH v(int i) {
+        switch(i)
+        {
+        case 0: return v0();
+        case 1: return v1();
+        case 2: return v2();
+        }
+        return v0();
+    }
+
     Point p0() { return v0().vertex().p; };
     Point p1() { return v1().vertex().p; };
     Point p2() { return v2().vertex().p; };
+
+    Point p(int i)
+    {
+        switch(i)
+        {
+        case 0: return p0();
+        case 1: return p1();
+        case 2: return p2();
+        }
+        return p0();
+    }
 
     virtual bool operator==(const MeshFaceHandle& b) const { return idx==b.idx; }; // TODO: more sophisticated check
     virtual bool operator!=(const MeshFaceHandle &other) const {

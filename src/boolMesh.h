@@ -41,7 +41,9 @@ class BooleanFVMeshOps
 public:
     static void subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& result);
 
+
 protected:
+
 };
 
 

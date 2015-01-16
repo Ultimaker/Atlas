@@ -91,8 +91,6 @@
 		<Unit filename="src/mesh/MeshFace.h" />
 		<Unit filename="src/mesh/MeshVertex.cpp" />
 		<Unit filename="src/mesh/MeshVertex.h" />
-		<Unit filename="src/mesh/polyhedra.cpp" />
-		<Unit filename="src/mesh/polyhedra.h" />
 		<Unit filename="src/modelFile/modelFile.cpp" />
 		<Unit filename="src/modelFile/modelFile.h" />
 		<Unit filename="src/optimizedModel.cpp" />

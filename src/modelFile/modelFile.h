@@ -9,6 +9,8 @@ The format returned is a Model class with an array of faces, which have integer 
 
 #include "../mesh/FVMesh.h"
 
+#include <fstream> // write to file
+
 //A PrintObject is a 3D model with 1 or more 3D meshes.
 class PrintObject : public SettingsBase
 {
@@ -78,5 +80,37 @@ public:
 bool loadFVMeshFromFile(PrintObject* object, const char* filename, FMatrix3x3& matrix);
 
 bool saveFVMeshToFile(FVMesh& mesh, const char* filename);
+
+template<class MeshT, class VH, class FH>
+bool saveMeshToFile(MeshT& mesh, const char* filename)
+{
+    std::ofstream out(filename);
+    out << "solid name" << std::endl;
+
+    auto getPoint = [&mesh](int f, int v) { return FH(mesh, f).p(v); } ;
+
+    Point3 vert;
+    for (int f = 0; f < mesh.faces.size() ; f++)
+    {
+
+        out << "facet normal 0 0 0" << std::endl;
+        out << "    outer loop" << std::endl;
+        vert = getPoint(f,0);
+        out << "        vertex " <<vert.x <<" "<<vert.y<<" "<<vert.z  << std::endl;
+        vert = getPoint(f,1);
+        out << "        vertex " <<vert.x <<" "<<vert.y<<" "<<vert.z  << std::endl;
+        vert = getPoint(f,2);
+        out << "        vertex " <<vert.x <<" "<<vert.y<<" "<<vert.z  << std::endl;
+        out << "    endloop" << std::endl;
+        out << "endfacet" << std::endl;
+
+    }
+
+    out << "endsolid name" << std::endl;
+    out.close();
+
+    return true;
+}
+
 
 #endif//MODELFILE_H

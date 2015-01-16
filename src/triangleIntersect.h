@@ -4,6 +4,8 @@
 #include "utils/intpoint.h" // Point3
 #include "utils/floatpoint.h" // Point3
 
+#include <boost/optional.hpp> // ==maybe
+
 #include <string>       // std::string
 #include <sstream>      // std::stringstream,
 
@@ -141,6 +143,7 @@ class TriangleIntersectionComputation
 {
 public:
     static TriangleIntersection intersect(HE_FaceHandle& fh1, HE_FaceHandle& fh2);
+    static TriangleIntersection intersect(HE_FaceHandle& fh1, HE_FaceHandle& fh2, boost::optional<Point> some_point_on_planes_intersection_line);
 
     static void test();
 protected:
@@ -158,6 +161,7 @@ protected:
         LinePlaneIntersection(const LinePlaneIntersection& old) { //!< also copies objects pointed to (from, to, intersection)
             *this = old;
         }
+
         LinePlaneIntersection& operator=(const LinePlaneIntersection& old) { //!< also copies objects pointed to (from, to, intersection)
             from = new FPoint3(*old.from);
             to = new FPoint3(*old.to);
@@ -205,10 +209,11 @@ protected:
         , O(nullptr)
         {  };
 
+
         TrianglePlaneIntersection(const TrianglePlaneIntersection& old) { //!< also copies objects pointed to (O)
             *this = old;
         };
-        TrianglePlaneIntersection& operator=(const TrianglePlaneIntersection& old) { //!< also copies objects pointed to (O)
+        void operator=(const TrianglePlaneIntersection& old) { //!< also copies objects pointed to (O)
             if (old.O != nullptr)
                 O = new FPoint(*old.O);
         };

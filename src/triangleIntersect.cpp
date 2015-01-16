@@ -9,7 +9,7 @@ void TriangleIntersectionComputation::test()
     mesh.vertices.emplace_back(Point(100000,100000,00), -1);
     mesh.vertices.emplace_back(Point(100000,0  ,00), -1);
 
-    mesh.vertices.emplace_back(Point(0  ,0  ,1000), -1);
+    mesh.vertices.emplace_back(Point(0  ,0  ,-1000), -1);
     mesh.vertices.emplace_back(Point(100000,100000,1000), -1);
     mesh.vertices.emplace_back(Point(100000,0  ,1000), -1);
 
@@ -47,12 +47,18 @@ void TriangleIntersectionComputation::test()
             }
             TRIANGLE_INTERSECT_DEBUG_SHOW(intersection.isDirectionOfInnerPartOfTriangle1);
             TRIANGLE_INTERSECT_DEBUG_SHOW(intersection.isDirectionOfInnerPartOfTriangle2);
-        } else
-            TRIANGLE_INTERSECT_DEBUG_PRINTLN(toString(intersection.intersectionType));
+        }
     )
+    TRIANGLE_INTERSECT_DEBUG_PRINTLN("..======================================================================");
+    TRIANGLE_INTERSECT_DEBUG_PRINTLN("|| type of triangle - triangle intersection : " << toString(intersection.intersectionType));
+    TRIANGLE_INTERSECT_DEBUG_PRINTLN("''======================================================================");
 }
 
 TriangleIntersection TriangleIntersectionComputation::intersect(HE_FaceHandle& fh1, HE_FaceHandle& fh2)
+{
+    return intersect(fh1, fh2, boost::none);
+}
+TriangleIntersection TriangleIntersectionComputation::intersect(HE_FaceHandle& fh1, HE_FaceHandle& fh2, boost::optional<Point> some_point_on_planes_intersection_line)
 {
     TRIANGLE_INTERSECT_DEBUG_PRINTLN("intersecting");
     //! see Tomas Moller - A Fast Triangle-Triangle Intersection Test
@@ -132,13 +138,11 @@ TriangleIntersection TriangleIntersectionComputation::intersect(HE_FaceHandle& f
     FPoint O;
 
 
-
     TrianglePlaneIntersection tri1_plane2_ints = getIntersectingEdges(a1,b1,c1,sa1,sb1,sc1, fh1);
     if (! tri1_plane2_ints.isCorrect) return TriangleIntersection(nullptr, nullptr, false, false, tri1_plane2_ints.intersectionType);
 
     TrianglePlaneIntersection tri2_plane1_ints = getIntersectingEdges(a2,b2,c2,sa2,sb2,sc2, fh2);
     if (! tri2_plane1_ints.isCorrect) return TriangleIntersection(nullptr, nullptr, false, false, tri2_plane1_ints.intersectionType);
-
 
 
 
@@ -155,8 +159,9 @@ TRIANGLE_INTERSECT_DEBUG_SHOW(n3);
     TRIANGLE_INTERSECT_DEBUG_PRINTLN(" O1 exists " << (tri1_plane2_ints.O != nullptr));
     TRIANGLE_INTERSECT_DEBUG_PRINTLN(" O2 exists " << (tri2_plane1_ints.O != nullptr));
 
-    if (tri1_plane2_ints.O != nullptr)        O = *tri1_plane2_ints.O;
-    else if (tri2_plane1_ints.O != nullptr)   O = *tri2_plane1_ints.O;
+    if (some_point_on_planes_intersection_line) O = *some_point_on_planes_intersection_line;
+    else if (tri1_plane2_ints.O != nullptr)     O = *tri1_plane2_ints.O;
+    else if (tri2_plane1_ints.O != nullptr)     O = *tri2_plane1_ints.O;
     else
     {
         FPoint d2n1 = d2 * n1 ;
@@ -313,9 +318,7 @@ xType TriangleIntersectionComputation::divide(FPoint a, FPoint& b) //!< assumes 
 
     TRIANGLE_INTERSECT_DEBUG_PRINTLN("\n dividing (" << a<<","<<b <<") = "<< ret);
     return ret;
-}
-
-
+};
 
 
 
