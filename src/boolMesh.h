@@ -37,9 +37,8 @@ typedef FPoint3 FPoint;
 
 class FractureLineSegment
 {
-    std::graph<IntersectionPoint> fracture;
-    Edge firstHalfEdgeOfOuterPart;
-    //bool isDirectionOfInnerPartOfTriangle; //!< whether the direction  begin -> end  is the same direction as the halfedges belonging the part of the triangle which fall INSIDE the other mesh
+    //std::graph<IntersectionPoint> fracture;
+    //Edge firstHalfEdgeOfOuterPart;
 
 };
 
