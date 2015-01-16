@@ -1,35 +1,27 @@
 #ifndef GRAPH_H_INCLUDED
 #define GRAPH_H_INCLUDED
 
-
-
-
-template<class NodeT, class ArrowT>
-struct Arrow;
-
-template<class NodeT, class ArrowT>
-struct Node
-{
-    NodeT data;
-    Arrow<ArrowT> *first_in, *last_in, *first_out, *last_out;
-};
-
-template<class NodeT, class ArrowT>
-struct Arrow
-{
-    ArrowT data;
-    Node<NodeT> *from, *to;
-    Arrow<ArrowT> *prev_same_from, *next_same_from,
-          *prev_same_to, *next_same_to;
-};
+#include <vector>
 
 
 template<class NodeT, class ArrowT>
 class Graph
 {
 public:
-    typedef Node<NodeT, ArrowT> Node;
-    typedef Arrow<NodeT, ArrowT> Arrow;
+    struct Arrow;
+    struct Node
+    {
+        NodeT data;
+        Arrow *first_in, *last_in, *first_out, *last_out;
+    };
+
+    struct Arrow
+    {
+        ArrowT data;
+        Node *from, *to;
+        Arrow *prev_same_from, *next_same_from,
+              *prev_same_to, *next_same_to;
+    };
 
     std::vector<Node> nodes;
     std::vector<Arrow> arrows;
