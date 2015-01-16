@@ -107,6 +107,7 @@
 		<Unit filename="src/utils/floatpoint.h" />
 		<Unit filename="src/utils/gettime.cpp" />
 		<Unit filename="src/utils/gettime.h" />
+		<Unit filename="src/utils/graph.h" />
 		<Unit filename="src/utils/intpoint.h" />
 		<Unit filename="src/utils/logoutput.cpp" />
 		<Unit filename="src/utils/logoutput.h" />
