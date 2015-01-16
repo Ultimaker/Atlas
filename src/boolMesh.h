@@ -6,6 +6,7 @@
 
 #include "triangleIntersect.h"
 
+#include <unordered_map> // ==hash_map
 
 #include <string>       // std::string
 #include <sstream>      // std::stringstream,
@@ -34,16 +35,25 @@
 
 typedef FPoint3 FPoint;
 
+class FractureLineSegment
+{
+    std::graph<IntersectionPoint> fracture;
+    Edge firstHalfEdgeOfOuterPart;
+    //bool isDirectionOfInnerPartOfTriangle; //!< whether the direction  begin -> end  is the same direction as the halfedges belonging the part of the triangle which fall INSIDE the other mesh
 
+};
 
 class BooleanFVMeshOps
 {
 public:
-    static void subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& result);
+    static void subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& result); //!< subtract one volume from another ([subtracted] from [keep])
 
 
 protected:
-
+    std::unordered_map<HE_FaceHandle, FractureLineSegment> face2fractureline_mesh1;
+    std::unordered_map<HE_FaceHandle, FractureLineSegment> face2fractureline_mesh2;
+    void followIntersectionsAlongFacet(HE_FaceHandle& triangle, TriangleIntersection first); //!< adds all intersections connected to the first which intersect with the triangle to the mapping of the triangle
+    void completeFractureLine(TriangleIntersection first); //!< walks along (each) fracture line segment recording all fracture line segemnts in the maps, until whole fracture is explored (a fracture line can split)
 };
 
 

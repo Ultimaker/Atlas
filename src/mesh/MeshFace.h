@@ -61,7 +61,7 @@ struct MeshFaceHandle
         return p0();
     }
 
-    virtual bool operator==(const MeshFaceHandle& b) const { return idx==b.idx; }; // TODO: more sophisticated check
+    virtual bool operator==(const MeshFaceHandle& b) const { return idx==b.idx && &m==&b.m; }; // TODO: more sophisticated check
     virtual bool operator!=(const MeshFaceHandle &other) const {
         return !(*this == other);
     };

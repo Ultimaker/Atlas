@@ -3,6 +3,8 @@
 
 #include "../Kernel.h"
 
+#include <hash_fun.h> // hash function object
+
 #include "MeshFace.h"
 #include "HalfEdgeMeshVertex.h"
 
@@ -55,5 +57,16 @@ struct HE_FaceHandle : public MeshFaceHandle<HE_Vertex, HE_VertexHandle, HE_Face
     HE_EdgeHandle getEdgeFrom(HE_VertexHandle& v);
 
 };
+
+namespace std {
+template <>
+class hash<HE_FaceHandle> {
+public:
+    size_t operator()(const HE_FaceHandle & fh) const
+    {
+    return fh.idx;
+    }
+};
+}
 
 #endif // HALFEDGEMESHFACE_H
