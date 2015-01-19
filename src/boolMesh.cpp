@@ -46,3 +46,47 @@ void BooleanFVMeshOps::subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& res
 
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void BooleanFVMeshOps::completeFractureLine(TriangleIntersection first)
+{
+
+}
+
+
+
+
+
+void BooleanFVMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle, TriangleIntersection first, FractureLineSegment& result)
+{
+
+
+
+
+
+
+
+}
+
+
+
+
+

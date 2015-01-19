@@ -37,8 +37,8 @@ typedef FPoint3 FPoint;
 
 class FractureLineSegment
 {
-    //std::graph<IntersectionPoint> fracture;
-    //Edge firstHalfEdgeOfOuterPart;
+    // we assume the mesh is manifold and so the fracture line is a line and not a graph
+    std::vector<IntersectionPoint> fracture;
 
 };
 
@@ -49,9 +49,10 @@ public:
 
 
 protected:
+    HE_Mesh& keep, subtracted;
     std::unordered_map<HE_FaceHandle, FractureLineSegment> face2fractureline_mesh1;
     std::unordered_map<HE_FaceHandle, FractureLineSegment> face2fractureline_mesh2;
-    void followIntersectionsAlongFacet(HE_FaceHandle& triangle, TriangleIntersection first); //!< adds all intersections connected to the first which intersect with the triangle to the mapping of the triangle
+    void getFacetIntersectionlineSegment(HE_FaceHandle& triangle, TriangleIntersection first, FractureLineSegment& result); //!< adds all intersections connected to the first which intersect with the triangle to the mapping of the triangle
     void completeFractureLine(TriangleIntersection first); //!< walks along (each) fracture line segment recording all fracture line segemnts in the maps, until whole fracture is explored (a fracture line can split)
 };
 
