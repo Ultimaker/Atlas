@@ -9,6 +9,8 @@
 #include <string>       // std::string
 #include <sstream>      // std::stringstream,
 
+#include <memory> // unique_ptr
+
 #include <cstdlib> // exit (debug only)
 
 #include "Kernel.h"
@@ -17,6 +19,8 @@
 #include "mesh/Mesh.h"
 #include "mesh/FVMesh.h"
 #include "mesh/HalfEdgeMesh.h"
+
+#include <boost/optional.hpp> // ==maybe
 
 // enable/disable debug output
 #define TRIANGLE_INTERSECT_DEBUG 1
@@ -47,11 +51,6 @@ public:
     virtual Point getLocation() = 0; //!< the location of the point
     Point p() { return getLocation(); }; //!< the location of the point
     virtual IntersectionPointType getType() = 0; //!< the type of endpoint: existing vertex or new point
-    virtual IntersectionPoint* copy() = 0;
-    virtual std::string toString() = 0;
-    virtual ~IntersectionPoint() {
-//        TRIANGLE_INTERSECT_DEBUG_PRINTLN(" base destructor called! for IntersectionPoint at " << long(this));
-    };
 };
 
 class ExistingVertexIntersectionPoint : public IntersectionPoint
@@ -63,10 +62,6 @@ public:
     ExistingVertexIntersectionPoint(HE_VertexHandle vh_) : vh(vh_) {};
     Point getLocation() { return vh.p(); };
     IntersectionPointType getType() { return EXISTING; };
-    virtual ~ExistingVertexIntersectionPoint() {
-//        TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ~ExistingVertexIntersectionPoint for " << long(this));
-    };
-    ExistingVertexIntersectionPoint* copy() { return new ExistingVertexIntersectionPoint(*this); }
     std::string toString() { return vh.vertex().p.toString(); };
 };
 
@@ -78,10 +73,6 @@ public:
     NewIntersectionPoint(Point loc, HE_EdgeHandle eh) : location(loc), edge(eh) {};
     Point getLocation() { return location; };
     IntersectionPointType getType() { return NEW; };
-    virtual ~NewIntersectionPoint() {
-//        TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ~NewIntersectionPoint for "<< long(this));
-    };
-    NewIntersectionPoint* copy() { return new NewIntersectionPoint(*this); }
     std::string toString() { return location.toString(); };
 };
 
@@ -114,20 +105,22 @@ the line segment knows which part of the first triangle falls below the second t
 */
 struct TriangleIntersection
 {
-    IntersectionPoint* from; //!< the first endpoint of the intersection line segment
-    IntersectionPoint* to;//!< the second endpoint of the intersection line segment
+    std::unique_ptr<IntersectionPoint> from; //!< the first endpoint of the intersection line segment
+    std::unique_ptr<IntersectionPoint> to;//!< the second endpoint of the intersection line segment
 
     bool isDirectionOfInnerPartOfTriangle1; //!< whether the direction  from -> to  is the same direction as the halfedge belonging the part of the first triangle which is below the second triangle
     bool isDirectionOfInnerPartOfTriangle2; //!< whether the direction  from -> to  is the same direction as the halfedge belonging the part of the second triangle which is below the first triangle
 
     IntersectionType intersectionType;
 
-    TriangleIntersection(IntersectionPoint* from, IntersectionPoint* to, bool inMesh2, bool inMesh1, IntersectionType intersectionType_)
-    : from(from)
-    , to(to)
-    , isDirectionOfInnerPartOfTriangle1(inMesh2)
+    TriangleIntersection(std::unique_ptr<IntersectionPoint> from_, std::unique_ptr<IntersectionPoint> to_, bool inMesh2, bool inMesh1, IntersectionType intersectionType_)
+    : isDirectionOfInnerPartOfTriangle1(inMesh2)
     , isDirectionOfInnerPartOfTriangle2(inMesh1)
-    , intersectionType(intersectionType_) { };
+    , intersectionType(intersectionType_)
+    {
+        from = std::move(from_);
+        to = std::move(to_);
+    };
 };
 
 
@@ -153,29 +146,14 @@ protected:
     */
     struct LinePlaneIntersection //!< edge of one triangle intersecting the halfplane of the other triangle
     {
-        FPoint3* from;
-        FPoint3* to;
+        boost::optional<FPoint3> from;
+        boost::optional<FPoint3> to;
 
-        IntersectionPoint* intersection;
+        std::unique_ptr<IntersectionPoint> intersection;
 
-        LinePlaneIntersection(const LinePlaneIntersection& old) { //!< also copies objects pointed to (from, to, intersection)
-            *this = old;
-        }
-
-        LinePlaneIntersection& operator=(const LinePlaneIntersection& old) { //!< also copies objects pointed to (from, to, intersection)
-            from = new FPoint3(*old.from);
-            to = new FPoint3(*old.to);
-            intersection = old.intersection->copy();
-        };
-
-        ~LinePlaneIntersection() { //!< also deletes objects pointed to (from, to, intersection)
-            delete from;
-            delete to;
-            delete intersection;
-        };
         LinePlaneIntersection()
-        : from(nullptr)
-        , to(nullptr)
+        : from(boost::none)
+        , to(boost::none)
         , intersection(nullptr) {};
     };
 
@@ -201,23 +179,15 @@ protected:
 
         IntersectionType intersectionType; //!< information on the intersection type between the two triangles, if already known.
 
-        FPoint* O; //!< any point on the line of the intersection between the two halfplanes. >> as 'O' in Tomas Moller - A Fast Triangle-Triangle Intersection Test
+        boost::optional<FPoint3> O; //!< any point on the line of the intersection between the two halfplanes. >> as 'O' in Tomas Moller - A Fast Triangle-Triangle Intersection Test
 
         TrianglePlaneIntersection()
         : isCorrect(false)
         , intersectionType(UNKNOWN)
-        , O(nullptr)
+        , O(boost::none)
         {  };
 
 
-        TrianglePlaneIntersection(const TrianglePlaneIntersection& old) { //!< also copies objects pointed to (O)
-            *this = old;
-        };
-        void operator=(const TrianglePlaneIntersection& old) { //!< also copies objects pointed to (O)
-            if (old.O != nullptr)
-                O = new FPoint(*old.O);
-        };
-        ~TrianglePlaneIntersection() { if (O != nullptr) delete O; }; //!< also deletes objects pointed to (O)
     protected:
         /*!
         Set the [from] and [to] of [line1] and [line2], and if at hand, set the information of O and the actual intersection points.
