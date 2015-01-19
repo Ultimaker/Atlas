@@ -51,7 +51,10 @@ public:
     virtual Point getLocation() = 0; //!< the location of the point
     Point p() { return getLocation(); }; //!< the location of the point
     virtual IntersectionPointType getType() = 0; //!< the type of endpoint: existing vertex or new point
+    virtual ~IntersectionPoint() = 0;
+    virtual IntersectionPoint* clone() const = 0;
 };
+inline IntersectionPoint::~IntersectionPoint() {};
 
 class ExistingVertexIntersectionPoint : public IntersectionPoint
 {
@@ -63,6 +66,8 @@ public:
     Point getLocation() { return vh.p(); };
     IntersectionPointType getType() { return EXISTING; };
     std::string toString() { return vh.vertex().p.toString(); };
+    ~ExistingVertexIntersectionPoint() {};
+    ExistingVertexIntersectionPoint* clone() const { return new ExistingVertexIntersectionPoint(vh); };
 };
 
 class NewIntersectionPoint : public IntersectionPoint
@@ -74,6 +79,8 @@ public:
     Point getLocation() { return location; };
     IntersectionPointType getType() { return NEW; };
     std::string toString() { return location.toString(); };
+    NewIntersectionPoint* clone() const { return new NewIntersectionPoint(location, edge); };
+    ~NewIntersectionPoint() {};
 };
 
 
@@ -135,8 +142,8 @@ Class for computing the intersection between two triangles.
 class TriangleIntersectionComputation
 {
 public:
-    static TriangleIntersection intersect(HE_FaceHandle& fh1, HE_FaceHandle& fh2);
-    static TriangleIntersection intersect(HE_FaceHandle& fh1, HE_FaceHandle& fh2, boost::optional<Point> some_point_on_planes_intersection_line);
+    static TriangleIntersection intersect(HE_FaceHandle fh1, HE_FaceHandle fh2);
+    static TriangleIntersection intersect(HE_FaceHandle fh1, HE_FaceHandle fh2, boost::optional<Point> some_point_on_planes_intersection_line);
 
     static void test();
 protected:

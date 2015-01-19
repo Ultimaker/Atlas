@@ -54,11 +54,11 @@ void TriangleIntersectionComputation::test()
     TRIANGLE_INTERSECT_DEBUG_PRINTLN("''======================================================================");
 }
 
-TriangleIntersection TriangleIntersectionComputation::intersect(HE_FaceHandle& fh1, HE_FaceHandle& fh2)
+TriangleIntersection TriangleIntersectionComputation::intersect(HE_FaceHandle fh1, HE_FaceHandle fh2)
 {
     return intersect(fh1, fh2, boost::none);
 }
-TriangleIntersection TriangleIntersectionComputation::intersect(HE_FaceHandle& fh1, HE_FaceHandle& fh2, boost::optional<Point> some_point_on_planes_intersection_line)
+TriangleIntersection TriangleIntersectionComputation::intersect(HE_FaceHandle fh1, HE_FaceHandle fh2, boost::optional<Point> some_point_on_planes_intersection_line)
 {
     TRIANGLE_INTERSECT_DEBUG_PRINTLN("intersecting");
     //! see Tomas Moller - A Fast Triangle-Triangle Intersection Test
