@@ -48,39 +48,25 @@ The interface for the two types of endpoint of a tri-tri intersection line segme
 class IntersectionPoint
 {
 public:
-    virtual Point getLocation() = 0; //!< the location of the point
-    Point p() { return getLocation(); }; //!< the location of the point
-    virtual IntersectionPointType getType() = 0; //!< the type of endpoint: existing vertex or new point
-    virtual ~IntersectionPoint() = 0;
-    virtual IntersectionPoint* clone() const = 0;
-};
-inline IntersectionPoint::~IntersectionPoint() {};
-
-class ExistingVertexIntersectionPoint : public IntersectionPoint
-{
-public:
+    Point location;
+    HE_EdgeHandle edge; //!< the handle of the edge which gave rise to the location, when intersecting the edge with the halfplane of the other triangle
 
     HE_VertexHandle vh; //!< the handle of the vertex coincident with the endpoint of the intersection line segment
 
-    ExistingVertexIntersectionPoint(HE_VertexHandle vh_) : vh(vh_) {};
-    Point getLocation() { return vh.p(); };
-    IntersectionPointType getType() { return EXISTING; };
-    std::string toString() { return vh.vertex().p.toString(); };
-    ~ExistingVertexIntersectionPoint() {};
-    ExistingVertexIntersectionPoint* clone() const { return new ExistingVertexIntersectionPoint(vh); };
-};
+    IntersectionPointType type;
+    Point getLocation()
+    {
+        switch (type) {
+        case NEW: return location;
+        case EXISTING: return vh.p();
+        }
+        return location;
+    }; //!< the location of the point
+    Point p() { return getLocation(); }; //!< the location of the point
+    IntersectionPointType getType() { return type; }; //!< the type of endpoint: existing vertex or new point
 
-class NewIntersectionPoint : public IntersectionPoint
-{
-public:
-    Point location;
-    HE_EdgeHandle edge; //!< the handle of the edge which gave rise to the location, when intersecting the edge with the halfplane of the other triangle
-    NewIntersectionPoint(Point loc, HE_EdgeHandle eh) : location(loc), edge(eh) {};
-    Point getLocation() { return location; };
-    IntersectionPointType getType() { return NEW; };
-    std::string toString() { return location.toString(); };
-    NewIntersectionPoint* clone() const { return new NewIntersectionPoint(location, edge); };
-    ~NewIntersectionPoint() {};
+    IntersectionPoint(HE_VertexHandle vh) : type(EXISTING), vh(vh),    edge(vh.m, -1) {};
+    IntersectionPoint(Point loc, HE_EdgeHandle edge) : location(loc), edge(edge),     vh(edge.m, -1) {};
 };
 
 
@@ -98,7 +84,7 @@ static std::string toString(IntersectionType t)
 	case PARALLEL: return "PARALLEL";
 	case UNKNOWN: return "UNKNOWN";
     }
-}
+};
 
 /*!
 The intersection between two triangles: a line segment.
@@ -112,22 +98,21 @@ the line segment knows which part of the first triangle falls below the second t
 */
 struct TriangleIntersection
 {
-    std::unique_ptr<IntersectionPoint> from; //!< the first endpoint of the intersection line segment
-    std::unique_ptr<IntersectionPoint> to;//!< the second endpoint of the intersection line segment
+    boost::optional<IntersectionPoint> from; //!< the first endpoint of the intersection line segment
+    boost::optional<IntersectionPoint> to;//!< the second endpoint of the intersection line segment
 
     bool isDirectionOfInnerPartOfTriangle1; //!< whether the direction  from -> to  is the same direction as the halfedge belonging the part of the first triangle which is below the second triangle
     bool isDirectionOfInnerPartOfTriangle2; //!< whether the direction  from -> to  is the same direction as the halfedge belonging the part of the second triangle which is below the first triangle
 
     IntersectionType intersectionType;
 
-    TriangleIntersection(std::unique_ptr<IntersectionPoint> from_, std::unique_ptr<IntersectionPoint> to_, bool inMesh2, bool inMesh1, IntersectionType intersectionType_)
-    : isDirectionOfInnerPartOfTriangle1(inMesh2)
+    TriangleIntersection(boost::optional<IntersectionPoint> from_, boost::optional<IntersectionPoint> to_, bool inMesh2, bool inMesh1, IntersectionType intersectionType_)
+    : from(from_)
+    , to(to_)
+    , isDirectionOfInnerPartOfTriangle1(inMesh2)
     , isDirectionOfInnerPartOfTriangle2(inMesh1)
     , intersectionType(intersectionType_)
-    {
-        from = std::move(from_);
-        to = std::move(to_);
-    };
+    { };
 };
 
 
@@ -156,12 +141,12 @@ protected:
         boost::optional<FPoint3> from;
         boost::optional<FPoint3> to;
 
-        std::unique_ptr<IntersectionPoint> intersection;
+        boost::optional<IntersectionPoint> intersection;
 
         LinePlaneIntersection()
         : from(boost::none)
         , to(boost::none)
-        , intersection(nullptr) {};
+        , intersection(boost::none) {};
     };
 
     /*!

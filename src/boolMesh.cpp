@@ -77,13 +77,14 @@ void BooleanFVMeshOps::completeFractureLine(TriangleIntersection& first)
 
 void BooleanFVMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle, TriangleIntersection& first, FractureLineSegment& result)
 {
+
     IntersectionPoint* first_intersectionPoint = first.from->clone();
 
 
     TriangleIntersection* intersectionSegment = &first;
     IntersectionPoint* intersectionPoint = first.to->clone();
 
-    TriangleIntersection nextIntersectionSegment(nullptr, nullptr, false, false, UNKNOWN);
+    TriangleIntersection nextIntersectionSegment(boost::none, boost::none, false, false, UNKNOWN);
 
     while (intersectionPoint->p() != first_intersectionPoint->p())
     {
@@ -96,7 +97,7 @@ void BooleanFVMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle, 
         {
         case NEW: // intersection with edge
         {
-            HE_FaceHandle nextFace = static_cast<NewIntersectionPoint*>(intersectionPoint)->edge.converse().face();
+            HE_FaceHandle nextFace = intersectionPoint->edge.converse().face();
             nextIntersectionSegment = TriangleIntersectionComputation::intersect(triangle, nextFace, intersectionPoint->p());
         }
         break;

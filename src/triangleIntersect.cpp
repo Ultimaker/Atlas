@@ -35,7 +35,7 @@ void TriangleIntersectionComputation::test()
                 TRIANGLE_INTERSECT_DEBUG_SHOW(intersection.from->getType());
                 TRIANGLE_INTERSECT_DEBUG_SHOW(intersection.from->getLocation());
                 if (intersection.from->getType() == NEW)
-                    TRIANGLE_INTERSECT_DEBUG_SHOW(static_cast<NewIntersectionPoint*>(intersection.from.get())->edge.from_vert().p() );
+                    TRIANGLE_INTERSECT_DEBUG_SHOW(intersection.from->edge.from_vert().p() );
             }
 
             if (intersection.to != nullptr)
@@ -43,7 +43,7 @@ void TriangleIntersectionComputation::test()
                 TRIANGLE_INTERSECT_DEBUG_SHOW(intersection.to->getType());
                 TRIANGLE_INTERSECT_DEBUG_SHOW(intersection.to->getLocation());
                 if (intersection.to->getType() == NEW)
-                    TRIANGLE_INTERSECT_DEBUG_SHOW(static_cast<NewIntersectionPoint*>(intersection.to.get())->edge.from_vert().p() );
+                    TRIANGLE_INTERSECT_DEBUG_SHOW(intersection.to->edge.from_vert().p() );
             }
             TRIANGLE_INTERSECT_DEBUG_SHOW(intersection.isDirectionOfInnerPartOfTriangle1);
             TRIANGLE_INTERSECT_DEBUG_SHOW(intersection.isDirectionOfInnerPartOfTriangle2);
@@ -94,7 +94,7 @@ TriangleIntersection TriangleIntersectionComputation::intersect(HE_FaceHandle fh
     if (n1==n2)
     {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("parallel triangles! (or coplanar) ");
-        return TriangleIntersection(nullptr, nullptr, false, false, PARALLEL); // parallel triangles! (also in the coplanar case we don't do anything)
+        return TriangleIntersection(boost::none, boost::none, false, false, PARALLEL); // parallel triangles! (also in the coplanar case we don't do anything)
     }
 
 
@@ -127,22 +127,22 @@ TriangleIntersection TriangleIntersectionComputation::intersect(HE_FaceHandle fh
     {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(" no intersection, or coplanar! " << sa1);
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(dp2(a1) << "," << dp2(b1) << ","<< dp2(c1));
-        return TriangleIntersection(nullptr, nullptr, false, false, NON_TOUCHING_PLANES); // no intersection (sign >0 or <0), or coplanar (sign=0)!
+        return TriangleIntersection(boost::none, boost::none, false, false, NON_TOUCHING_PLANES); // no intersection (sign >0 or <0), or coplanar (sign=0)!
     }
     if (sa2 == sb2 && sb2 == sc2)
     {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(" no intersection! ");
-        return TriangleIntersection(nullptr, nullptr, false, false, NON_TOUCHING_PLANES); // no intersection
+        return TriangleIntersection(boost::none, boost::none, false, false, NON_TOUCHING_PLANES); // no intersection
     }
 
     FPoint O;
 
 
     TrianglePlaneIntersection tri1_plane2_ints = getIntersectingEdges(a1,b1,c1,sa1,sb1,sc1, fh1);
-    if (! tri1_plane2_ints.isCorrect) return TriangleIntersection(nullptr, nullptr, false, false, tri1_plane2_ints.intersectionType);
+    if (! tri1_plane2_ints.isCorrect) return TriangleIntersection(boost::none, boost::none, false, false, tri1_plane2_ints.intersectionType);
 
     TrianglePlaneIntersection tri2_plane1_ints = getIntersectingEdges(a2,b2,c2,sa2,sb2,sc2, fh2);
-    if (! tri2_plane1_ints.isCorrect) return TriangleIntersection(nullptr, nullptr, false, false, tri2_plane1_ints.intersectionType);
+    if (! tri2_plane1_ints.isCorrect) return TriangleIntersection(boost::none, boost::none, false, false, tri2_plane1_ints.intersectionType);
 
 
 
@@ -202,13 +202,13 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ");
     xType x21;
     xType x22;
 
-    if (tri2_plane1_ints.line1.to.get() == tri2_plane1_ints.line2.from.get() && tri2_plane1_ints.line1.to)
+    if (tri2_plane1_ints.line1.to == tri2_plane1_ints.line2.from && tri2_plane1_ints.line1.to)
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("WTF!");
 
     if (tri1_plane2_ints.line1.intersection->getType() == NEW) {
         x11 = i1(*tri1_plane2_ints.line1.from, *tri1_plane2_ints.line1.to);
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(O << " + " << x11 << " * "<<n3<<" = "<< (O + x11 * n3));
-        static_cast<NewIntersectionPoint*> (tri1_plane2_ints.line1.intersection.get() )->location = (O + x11 * n3 /n3.vSize()).toPoint3();
+        tri1_plane2_ints.line1.intersection = (O + x11 * n3 /n3.vSize()).toPoint3();
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(tri1_plane2_ints.line1.intersection->p());
     } else {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("using intersection x11 from given vertex ");
@@ -217,26 +217,26 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ");
     if (tri1_plane2_ints.line2.intersection->getType() == NEW) {
         x12 = i1(*tri1_plane2_ints.line2.from, *tri1_plane2_ints.line2.to);
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(O << " + " << x12 << " * "<<n3<<" = "<< (O + x12 * n3));
-        static_cast<NewIntersectionPoint*> (tri1_plane2_ints.line2.intersection.get() )->location = (O + x12 * n3 /n3.vSize()).toPoint3();
+        tri1_plane2_ints.line2.intersection = (O + x12 * n3 /n3.vSize()).toPoint3();
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(tri1_plane2_ints.line2.intersection->p());
     } else {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("using intersection x12 from given vertex ");
         x12 = divide(FPoint(tri1_plane2_ints.line2.intersection->p()) - O , n3);
     }
-    TRIANGLE_INTERSECT_DEBUG_SHOW(tri2_plane1_ints.line1.intersection.get());
+    TRIANGLE_INTERSECT_DEBUG_SHOW(tri2_plane1_ints.line1.intersection);
     if (tri2_plane1_ints.line1.intersection == nullptr)
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(" is null pointer!!!!@!! OMFG");
 
     if (tri2_plane1_ints.line1.intersection->getType() == NEW) {
         x21 = i2(*tri2_plane1_ints.line1.from, *tri2_plane1_ints.line1.to);
-        static_cast<NewIntersectionPoint*> (tri2_plane1_ints.line1.intersection.get() )->location = (O + x21 * n3 /n3.vSize()).toPoint3();
+        tri2_plane1_ints.line1.intersection  = (O + x21 * n3 /n3.vSize()).toPoint3();
     } else {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("using intersection x21 from given vertex ");
         x21 = divide(FPoint(tri2_plane1_ints.line1.intersection->p()) - O , n3);
     }
     if (tri2_plane1_ints.line2.intersection->getType() == NEW) {
         x22 = i2(*tri2_plane1_ints.line2.from, *tri2_plane1_ints.line2.to);
-        static_cast<NewIntersectionPoint*> (tri2_plane1_ints.line2.intersection.get() )->location = (O + x22 * n3 /n3.vSize()).toPoint3();
+        tri2_plane1_ints.line2.intersection = (O + x22 * n3 /n3.vSize()).toPoint3();
     } else {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("using intersection x22 from given vertex ");
         x22 = divide(FPoint(tri2_plane1_ints.line2.intersection->p()) - O , n3);
@@ -289,10 +289,10 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN("p22 = " << tri2_plane1_ints.line2.intersection
     if ( ( ret.from->p() - ret.to->p() ) .testLength(MELD_DISTANCE))
     { // only return resulting line segment if it contains a vertex and another point (which is not the same vertex)
         if (ret.to->getType() == NEW && ret.from->getType() == NEW)
-            return TriangleIntersection(nullptr, nullptr, false, false, TOUCHING);
+            return TriangleIntersection(boost::none, boost::none, false, false, TOUCHING);
         if (ret.to->getType() == EXISTING && ret.from->getType() == EXISTING)
-            if (static_cast<ExistingVertexIntersectionPoint*>(ret.to.get() )->vh == static_cast<ExistingVertexIntersectionPoint*>(ret.from.get() )->vh  )
-                return TriangleIntersection(nullptr, nullptr, false, false, TOUCHING);
+            if (ret.to->vh == ret.from->vh  )
+                return TriangleIntersection(boost::none, boost::none, false, false, TOUCHING);
 
     }
 
@@ -363,8 +363,8 @@ void TriangleIntersectionComputation::TrianglePlaneIntersection::computeIntersec
     {
         if (sa==0) // whole line lies on segment
         {
-            line1.intersection = std::unique_ptr<IntersectionPoint>(new ExistingVertexIntersectionPoint(fh.v0()));
-            line2.intersection = std::unique_ptr<IntersectionPoint>(new ExistingVertexIntersectionPoint(fh.v1()));
+            line1.intersection = IntersectionPoint(fh.v0());
+            line2.intersection = IntersectionPoint(fh.v1());
             O = FPoint(line2.intersection->p());
             isDirectionOfInnerFacePart = sc < 0;
             std::cerr<< "use line segment ab below, instead of the computed line segment" << std::endl;
@@ -377,10 +377,10 @@ void TriangleIntersectionComputation::TrianglePlaneIntersection::computeIntersec
                 intersectionType = TOUCHING;
                 return; // triangle doesn't cross the plane (only touches it)
             }
-            line1.intersection = std::unique_ptr<IntersectionPoint>(new NewIntersectionPoint(Point(0,0,0), fh.edge1()));
+            line1.intersection = IntersectionPoint(Point(0,0,0), fh.edge1());
             line1.from  = FPoint3(b);
             line1.to    = FPoint3(c);
-            line2.intersection = std::unique_ptr<IntersectionPoint>(new NewIntersectionPoint(Point(0,0,0), fh.edge2()));
+            line2.intersection = IntersectionPoint(Point(0,0,0), fh.edge2());
             line2.from  = FPoint3(c);
             line2.to    = FPoint3(a);
             isDirectionOfInnerFacePart = sc > 0;
@@ -391,8 +391,8 @@ void TriangleIntersectionComputation::TrianglePlaneIntersection::computeIntersec
     {
         if (sb==0) // whole line lies on segment
         {
-            line1.intersection = std::unique_ptr<IntersectionPoint>(new ExistingVertexIntersectionPoint(fh.v1()));
-            line2.intersection = std::unique_ptr<IntersectionPoint>(new ExistingVertexIntersectionPoint(fh.v2()));
+            line1.intersection = IntersectionPoint(fh.v1());
+            line2.intersection = IntersectionPoint(fh.v2());
             O = FPoint(line2.intersection->p());
             isDirectionOfInnerFacePart = sa < 0;
             std::cerr<< "use line segment bc below, instead of the computed line segment" << std::endl;
@@ -405,10 +405,10 @@ void TriangleIntersectionComputation::TrianglePlaneIntersection::computeIntersec
                 intersectionType = TOUCHING;
                 return; // triangle doesn't cross the plane (only touches it)
             }
-            line1.intersection = std::unique_ptr<IntersectionPoint>(new NewIntersectionPoint(Point(0,0,0), fh.edge2()));
+            line1.intersection = IntersectionPoint(Point(0,0,0), fh.edge2());
             line1.from  = FPoint3(c);
             line1.to    = FPoint3(a);
-            line2.intersection = std::unique_ptr<IntersectionPoint>(new NewIntersectionPoint(Point(0,0,0), fh.edge0()));
+            line2.intersection = IntersectionPoint(Point(0,0,0), fh.edge0());
             line2.from  = FPoint3(a);
             line2.to    = FPoint3(b);
             isDirectionOfInnerFacePart = sa > 0;
@@ -419,8 +419,8 @@ void TriangleIntersectionComputation::TrianglePlaneIntersection::computeIntersec
     {
         if (sc==0) // whole line lies on segment
         {
-            line1.intersection = std::unique_ptr<IntersectionPoint>(new ExistingVertexIntersectionPoint(fh.v2()));
-            line2.intersection = std::unique_ptr<IntersectionPoint>(new ExistingVertexIntersectionPoint(fh.v0()));
+            line1.intersection = IntersectionPoint(fh.v2());
+            line2.intersection = IntersectionPoint(fh.v0());
             O = FPoint(line2.intersection->p());
             isDirectionOfInnerFacePart = sb < 0;
             std::cerr<< "use line segment ac below, instead of the computed line segment" << std::endl;
@@ -433,10 +433,10 @@ void TriangleIntersectionComputation::TrianglePlaneIntersection::computeIntersec
                 intersectionType = TOUCHING;
                 return; // triangle doesn't cross the plane (only touches it)
             }
-            line1.intersection = std::unique_ptr<IntersectionPoint>(new NewIntersectionPoint(Point(0,0,0), fh.edge0()));
+            line1.intersection = IntersectionPoint(Point(0,0,0), fh.edge0());
             line1.from  = FPoint3(a);
             line1.to    = FPoint3(b);
-            line2.intersection = std::unique_ptr<IntersectionPoint>(new NewIntersectionPoint(Point(0,0,0), fh.edge1()));
+            line2.intersection = IntersectionPoint(Point(0,0,0), fh.edge1());
             line2.from  = FPoint3(b);
             line2.to    = FPoint3(c);
             isDirectionOfInnerFacePart = sb > 0;
@@ -446,32 +446,32 @@ void TriangleIntersectionComputation::TrianglePlaneIntersection::computeIntersec
     {
         if (sa == 0)
         {
-            line1.intersection = std::unique_ptr<IntersectionPoint>(new ExistingVertexIntersectionPoint(fh.v0()));
+            line1.intersection = IntersectionPoint(fh.v0());
             TRIANGLE_INTERSECT_DEBUG_PRINTLN("using intersection from given vertex " << fh.v0().idx);
             O = FPoint(line1.intersection->p());
             line2.from = FPoint3(b);
             line2.to   = FPoint3(c);
-            line2.intersection = std::unique_ptr<IntersectionPoint>(new NewIntersectionPoint(Point(0,0,0), fh.edge1()));
+            line2.intersection = IntersectionPoint(Point(0,0,0), fh.edge1());
             isDirectionOfInnerFacePart = sb > 0;
         }
         else if (sb == 0)
         {
-            line1.intersection = std::unique_ptr<IntersectionPoint>(new ExistingVertexIntersectionPoint(fh.v1()));
+            line1.intersection = IntersectionPoint(fh.v1());
             TRIANGLE_INTERSECT_DEBUG_PRINTLN("using intersection from given vertex " << fh.v1().idx);
             O = FPoint(line1.intersection->p());
             line2.from  = FPoint3(c);
             line2.to    = FPoint3(a);
-            line2.intersection = std::unique_ptr<IntersectionPoint>(new NewIntersectionPoint(Point(0,0,0), fh.edge2()));
+            line2.intersection = IntersectionPoint(Point(0,0,0), fh.edge2());
             isDirectionOfInnerFacePart = sc > 0;
         }
         else if (sc == 0)
         {
-            line1.intersection = std::unique_ptr<IntersectionPoint>(new ExistingVertexIntersectionPoint(fh.v2()));
+            line1.intersection = IntersectionPoint(fh.v2());
             TRIANGLE_INTERSECT_DEBUG_PRINTLN("using intersection from given vertex " << fh.v2().idx);
             O = FPoint(line1.intersection->p());
             line2.from  = FPoint3(a);
             line2.to    = FPoint3(b);
-            line2.intersection = std::unique_ptr<IntersectionPoint>(new NewIntersectionPoint(Point(0,0,0), fh.edge0()));
+            line2.intersection = IntersectionPoint(Point(0,0,0), fh.edge0());
             isDirectionOfInnerFacePart = sa > 0;
         } else
         {
