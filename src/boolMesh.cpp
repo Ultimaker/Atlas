@@ -1,5 +1,6 @@
 #include "boolMesh.h"
 
+#include <memory> // sharred_ptr
 
 void BooleanFVMeshOps::subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& result)
 {
@@ -81,10 +82,8 @@ void BooleanFVMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle, 
     IntersectionPoint* first_intersectionPoint = first.from->clone();
 
 
-    TriangleIntersection* intersectionSegment = &first;
+    std::shared_ptr<TriangleIntersection> intersectionSegment = std::shared_ptr<TriangleIntersection> (&first);
     IntersectionPoint* intersectionPoint = first.to->clone();
-
-    TriangleIntersection nextIntersectionSegment(boost::none, boost::none, false, false, UNKNOWN);
 
     while (intersectionPoint->p() != first_intersectionPoint->p())
     {
@@ -98,14 +97,13 @@ void BooleanFVMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle, 
         case NEW: // intersection with edge
         {
             HE_FaceHandle nextFace = intersectionPoint->edge.converse().face();
-            nextIntersectionSegment = TriangleIntersectionComputation::intersect(triangle, nextFace, intersectionPoint->p());
+            intersectionSegment = TriangleIntersectionComputation::intersect(triangle, nextFace, intersectionPoint->p());
         }
         break;
         case EXISTING: // intersection lies exactly on vertex
 
         break;
         }
-        intersectionSegment = &nextIntersectionSegment;
 
     }
 

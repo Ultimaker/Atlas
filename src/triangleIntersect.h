@@ -67,6 +67,11 @@ public:
 
     IntersectionPoint(HE_VertexHandle vh) : type(EXISTING), vh(vh),    edge(vh.m, -1) {};
     IntersectionPoint(Point loc, HE_EdgeHandle edge) : location(loc), edge(edge),     vh(edge.m, -1) {};
+    IntersectionPoint(Point loc, HE_EdgeHandle edge, HE_VertexHandle vh, IntersectionPointType type) : location(loc), edge(edge), vh(vh), type(type) {};
+
+    IntersectionPoint* clone() { return new IntersectionPoint(location, edge, vh, type); };
+
+
 };
 
 
@@ -127,8 +132,8 @@ Class for computing the intersection between two triangles.
 class TriangleIntersectionComputation
 {
 public:
-    static TriangleIntersection intersect(HE_FaceHandle fh1, HE_FaceHandle fh2);
-    static TriangleIntersection intersect(HE_FaceHandle fh1, HE_FaceHandle fh2, boost::optional<Point> some_point_on_planes_intersection_line);
+    static std::shared_ptr<TriangleIntersection> intersect(HE_FaceHandle fh1, HE_FaceHandle fh2);
+    static std::shared_ptr<TriangleIntersection>  intersect(HE_FaceHandle fh1, HE_FaceHandle fh2, boost::optional<Point> some_point_on_planes_intersection_line);
 
     static void test();
 protected:
