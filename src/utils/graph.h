@@ -59,6 +59,17 @@ public:
         }
     };
 
+    void disconnect(std::vector<Arrow>::iterator  a)
+    {
+        a->prev_same_from.next_same_from = a->next_same_from;
+        a->next_same_from.prev_same_from = a->prev_same_from;
+
+        a->prev_same_to.next_same_to = a->next_same_to;
+        a->next_same_to.prev_same_to = a->prev_same_to;
+
+        arrows.erase(a);
+    };
+
 };
 
 
