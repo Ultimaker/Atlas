@@ -66,7 +66,7 @@ void BooleanFVMeshOps::subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& res
 
 
 
-void BooleanFVMeshOps::completeFractureLine(TriangleIntersection first)
+void BooleanFVMeshOps::completeFractureLine(TriangleIntersection& first)
 {
 
 }
@@ -75,12 +75,38 @@ void BooleanFVMeshOps::completeFractureLine(TriangleIntersection first)
 
 
 
-void BooleanFVMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle, TriangleIntersection first, FractureLineSegment& result)
+void BooleanFVMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle, TriangleIntersection& first, FractureLineSegment& result)
 {
+    IntersectionPoint* first_intersectionPoint = first.from->clone();
 
 
+    TriangleIntersection* intersectionSegment = &first;
+    IntersectionPoint* intersectionPoint = first.to->clone();
 
+    TriangleIntersection nextIntersectionSegment(nullptr, nullptr, false, false, UNKNOWN);
 
+    while (intersectionPoint->p() != first_intersectionPoint->p())
+    {
+
+        if      (intersectionPoint->p() == intersectionSegment->from->p())  intersectionPoint = intersectionSegment->to->clone();
+        else if (intersectionPoint->p() == intersectionSegment->to->p())    intersectionPoint = intersectionSegment->from->clone();
+        else BOOL_MESH_DEBUG_PRINTLN(" two consecutive intersection points are disconnected???!?! ");
+
+        switch (intersectionPoint->getType())
+        {
+        case NEW: // intersection with edge
+        {
+            HE_FaceHandle nextFace = static_cast<NewIntersectionPoint*>(intersectionPoint)->edge.converse().face();
+            nextIntersectionSegment = TriangleIntersectionComputation::intersect(triangle, nextFace, intersectionPoint->p());
+        }
+        break;
+        case EXISTING: // intersection lies exactly on vertex
+
+        break;
+        }
+        intersectionSegment = &nextIntersectionSegment;
+
+    }
 
 
 
