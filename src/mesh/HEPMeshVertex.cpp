@@ -20,7 +20,7 @@
 
 HEP_EdgeHandle HEP_VertexHandle::someEdge()
 {
-    return HEP_EdgeHandle(m, v.someEdge);
+    return HEP_EdgeHandle(*m, v.someEdge);
 }
 
 Point HEP_VertexHandle::p() { return vertex().p; };
@@ -45,11 +45,11 @@ void HEP_VertexHandle::getConnectedEdgeGroups(FVMeshVertexHandle& correspondingF
 
     for (int f = 0; f < connected_faces_idx.size(); f++)
     {
-        if (checkedFaces.find(&m.faces[f]) != checkedFaces.end()) continue; // continue when found
+        if (checkedFaces.find(&m->faces[f]) != checkedFaces.end()) continue; // continue when found
 
         std::vector<HEP_EdgeHandle> currentGroup;
 
-        HEP_FaceHandle fh(m, &m.faces[connected_faces_idx[f]]);
+        HEP_FaceHandle fh(*m, &m->faces[connected_faces_idx[f]]);
         HEP_EdgeHandle outEdgeFirst = fh.getEdgeFrom(*this);
 
         if((&outEdgeFirst.edge()) == nullptr)
@@ -147,11 +147,11 @@ void HEP_VertexHandle::splitWhenNonManifold(FVMeshVertexHandle& correspondingFVM
         Point3 newLoc = group[0].from_vert().p() + (direction * INT2MM(MELD_DISTANCE + 2) ).toPoint3();
 
 
-        m.vertices.emplace_back(newLoc, &group[0].edge());
+        m->vertices.emplace_back(newLoc, &group[0].edge());
 
         for_each(group.begin(), group.end(), [this](HEP_EdgeHandle edge)
         {
-            edge.edge().from_vert = & m.vertices[m.vertices.size()-1];
+            edge.edge().from_vert = & m->vertices[m->vertices.size()-1];
         });
 
     }

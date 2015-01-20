@@ -23,21 +23,21 @@
 HE_EdgeHandle& HE_EdgeHandle:: operator =(const HE_EdgeHandle& other)
 { m = other.m; idx= other.idx; };
 
-HE_Edge& HE_EdgeHandle::edge() { return m.edges[idx]; };
+HE_Edge& HE_EdgeHandle::edge() { return m->edges[idx]; };
 
 HE_EdgeHandle HE_EdgeHandle::next()
 {
-    return HE_EdgeHandle(m, m.edges[idx].next_edge_idx) ;
+    return HE_EdgeHandle(*m, m->edges[idx].next_edge_idx) ;
 };
 
 HE_EdgeHandle HE_EdgeHandle::converse()
 {
-    return HE_EdgeHandle(m,  m.edges[idx].converse_edge_idx);
+    return HE_EdgeHandle(*m,  m->edges[idx].converse_edge_idx);
 };
 
 HE_VertexHandle HE_EdgeHandle::from_vert()
 {
-    return HE_VertexHandle(m, m.edges[idx].from_vert_idx);
+    return HE_VertexHandle(*m, m->edges[idx].from_vert_idx);
 }
 HE_VertexHandle HE_EdgeHandle::to_vert()
 {
@@ -46,7 +46,7 @@ HE_VertexHandle HE_EdgeHandle::to_vert()
 
 HE_FaceHandle HE_EdgeHandle::face()
 {
-    return HE_FaceHandle(m, m.edges[idx].face_idx);
+    return HE_FaceHandle(*m, m->edges[idx].face_idx);
 }
 
 Point HE_EdgeHandle::p0() { return from_vert().vertex().p; }

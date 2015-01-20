@@ -26,11 +26,11 @@ struct MeshFaceHandle
     typedef MeshFaceHandle<V,VH,F,M> FH;
 //    BOOST_STATIC_ASSERT((boost::is_base_of<MeshFace<V>, F>::value));
 //    BOOST_STATIC_ASSERT((boost::is_base_of<Mesh<V,VH,F,FH>, M>::value));
-    M& m;
+    M* m;
     int idx;
-    MeshFaceHandle(M& m_, int idx_) : m(m_), idx(idx_) {};
+    MeshFaceHandle(M& m_, int idx_) : m(&m_), idx(idx_) {};
 
-    F& face() { return m.faces[idx]; };
+    F& face() { return m->faces[idx]; };
 
     virtual VH v0() =0;
     virtual VH v1() =0;
@@ -61,7 +61,7 @@ struct MeshFaceHandle
         return p0();
     }
 
-    virtual bool operator==(const MeshFaceHandle& b) const { return idx==b.idx && &m==&b.m; }; // TODO: more sophisticated check
+    virtual bool operator==(const MeshFaceHandle& b) const { return idx==b.idx && m==b.m; }; // TODO: more sophisticated check
     virtual bool operator!=(const MeshFaceHandle &other) const {
         return !(*this == other);
     };

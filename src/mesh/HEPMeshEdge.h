@@ -45,12 +45,12 @@ class HEP_FaceHandle;
 
 struct HEP_EdgeHandle
 {
-    HEP_Mesh& m;
+    HEP_Mesh* m;
     int idx;
     HEP_Edge& e;
     HEP_Edge& edge() { return e; };
 
-    HEP_EdgeHandle(HEP_Mesh& m_, HEP_Edge* edge) : m(m_), idx(-1), e(*edge) {};
+    HEP_EdgeHandle(HEP_Mesh& m_, HEP_Edge* edge) : m(&m_), idx(-1), e(*edge) {};
 
     HEP_VertexHandle from_vert();
     HEP_VertexHandle to_vert();
@@ -63,7 +63,7 @@ struct HEP_EdgeHandle
 
     HEP_FaceHandle face();
 
-    bool operator==(const HEP_EdgeHandle& b) const { return &e==&b.e; }; // TODO: more sophisticated check
+    bool operator==(const HEP_EdgeHandle& b) const { return &e==&b.e && m==b.m; }; // TODO: more sophisticated check
     bool operator!=(const HEP_EdgeHandle &other) const {
         return !(*this == other);
     };

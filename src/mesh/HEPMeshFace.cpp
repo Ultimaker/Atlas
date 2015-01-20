@@ -18,17 +18,17 @@
 
 HEP_EdgeHandle HEP_FaceHandle::edge0()
 {
-    return HEP_EdgeHandle(m, f.edge[0]);
+    return HEP_EdgeHandle(*m, f.edge[0]);
 }
 
 HEP_EdgeHandle HEP_FaceHandle::edge1()
 {
-    return HEP_EdgeHandle(m, f.edge[1]);
+    return HEP_EdgeHandle(*m, f.edge[1]);
 }
 
 HEP_EdgeHandle HEP_FaceHandle::edge2()
 {
-    return HEP_EdgeHandle(m, f.edge[2]);
+    return HEP_EdgeHandle(*m, f.edge[2]);
 }
 
 HEP_VertexHandle HEP_FaceHandle::v0()
@@ -51,5 +51,5 @@ HEP_EdgeHandle HEP_FaceHandle::getEdgeFrom(HEP_VertexHandle& v)
     if (edge1().from_vert() == v) return edge1();
     if (edge2().from_vert() == v) return edge2();
     HEP_MESH_DEBUG_PRINTLN("getEdgeFrom returning nullptr!!!");
-    return HEP_EdgeHandle(m, nullptr); // face is not connected to the vertex!!
+    return HEP_EdgeHandle(*m, nullptr); // face is not connected to the vertex!!
 }

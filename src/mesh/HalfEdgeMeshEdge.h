@@ -43,11 +43,11 @@ class HE_FaceHandle;
 
 struct HE_EdgeHandle
 {
-    HE_Mesh& m;
+    HE_Mesh* m;
     int idx;
     HE_Edge& edge();
 
-    HE_EdgeHandle(HE_Mesh& m_, int idx_) : m(m_), idx(idx_) {};
+    HE_EdgeHandle(HE_Mesh& m_, int idx_) : m(&m_), idx(idx_) {};
 
     HE_VertexHandle from_vert();
     HE_VertexHandle to_vert();
@@ -60,7 +60,7 @@ struct HE_EdgeHandle
 
     HE_FaceHandle face();
 
-    bool operator==(const HE_EdgeHandle& b) const { return idx==b.idx; }; // TODO: more sophisticated check
+    bool operator==(const HE_EdgeHandle& b) const { return idx==b.idx && m==b.m; }; // TODO: more sophisticated check
     bool operator!=(const HE_EdgeHandle &other) const {
         return !(*this == other);
     };

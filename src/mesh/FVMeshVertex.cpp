@@ -2,5 +2,5 @@
 
 FVMeshVertex& FVMeshVertexHandle::vertex()
 {
-    return m.vertices[idx];
+    return m->vertices[idx];
 };

@@ -24,14 +24,14 @@
 
 HE_EdgeHandle HE_VertexHandle::someEdge()
 {
-    return HE_EdgeHandle(m, m.vertices[idx].someEdge_idx);
+    return HE_EdgeHandle(*m, m->vertices[idx].someEdge_idx);
 }
 
 Point HE_VertexHandle::p() { return vertex().p; };
 
 HE_Vertex& HE_VertexHandle::vertex()
 {
-    return m.vertices[idx];
+    return m->vertices[idx];
 };
 
 
@@ -57,7 +57,7 @@ void HE_VertexHandle::getConnectedEdgeGroups(FVMeshVertexHandle& correspondingFV
 
         std::vector<HE_EdgeHandle> currentGroup;
 
-        HE_FaceHandle fh(m, connected_faces_idx[f]);
+        HE_FaceHandle fh(*m, connected_faces_idx[f]);
         HE_EdgeHandle outEdgeFirst = fh.getEdgeFrom(*this);
 
         HE_EdgeHandle outEdge = outEdgeFirst;
@@ -146,11 +146,11 @@ void HE_VertexHandle::splitWhenNonManifold(FVMeshVertexHandle& correspondingFVMe
 
         Point3 newLoc = group[0].from_vert().p() + (direction * INT2MM(MELD_DISTANCE + 2) ).toPoint3();
 
-        m.vertices.emplace_back(newLoc, group[0].idx);
+        m->vertices.emplace_back(newLoc, group[0].idx);
 
         for_each(group.begin(), group.end(), [this](HE_EdgeHandle edge)
         {
-            edge.edge().from_vert_idx = m.vertices.size()-1;
+            edge.edge().from_vert_idx = m->vertices.size()-1;
         });
 
     }

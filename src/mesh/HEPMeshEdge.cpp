@@ -33,17 +33,17 @@
 
 HEP_EdgeHandle HEP_EdgeHandle::next()
 {
-    return HEP_EdgeHandle(m, e.next_edge) ;
+    return HEP_EdgeHandle(*m, e.next_edge) ;
 };
 
 HEP_EdgeHandle HEP_EdgeHandle::converse()
 {
-    return HEP_EdgeHandle(m,  e.converse_edge);
+    return HEP_EdgeHandle(*m,  e.converse_edge);
 };
 
 HEP_VertexHandle HEP_EdgeHandle::from_vert()
 {
-    return HEP_VertexHandle(m, e.from_vert);
+    return HEP_VertexHandle(*m, e.from_vert);
 }
 HEP_VertexHandle HEP_EdgeHandle::to_vert()
 {
@@ -52,7 +52,7 @@ HEP_VertexHandle HEP_EdgeHandle::to_vert()
 
 HEP_FaceHandle HEP_EdgeHandle::face()
 {
-    return HEP_FaceHandle(m, e.face);
+    return HEP_FaceHandle(*m, e.face);
 }
 
 Point HEP_EdgeHandle::p0() { return from_vert().vertex().p; }

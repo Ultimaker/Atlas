@@ -30,14 +30,14 @@ struct MeshVertexHandle
     typedef MeshVertexHandle<V,F,FH,M> VH;
 //    BOOST_STATIC_ASSERT((boost::is_base_of<MeshVertex, V>::value));
 //    BOOST_STATIC_ASSERT((boost::is_base_of<Mesh<V,VH,F,FH>, M>::value));
-    M& m;
+    M* m;
     int idx;
-    MeshVertexHandle(M& m_, int idx_) : m(m_), idx(idx_) {};
+    MeshVertexHandle(M& m_, int idx_) : m(&m_), idx(idx_) {};
 
-    V& vertex() { return m.vertices[idx]; };
-    Point& p() { return m.vertices[idx].p; };
+    V& vertex() { return m->vertices[idx]; };
+    Point& p() { return m->vertices[idx].p; };
 
-    virtual bool operator==(const MeshVertexHandle& b) const { return idx==b.idx; }; // TODO: more sophisticated check
+    virtual bool operator==(const MeshVertexHandle& b) const { return idx==b.idx && m==b.m; }; // TODO: more sophisticated check
     virtual bool operator!=(const MeshVertexHandle &other) const {
         return !(*this == other);
     }

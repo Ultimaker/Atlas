@@ -18,17 +18,17 @@
 
 HE_EdgeHandle HE_FaceHandle::edge0()
 {
-    return HE_EdgeHandle(m, m.faces[idx].edge_idx[0]);
+    return HE_EdgeHandle(*m, m->faces[idx].edge_idx[0]);
 }
 
 HE_EdgeHandle HE_FaceHandle::edge1()
 {
-    return HE_EdgeHandle(m, m.faces[idx].edge_idx[1]);
+    return HE_EdgeHandle(*m, m->faces[idx].edge_idx[1]);
 }
 
 HE_EdgeHandle HE_FaceHandle::edge2()
 {
-    return HE_EdgeHandle(m, m.faces[idx].edge_idx[2]);
+    return HE_EdgeHandle(*m, m->faces[idx].edge_idx[2]);
 }
 
 HE_VertexHandle HE_FaceHandle::v0()
@@ -51,5 +51,5 @@ HE_EdgeHandle HE_FaceHandle::getEdgeFrom(HE_VertexHandle& v)
     if (edge0().from_vert() == v) return edge0();
     if (edge1().from_vert() == v) return edge1();
     if (edge2().from_vert() == v) return edge2();
-    return HE_EdgeHandle(m, -1); // face is not connected to the vertex!!
+    return HE_EdgeHandle(*m, -1); // face is not connected to the vertex!!
 }
