@@ -133,7 +133,7 @@ class TriangleIntersectionComputation
 {
 public:
     static std::shared_ptr<TriangleIntersection> intersect(HE_FaceHandle fh1, HE_FaceHandle fh2);
-    static std::shared_ptr<TriangleIntersection>  intersect(HE_FaceHandle fh1, HE_FaceHandle fh2, boost::optional<Point> some_point_on_planes_intersection_line);
+    static std::shared_ptr<TriangleIntersection> intersect(HE_FaceHandle fh1, HE_FaceHandle fh2, boost::optional<Point> some_point_on_planes_intersection_line);
 
     static void test();
 protected:

@@ -2,6 +2,8 @@
 
 #include <memory> // sharred_ptr
 
+#include <list> // == double-linked list, used as queue
+
 void BooleanFVMeshOps::subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& result)
 {
 //! is more efficient when keep is smaller than subtracted.
@@ -67,7 +69,7 @@ void BooleanFVMeshOps::subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& res
 
 
 
-void BooleanFVMeshOps::completeFractureLine(TriangleIntersection& first)
+void BooleanFVMeshOps::completeFractureLine(std::shared_ptr<TriangleIntersection> first)
 {
 
 }
@@ -76,35 +78,59 @@ void BooleanFVMeshOps::completeFractureLine(TriangleIntersection& first)
 
 
 
-void BooleanFVMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle, TriangleIntersection& first, FractureLineSegment& result)
+void BooleanFVMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, std::shared_ptr<TriangleIntersection> first, FractureLineSegment& result)
 {
+    typedef Graph<IntersectionPoint, TriangleIntersection>::Node Node;
+    typedef Graph<IntersectionPoint, TriangleIntersection>::Arrow Arrow;
 
-    IntersectionPoint* first_intersectionPoint = first.from->clone();
+    IntersectionPoint first_intersectionPoint = *first->from;
 
+    Node* first_node = result.fracture.addNode(first_intersectionPoint);
 
-    std::shared_ptr<TriangleIntersection> intersectionSegment = std::shared_ptr<TriangleIntersection> (&first);
-    IntersectionPoint* intersectionPoint = first.to->clone();
+    Node* last_node = first_node;
 
-    while (intersectionPoint->p() != first_intersectionPoint->p())
+    //std::list<Arrow> todo; // holds the prev intersectionSegment and the new intersectionPoint which should be one end of the new lineSegment
+
+    std::shared_ptr<TriangleIntersection> intersectionSegment (first);
+    IntersectionPoint intersectionPoint = *first->to;
+    HE_FaceHandle lastFace = triangle2;
+
+    while (intersectionPoint.p() != first_intersectionPoint.p())
     {
+        Node* newNode = result.fracture.connectToNewNode(*last_node, intersectionPoint, *intersectionSegment);
 
-        if      (intersectionPoint->p() == intersectionSegment->from->p())  intersectionPoint = intersectionSegment->to->clone();
-        else if (intersectionPoint->p() == intersectionSegment->to->p())    intersectionPoint = intersectionSegment->from->clone();
-        else BOOL_MESH_DEBUG_PRINTLN(" two consecutive intersection points are disconnected???!?! ");
-
-        switch (intersectionPoint->getType())
+        switch (intersectionPoint.getType())
         {
         case NEW: // intersection with edge
         {
-            HE_FaceHandle nextFace = intersectionPoint->edge.converse().face();
-            intersectionSegment = TriangleIntersectionComputation::intersect(triangle, nextFace, intersectionPoint->p());
+            lastFace = intersectionPoint.edge.converse().face();
+            intersectionSegment = TriangleIntersectionComputation::intersect(triangle1, lastFace, intersectionPoint.p());
         }
         break;
         case EXISTING: // intersection lies exactly on vertex
+            HE_EdgeHandle first_outEdge = intersectionPoint.vh.someEdge();
+            HE_EdgeHandle outEdge = first_outEdge;
+            HE_FaceHandle prevFace = lastFace;
+            do {
+                if (outEdge.face() != prevFace)
+                {
+                    lastFace = outEdge.face();
+                    intersectionSegment = TriangleIntersectionComputation::intersect(triangle1, lastFace, intersectionPoint.p());
+                }
 
+                outEdge = outEdge.converse().next();
+            } while ( outEdge != first_outEdge);
         break;
         }
 
+        assert(intersectionSegment->to);
+        assert(intersectionSegment->from);
+
+        {// update the intersectionPoint
+            if      (intersectionPoint.p() == intersectionSegment->from->p())  intersectionPoint = *intersectionSegment->to;
+            else if (intersectionPoint.p() == intersectionSegment->to->p())    intersectionPoint = *intersectionSegment->from;
+            else BOOL_MESH_DEBUG_PRINTLN(" two consecutive intersection points are disconnected???!?! ");
+        }
     }
 
 

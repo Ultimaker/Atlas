@@ -20,6 +20,8 @@
 #include "mesh/FVMesh.h"
 #include "mesh/HalfEdgeMesh.h"
 
+#include "utils/graph.h"
+
 // enable/disable debug output
 #define BOOL_MESH_DEBUG 1
 
@@ -33,13 +35,17 @@
 #   define BOOL_MESH_DEBUG_PRINTLN(x)
 #endif
 
+
+
 typedef FPoint3 FPoint;
 
-class FractureLineSegment
+struct FractureLineSegment
 {
-    // we assume the mesh is manifold and so the fracture line is a line and not a graph
-    std::vector<IntersectionPoint> fracture;
-    bool direction_something;
+    // when two triangles are coplanar, the intersection is non-linear ( => graph-like)
+    // also where a vertex lies exactly on a triangle of the other mesh, the intersection can be non-linear ( => graph-like)
+    Graph<IntersectionPoint, TriangleIntersection> fracture;
+    Graph<IntersectionPoint, TriangleIntersection>::Arrow start;
+    std::vector<Graph<IntersectionPoint, TriangleIntersection>::Arrow> endPoints;
 };
 
 class BooleanFVMeshOps
@@ -52,8 +58,8 @@ protected:
     HE_Mesh& keep, subtracted;
     std::unordered_map<HE_FaceHandle, std::vector<FractureLineSegment>> face2fracturelines_mesh1;
     std::unordered_map<HE_FaceHandle, std::vector<FractureLineSegment>> face2fracturelines_mesh2;
-    void getFacetIntersectionlineSegment(HE_FaceHandle& triangle, TriangleIntersection& first, FractureLineSegment& result); //!< adds all intersections connected to the first which intersect with the triangle to the mapping of the triangle
-    void completeFractureLine(TriangleIntersection& first); //!< walks along (each) fracture line segment recording all fracture line segemnts in the maps, until whole fracture is explored (a fracture line can split)
+    void getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, std::shared_ptr<TriangleIntersection> first, FractureLineSegment& result); //!< adds all intersections connected to the first which intersect with the triangle to the mapping of the triangle
+    void completeFractureLine(std::shared_ptr<TriangleIntersection> first); //!< walks along (each) fracture line segment recording all fracture line segemnts in the maps, until whole fracture is explored (a fracture line can split)
 };
 
 
