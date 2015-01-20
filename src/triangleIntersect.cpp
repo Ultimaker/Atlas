@@ -80,8 +80,10 @@ std::shared_ptr<TriangleIntersection> TriangleIntersectionComputation::intersect
     FPoint ab2 = b2-a2;
     FPoint ac2 = c2-a2;
 
-    FPoint n1 = ab1.cross(ac1).normalized();
-    FPoint n2 = ab2.cross(ac2).normalized();
+    FPoint n1u = ab1.cross(ac1);
+    FPoint n2u = ab2.cross(ac2);
+    FPoint n1 = n1u.normalized();
+    FPoint n2 = n2u.normalized();
 
     TRIANGLE_INTERSECT_DEBUG_SHOW(n1);
     TRIANGLE_INTERSECT_DEBUG_SHOW(n2);
@@ -154,7 +156,11 @@ std::shared_ptr<TriangleIntersection> TriangleIntersectionComputation::intersect
 //    resizeNormal(n3);
 
 TRIANGLE_INTERSECT_DEBUG_SHOW(n3);
+TRIANGLE_INTERSECT_DEBUG_SHOW(n3u);
 
+
+TRIANGLE_INTERSECT_DEBUG_SHOW(n2.dot(a2)+d2);
+TRIANGLE_INTERSECT_DEBUG_SHOW(n1.dot(a1)+d1);
 
     TRIANGLE_INTERSECT_DEBUG_PRINTLN(" O1 exists " << (bool(tri1_plane2_ints.O)));
     TRIANGLE_INTERSECT_DEBUG_PRINTLN(" O2 exists " << (bool(tri2_plane1_ints.O)));
@@ -171,6 +177,9 @@ TRIANGLE_INTERSECT_DEBUG_SHOW(n3);
         FPoint p0 = (d2n1 - d1n2  ).cross(n3u) / n3u.vSize2() ; // as 'p0' in http://geomalgorithms.com/a05-_intersect-1.html : Intersection of 2 Planes . (C)
         O = p0; // as 'O' in Tomas Moller - A Fast Triangle-Triangle Intersection Test
     }
+
+TRIANGLE_INTERSECT_DEBUG_PRINTLN(n1.dot(O)+d1 << " == 0");
+TRIANGLE_INTERSECT_DEBUG_PRINTLN(n2.dot(O)+d2 << " == 0");
 
 TRIANGLE_INTERSECT_DEBUG_PRINTLN("O = " << O);
 TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ");
@@ -189,8 +198,8 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ");
         }; // intersect line from plane 1 with plane 2
     auto i2 = [&](FPoint& a, FPoint& b)
         {
-            TRIANGLE_INTERSECT_DEBUG_PRINTLN("\n i2 for "<<&a << ","<<&b);
-            TRIANGLE_INTERSECT_DEBUG_PRINTLN("\n i2 for "<<a << ","<<b);
+            TRIANGLE_INTERSECT_DEBUG_PRINTLN("\n i2 for "<<&a << " , "<<&b);
+            TRIANGLE_INTERSECT_DEBUG_PRINTLN("  namely for "<<a << " , "<<b);
             float pLa = pL(a);
             float pLb = pL(b);
             return pLa + (pLb - pLa) * dp1(a) / xType(dp1(a) - dp1(b));
@@ -202,7 +211,6 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ");
     xType x21;
     xType x22;
 
-
     if (tri1_plane2_ints.line1.intersection->getType() == NEW) {
         x11 = i1(*tri1_plane2_ints.line1.from, *tri1_plane2_ints.line1.to);
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(O << " + " << x11 << " * "<<n3<<" = "<< (O + x11 * n3));
@@ -210,6 +218,7 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ");
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(tri1_plane2_ints.line1.intersection->p());
     } else {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("using intersection x11 from given vertex ");
+    TRIANGLE_INTERSECT_DEBUG_SHOW(tri1_plane2_ints.line1.intersection->p());
         x11 = divide(FPoint(tri1_plane2_ints.line1.intersection->p()) - O , n3);
     }
     if (tri1_plane2_ints.line2.intersection->getType() == NEW) {
@@ -314,7 +323,7 @@ xType TriangleIntersectionComputation::divide(FPoint a, FPoint& b) //!< assumes 
     else
         ret = float(a.z) / b.z;
 
-    TRIANGLE_INTERSECT_DEBUG_PRINTLN("\n dividing (" << a<<","<<b <<") = "<< ret);
+    TRIANGLE_INTERSECT_DEBUG_PRINTLN("\n dividing (" << a<<" / "<<b <<") = "<< ret);
     return ret;
 };
 
