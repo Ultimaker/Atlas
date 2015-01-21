@@ -40,7 +40,7 @@ typedef FPoint3 FPoint;
 
 typedef double xType; //!< type of x in the line equation L = ab * x + d
 
-enum IntersectionPointType { EXISTING, NEW }; //!< the type of an endpoint of a tri-tri intersection line segment: either an existing vertex or a new point to be made into a new vertex
+enum IntersectionPointType { VERTEX, NEW }; //!< the type of an endpoint of a tri-tri intersection line segment: either an existing vertex or a new point to be made into a new vertex
 
 /*!
 The interface for the two types of endpoint of a tri-tri intersection line segment (ExistingVertexIntersectionPoint and NewIntersectionPoint)
@@ -58,14 +58,14 @@ public:
     {
         switch (type) {
         case NEW: return location;
-        case EXISTING: return vh.p();
+        case VERTEX: return vh.p();
         }
         return location;
     }; //!< the location of the point
     Point p() { return getLocation(); }; //!< the location of the point
     IntersectionPointType getType() { return type; }; //!< the type of endpoint: existing vertex or new point
 
-    IntersectionPoint(HE_VertexHandle vh)               : type(EXISTING), vh(vh),    edge(*vh.m, -1) {};
+    IntersectionPoint(HE_VertexHandle vh)               : type(VERTEX), vh(vh),    edge(*vh.m, -1) {};
     IntersectionPoint(Point loc, HE_EdgeHandle edge)    : type(NEW), location(loc), edge(edge),     vh(*edge.m, -1) {};
     IntersectionPoint(Point loc, HE_EdgeHandle edge, HE_VertexHandle vh, IntersectionPointType type) : location(loc), edge(edge), vh(vh), type(type) {};
 
