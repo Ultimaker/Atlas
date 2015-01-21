@@ -67,7 +67,7 @@ void FVMesh::finish()
     for (unsigned int i=0; i<vertices.size(); i++)
     {
         const Point& p = vertices[i].p;
-        bbox += p;
+        bbox += p; // expand box to include p
     }
 
     // For each face, store which other face is connected with it.

@@ -23,6 +23,7 @@
 
 #include "mesh/HalfEdgeMeshVertex.h" // testGetConnectedEdgeGroups
 #include "mesh/HEPMeshVertex.h" // testGetConnectedEdgeGroups
+#include "boolMesh.h" //test_getFacetIntersectionlineSegment
 
 #include <iostream>
 
@@ -126,8 +127,9 @@ public:
         saveFVMeshToFile(supportFVMesh, "blockSupport.stl");
 
 */
-        TriangleIntersectionComputation::test();
+//        TriangleIntersectionComputation::test();
 
+        BooleanMeshOps::test_getFacetIntersectionlineSegment(model);
         std::cerr << std::endl << " Test finished!" << std::endl << std::endl;
 
 

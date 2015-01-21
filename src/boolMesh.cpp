@@ -4,7 +4,9 @@
 
 #include <unordered_set> //==hash_set
 
-void BooleanFVMeshOps::subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& result)
+#include "modelFile/modelFile.h" // PrintObject
+
+void BooleanMeshOps::subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& result)
 {
 //! is more efficient when keep is smaller than subtracted.
 
@@ -69,7 +71,7 @@ void BooleanFVMeshOps::subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& res
 
 
 
-void BooleanFVMeshOps::completeFractureLine(std::shared_ptr<TriangleIntersection> first)
+void BooleanMeshOps::completeFractureLine(std::shared_ptr<TriangleIntersection> first)
 {
 
 }
@@ -78,8 +80,9 @@ void BooleanFVMeshOps::completeFractureLine(std::shared_ptr<TriangleIntersection
 
 
 
-void BooleanFVMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, std::shared_ptr<TriangleIntersection> first, FractureLinePart& result)
+void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, std::shared_ptr<TriangleIntersection> first, FractureLinePart& result)
 {
+    BOOL_MESH_DEBUG_PRINTLN(" starting getFacetIntersectionlineSegment");
     typedef Graph<IntersectionPoint, IntersectionSegment>::Node Node;
     typedef Graph<IntersectionPoint, IntersectionSegment>::Arrow Arrow;
 
@@ -88,9 +91,13 @@ void BooleanFVMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1,
 
     std::unordered_set<HE_FaceHandle> checked_faces;
 
+    BOOL_MESH_DEBUG_PRINTLN(toString(first->intersectionType));
+    BOOL_MESH_DEBUG_PRINTLN(first->from);
+
     IntersectionPoint first_intersectionPoint = *first->from;
 
     Node* first_node = result.fracture.addNode(first_intersectionPoint);
+
 
     Node* second_node = result.fracture.addNode(*first->to);
     Arrow* first_arrow = result.fracture.connect(*first_node, *second_node, IntersectionSegment(*first, triangle1));
@@ -99,6 +106,8 @@ void BooleanFVMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1,
 
     std::list<Arrow*> todo; // holds the prev intersectionSegment and the intersectionPoint which should be the first end of the new lineSegment
     todo.push_front(first_arrow);
+
+    BOOL_MESH_DEBUG_PRINTLN(" starting main loop");
 
     while (!todo.empty())
     {
@@ -113,6 +122,7 @@ void BooleanFVMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1,
         {
         case NEW: // intersection with edge
         {
+            BOOL_MESH_DEBUG_PRINTLN(" NEW case ");
             HE_FaceHandle newFace = connectingPoint.edge.converse().face();
             if (checked_faces.find(newFace) == checked_faces.end())
             {
@@ -123,6 +133,7 @@ void BooleanFVMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1,
         }
         break;
         case VERTEX: // intersection lies exactly on vertex
+            BOOL_MESH_DEBUG_PRINTLN(" VERTEX case ");
             HE_EdgeHandle first_outEdge = connectingPoint.vh.someEdge();
             HE_FaceHandle prevFace = current->data.otherFace;
             HE_EdgeHandle outEdge = first_outEdge;
@@ -147,58 +158,12 @@ void BooleanFVMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1,
         }
 
     }
-
-/*
-    std::shared_ptr<TriangleIntersection> intersectionSegment (first);
-    IntersectionPoint intersectionPoint = *first->to;
-    HE_FaceHandle lastFace = triangle2;
-
-    while (intersectionPoint.p() != first_intersectionPoint.p())
-    {
-        Node* newNode = result.fracture.connectToNewNode(*last_node, intersectionPoint, *intersectionSegment);
-
-        switch (intersectionPoint.getType())
-        {
-        case NEW: // intersection with edge
-        {
-            lastFace = intersectionPoint.edge.converse().face();
-            intersectionSegment = TriangleIntersectionComputation::intersect(triangle1, lastFace, intersectionPoint.p());
-        }
-        break;
-        case VERTEX: // intersection lies exactly on vertex
-            HE_EdgeHandle first_outEdge = intersectionPoint.vh.someEdge();
-            HE_EdgeHandle outEdge = first_outEdge;
-            HE_FaceHandle prevFace = lastFace;
-            do {
-                if (outEdge.face() != prevFace)
-                {
-                    lastFace = outEdge.face();
-                    intersectionSegment = TriangleIntersectionComputation::intersect(triangle1, lastFace, intersectionPoint.p());
-                }
-
-                outEdge = outEdge.converse().next();
-            } while ( outEdge != first_outEdge);
-        break;
-        }
-
-        assert(intersectionSegment->to);
-        assert(intersectionSegment->from);
-
-        {// update the intersectionPoint
-            if      (intersectionPoint.p() == intersectionSegment->from->p())  intersectionPoint = *intersectionSegment->to;
-            else if (intersectionPoint.p() == intersectionSegment->to->p())    intersectionPoint = *intersectionSegment->from;
-            else BOOL_MESH_DEBUG_PRINTLN(" two consecutive intersection points are disconnected???!?! ");
-        }
-    }
-
-*/
-
 }
 
 
 
 
-void BooleanFVMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, TriangleIntersection& triangleIntersection, HE_FaceHandle originalFace, HE_FaceHandle newFace, std::unordered_map<HE_VertexHandle, Node*>& vertex2node, FractureLinePart& result, std::list<Arrow*> todo)
+void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, TriangleIntersection& triangleIntersection, HE_FaceHandle originalFace, HE_FaceHandle newFace, std::unordered_map<HE_VertexHandle, Node*>& vertex2node, FractureLinePart& result, std::list<Arrow*> todo)
 {
     IntersectionPoint& connectingPoint = connectingNode.data;
 
@@ -252,3 +217,99 @@ void BooleanFVMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Trian
     }
 }
 
+
+void BooleanMeshOps::test_getFacetIntersectionlineSegment(PrintObject* model)
+{
+    std::cerr << "=============================================\n" << std::endl;
+
+    FVMesh& mesh = model->meshes[0];
+
+//    Point3 minn = mesh.bbox.min;
+//    for (int p = 0 ; p < mesh.vertices.size() ; p++)
+//    {
+//        mesh.vertices[p].p -= minn;
+//    }
+
+        for (int i = 0; i < mesh.vertices.size(); i++)
+            BOOL_MESH_DEBUG_SHOW(mesh.vertices[i].p);
+
+
+    HE_Mesh heMesh(mesh);
+    heMesh.makeManifold(mesh);
+
+    HE_Mesh other;
+    other.vertices.emplace_back(mesh.bbox.mid() + Point3(2*mesh.bbox.size().x,0,0), 0);
+    other.vertices.emplace_back(mesh.bbox.mid() + Point3(-2*mesh.bbox.size().x,2*mesh.bbox.size().y,0), 1);
+    other.vertices.emplace_back(mesh.bbox.mid() + Point3(-2*mesh.bbox.size().x,-2*mesh.bbox.size().y,0), 2);
+    other.edges.emplace_back(0,1);
+    other.edges.emplace_back(1,2);
+    other.edges.emplace_back(2,0);
+    other.connectEdgesPrevNext(0,1);
+    other.connectEdgesPrevNext(1,2);
+    other.connectEdgesPrevNext(2,0);
+    other.faces.emplace_back(0,1,2);
+    other.edges[0].face_idx = 0;
+    other.edges[1].face_idx = 0;
+    other.edges[2].face_idx = 0;
+    HE_FaceHandle otherFace(other, 0);
+
+    int f;
+    std::shared_ptr<TriangleIntersection> triangleIntersection;
+    for (f = 0; f < heMesh.faces.size(); f++)
+    {
+        HE_FaceHandle face(heMesh, f);
+        triangleIntersection = TriangleIntersectionComputation::intersect(face, otherFace);
+        BOOL_MESH_DEBUG_PRINTLN(toString(triangleIntersection->intersectionType));
+        if (triangleIntersection->intersectionType == LINE_SEGMENT) break;
+    }
+    if (f == heMesh.faces.size())
+    {
+        BOOL_MESH_DEBUG_PRINTLN("mesh doesn't intersect the face defined to go through its middle!");
+        BOOL_MESH_DEBUG_SHOW(mesh.bbox.min);
+        BOOL_MESH_DEBUG_SHOW(mesh.bbox.max);
+        BOOL_MESH_DEBUG_SHOW(mesh.bbox.mid());
+
+
+        for (int i = 0; i < mesh.vertices.size(); i++)
+            BOOL_MESH_DEBUG_SHOW(mesh.vertices[i].p);
+
+        BOOL_MESH_DEBUG_SHOW(" \n==============\n");
+
+        heMesh.debugOutputWholeMesh();
+
+        int vi = heMesh.vertices.size();
+        int ei = heMesh.edges.size();
+        int fi = heMesh.faces.size();
+        heMesh.vertices.emplace_back(mesh.bbox.mid() + Point3(2*mesh.bbox.size().x,0,0), ei+0);
+        heMesh.vertices.emplace_back(mesh.bbox.mid() + Point3(-2*mesh.bbox.size().x,2*mesh.bbox.size().y,0), ei+1);
+        heMesh.vertices.emplace_back(mesh.bbox.mid() + Point3(-2*mesh.bbox.size().x,-2*mesh.bbox.size().y,0), ei+2);
+        heMesh.edges.emplace_back(vi+0,vi+1);
+        heMesh.edges.emplace_back(vi+1,vi+2);
+        heMesh.edges.emplace_back(vi+2,vi+0);
+        heMesh.connectEdgesPrevNext(ei+0,ei+1);
+        heMesh.connectEdgesPrevNext(ei+1,ei+2);
+        heMesh.connectEdgesPrevNext(ei+2,ei+0);
+        heMesh.faces.emplace_back(ei+0,ei+1,ei+2);
+        heMesh.edges[ei+0].face_idx = fi;
+        heMesh.edges[ei+1].face_idx = fi;
+        heMesh.edges[ei+2].face_idx = fi;
+        saveMeshToFile<HE_Mesh, HE_VertexHandle, HE_FaceHandle>(heMesh, "crappa.stl");
+        BOOL_MESH_DEBUG_PRINTLN(other.vertices[0].p);
+        BOOL_MESH_DEBUG_PRINTLN(other.vertices[1].p);
+        BOOL_MESH_DEBUG_PRINTLN(other.vertices[2].p);
+        exit(0);
+    }
+
+    HE_FaceHandle intersectingFace(heMesh, f);
+
+
+
+    std::cerr << std::endl;
+    std::cerr << "=============================================\n" << std::endl;
+    std::cerr << "=== start getFacetIntersectionlineSegment ===\n" << std::endl;
+    std::cerr << "=============================================\n" << std::endl;
+    std::cerr << std::endl;
+
+    FractureLinePart result;
+    getFacetIntersectionlineSegment(otherFace, intersectingFace, triangleIntersection, result);
+}
