@@ -27,7 +27,7 @@ public:
         Node *from, *to;
         Arrow *prev_same_from, *next_same_from,
               *prev_same_to, *next_same_to;
-        Arrow(Node* from, ArrowT& data_, Node* to) : data(data_), from(from), to(to) {};
+        Arrow(Node* from, ArrowT data_, Node* to) : data(data_), from(from), to(to) {};
     };
 
 protected:
@@ -35,7 +35,7 @@ protected:
     std::vector<Arrow> arrows; // all arrows in arbitrary order
 
 public:
-    void connect(Node& a, Node& b, ArrowT& data)
+    Arrow* connect(Node& a, Node& b, ArrowT data)
     {
         arrows.emplace_back(&a, data, &b);
         Arrow& newArrow = arrows[arrows.size()-1];
@@ -63,6 +63,7 @@ public:
             b.last_in->next_same_to = &newArrow;
             b.last_in = &newArrow;
         }
+        return &newArrow;
     };
 
     Node* addNode(NodeT& data)
@@ -71,12 +72,7 @@ public:
         return &nodes[nodes.size()-1];
     };
 
-    Node* connectToNewNode(Node& a, NodeT& nodeData, ArrowT& arrowData)
-    {
-        Node* node = addNode(nodeData);
-        connect(a,*node, arrowData);
-        return node;
-    };
+
 
     void disconnect(typename std::vector<Arrow>::iterator  a)
     {
