@@ -50,6 +50,8 @@ struct MeshFaceHandle
     Point p1() { return v1().vertex().p; };
     Point p2() { return v2().vertex().p; };
 
+    bool hasVertex(VH vh) { return v0()==vh || v1()==vh || v2()==vh; };
+
     Point p(int i)
     {
         switch(i)

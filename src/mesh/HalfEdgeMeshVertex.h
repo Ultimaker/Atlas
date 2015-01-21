@@ -54,5 +54,15 @@ struct HE_VertexHandle : public MeshVertexHandle<HE_Vertex, HE_Face, HE_FaceHand
 
 };
 
+namespace std {
+template <>
+class hash<HE_VertexHandle> {
+public:
+    size_t operator()(const HE_VertexHandle & fh) const
+    {
+    return fh.idx;
+    }
+};
+}
 
 #endif // HALFEDGEMESHVERTEX_H
