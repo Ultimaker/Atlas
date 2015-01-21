@@ -75,6 +75,12 @@ struct BoundingBox
         max.z = std::max(max.z, b.z);
     }
 
+    void offset(const Point& v)
+    {
+        min += v;
+        max += v;
+    }
+
     /*!
     Returns true if the two binding boxes have a voljume as intersection.
 
@@ -92,6 +98,8 @@ struct BoundingBox
     };
 
     Point mid() { return (max+min)/2; }; //!< the geometric middle of the box
+
+    Point size() { return max-min; }; //!< a point containing the width, height and depth information
 
     template<class CharT, class TraitsT>
     friend

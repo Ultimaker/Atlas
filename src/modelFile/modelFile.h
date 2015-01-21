@@ -60,8 +60,11 @@ public:
     void offset(Point3 offset)
     {
         for(FVMesh& m : meshes)
+        {
+            m.bbox.offset(offset);
             for(FVMeshVertex& v : m.vertices)
                 v.p += offset;
+        }
     }
 
     void finalize()
