@@ -41,6 +41,14 @@ typedef FPoint3 FPoint;
 typedef double xType; //!< type of x in the line equation L = ab * x + d
 
 enum IntersectionPointType { VERTEX, NEW }; //!< the type of an endpoint of a tri-tri intersection line segment: either an existing vertex or a new point to be made into a new vertex
+static std::string toString(IntersectionPointType t)
+{
+    switch(t)
+    {
+	case NEW: return "NEW";
+	case VERTEX: return "VERTEX";
+    }
+};
 
 /*!
 The interface for the two types of endpoint of a tri-tri intersection line segment (ExistingVertexIntersectionPoint and NewIntersectionPoint)
@@ -54,14 +62,14 @@ public:
     HE_VertexHandle vh; //!< the handle of the vertex coincident with the endpoint of the intersection line segment
 
     IntersectionPointType type;
-    Point getLocation()
+    Point getLocation() //!< the location of the point
     {
         switch (type) {
         case NEW: return location;
         case VERTEX: return vh.p();
         }
         return location;
-    }; //!< the location of the point
+    };
     Point p() { return getLocation(); }; //!< the location of the point
     IntersectionPointType getType() { return type; }; //!< the type of endpoint: existing vertex or new point
 
@@ -69,8 +77,21 @@ public:
     IntersectionPoint(Point loc, HE_EdgeHandle edge)    : type(NEW), location(loc), edge(edge),     vh(*edge.m, -1) {};
     IntersectionPoint(Point loc, HE_EdgeHandle edge, HE_VertexHandle vh, IntersectionPointType type) : location(loc), edge(edge), vh(vh), type(type) {};
 
+    IntersectionPoint& operator=(const IntersectionPoint& other)
+    {
+        TRIANGLE_INTERSECT_DEBUG_PRINTLN(" IntersectionPoint location reassignment: " << location << " becomes" << other.location);
+        location = other.location;
+        edge = other.edge;
+        vh = other.vh;
+        return *this;
+    }
+
     IntersectionPoint* clone() { return new IntersectionPoint(location, edge, vh, type); };
 
+    void debugOutput()
+    {
+        std::cerr << getLocation() << "\t " << toString(type) << ",\t idx = " << ((type == NEW)? edge.idx : vh.idx)<< std::endl;
+    };
 
 };
 

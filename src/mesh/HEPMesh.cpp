@@ -54,6 +54,9 @@ HEP_Face* HEP_Mesh::createFace(HEP_Vertex* v0, HEP_Vertex* v1, HEP_Vertex* v2)
         faces.push_back(f);
         HEP_Face* fP = &faces[faces.size()-1];
 
+        HEP_MESH_DEBUG_PRINTLN("taking pointer to vector element!");
+        exit(0);
+
         HEP_Edge e0 (v0, fP);
         HEP_Edge e1 (v1, fP);
         HEP_Edge e2 (v2, fP);

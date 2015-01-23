@@ -5,6 +5,7 @@
 
 #include <iostream> // std::cerr
 
+#include "../Kernel.h"
 
 // enable/disable debug output
 #define GRAPH_DEBUG 1
@@ -35,7 +36,7 @@ public:
         NodeT data;
         Arrow *first_in, *last_in, *first_out, *last_out;
         bool points() { return first_out != nullptr; }
-        Node(NodeT& data_) : data(data_) {};
+        Node(NodeT& data_) : data(data_), first_in(nullptr), last_in(nullptr), first_out(nullptr), last_out(nullptr) {};
         Node& operator=(const Node& b)
         {
             GRAPH_DEBUG_PRINTLN("changing Node data!");
@@ -50,7 +51,7 @@ public:
         Node *from, *to;
         Arrow *prev_same_from, *next_same_from,
               *prev_same_to, *next_same_to;
-        Arrow(Node* from_, ArrowT data_, Node* to_) : data(data_), from(from_), to(to_) {};
+        Arrow(Node* from_, ArrowT data_, Node* to_) : data(data_), from(from_), to(to_), prev_same_from(nullptr), next_same_from(nullptr), prev_same_to(nullptr), next_same_to(nullptr) {};
     };
 
 //protected:
@@ -60,20 +61,30 @@ public:
 public:
     Arrow* connect(Node& a, Node& b, ArrowT data)
     {
+        DEBUG_HERE;
         Arrow* newArrow = new Arrow(&a, data, &b);
         arrows.push_back(newArrow);
+        DEBUG_HERE;
+        GRAPH_DEBUG_PRINTLN(long(&a));
+        GRAPH_DEBUG_PRINTLN(a.last_out);
 
         newArrow->prev_same_from = a.last_out;
+        DEBUG_HERE;
         if (a.last_out == nullptr)
         {
+            DEBUG_HERE;
             a.first_out = newArrow;
+            DEBUG_HERE;
             a.last_out = newArrow;
         }
         else
         {
+            DEBUG_HERE;
             a.last_out->next_same_from = newArrow;
+            DEBUG_HERE;
             a.last_out = newArrow;
         }
+        DEBUG_HERE;
 
         newArrow->prev_same_to = b.last_in;
         if (b.last_in == nullptr)
@@ -86,6 +97,7 @@ public:
             b.last_in->next_same_to = newArrow;
             b.last_in = newArrow;
         }
+        DEBUG_HERE;
         return newArrow;
     };
 
