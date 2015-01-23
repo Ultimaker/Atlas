@@ -76,8 +76,12 @@ void BooleanMeshOps::completeFractureLine(std::shared_ptr<TriangleIntersection> 
 
 }
 
+spaceType inaccuracy = 20;
 
-
+inline bool isEqual(Point& a, Point& b)
+{
+    return (a-b).testLength(inaccuracy);
+}
 
 
 void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, std::shared_ptr<TriangleIntersection> first, FractureLinePart& result)
@@ -85,11 +89,9 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
     BOOL_MESH_DEBUG_PRINTLN(" starting getFacetIntersectionlineSegment");
     BOOL_MESH_DEBUG_PRINTLN("\n\n\n\n\n\n\n\n");
 
-    DEBUG_HERE;
 
     typedef Graph<IntersectionPoint, IntersectionSegment>::Node Node;
     typedef Graph<IntersectionPoint, IntersectionSegment>::Arrow Arrow;
-    DEBUG_HERE;
 
     std::unordered_map<HE_VertexHandle, Node*> vertex2node; // to know when we have closed a cycle
     // vertices are the only places where the fracture can split
@@ -99,17 +101,12 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
     BOOL_MESH_DEBUG_PRINTLN(toString(first->intersectionType));
 
     Node* first_node = result.fracture.addNode(*first->from);
-    DEBUG_HERE;
     Node* second_node = result.fracture.addNode(*first->to);
-    DEBUG_HERE;
     Arrow* first_arrow = result.fracture.connect(*first_node, *second_node, IntersectionSegment(*first, triangle1));
-    DEBUG_HERE;
 
     result.start = first_arrow;
 
-    DEBUG_HERE;
     result.debugOutput();
-    DEBUG_HERE;
 
     checked_faces.insert(triangle2);
 
@@ -122,8 +119,13 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
     BOOL_MESH_DEBUG_PRINTLN(" starting main loop ");
     BOOL_MESH_DEBUG_PRINTLN(" ================== ");
 
+    long counter = 0;
     while (!todo.empty())
     {
+        counter++;
+        if (counter % 1000000 == 0)
+            std::cerr << "triangle seems to intersect with over " << counter << " triangles in the other mesh! infinite loop?" << std::endl;
+
         Arrow* current = todo.back();
         todo.pop_back();
 
@@ -141,6 +143,11 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
             {
                 checked_faces.insert(newFace);
                 std::shared_ptr<TriangleIntersection> triangleIntersection = TriangleIntersectionComputation::intersect(triangle1, newFace, connectingPoint.p());
+                if (! triangleIntersection->from || ! triangleIntersection->to)
+                {
+                    BOOL_MESH_DEBUG_PRINTLN("no intersection!!! type = " << toString(triangleIntersection->intersectionType));
+                    exit(0);
+                }
                 addIntersectionToGraphAndTodo(connectingNode, *triangleIntersection, triangle1, newFace, vertex2node, result, todo);
             } else BOOL_MESH_DEBUG_PRINTLN("face " << newFace.idx <<" checked already!");
         }
@@ -150,7 +157,16 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
             HE_EdgeHandle first_outEdge = connectingPoint.vh.someEdge();
             HE_FaceHandle prevFace = current->data.otherFace;
             HE_EdgeHandle outEdge = first_outEdge;
+
+            int edge_counter = 0;
             do {
+                edge_counter++;
+                if (edge_counter > 1000)
+                {
+                    std::cerr << "Vertex seems to be connected to over 1000 edges, breaking edges-around-vertex-iteration!" << std::endl;
+                    break;
+                }
+
                 if (outEdge.face() != prevFace)
                 {
                     HE_FaceHandle newFace = outEdge.face();
@@ -160,6 +176,14 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
                         std::shared_ptr<TriangleIntersection> triangleIntersection = TriangleIntersectionComputation::intersect(triangle1, newFace, connectingPoint.p());
                         if (triangleIntersection->intersectionType == LINE_SEGMENT)
                         {
+                            assert(triangleIntersection->from);
+                            assert(triangleIntersection->to);
+                            if ( triangleIntersection->from->type == VERTEX
+                                && triangleIntersection->to->type == VERTEX
+                                && triangleIntersection->from->vh != triangleIntersection->to->vh)
+                            {
+                                check_faces.insert(newFace.m->getFaceWithPoints(triangleIntersection->from->vh, triangleIntersection->to->vh, newface);
+                            }
                             addIntersectionToGraphAndTodo(connectingNode, *triangleIntersection, triangle1, newFace, vertex2node, result, todo);
                         }
                     }
@@ -169,10 +193,10 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
             } while ( outEdge != first_outEdge);
         break;
         }
-        BOOL_MESH_DEBUG_PRINTLN("------");
-        result.debugOutput();
-        BOOL_MESH_DEBUG_PRINTLN("------");
     }
+    BOOL_MESH_DEBUG_PRINTLN("------");
+    result.debugOutput();
+    BOOL_MESH_DEBUG_PRINTLN("------");
 }
 
 
@@ -182,19 +206,21 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
 {
     IntersectionPoint& connectingPoint = connectingNode.data;
 
+
     Node* new_node;
 
-    if      (connectingPoint.p() == triangleIntersection.to->p())   // TODO: more libral check
+    if (isEqual(connectingPoint.p(), triangleIntersection.to->p()))
     {
-        BOOL_MESH_DEBUG_PRINTLN(connectingPoint.p() <<" == "<< triangleIntersection.to->p());
+        BOOL_MESH_DEBUG_PRINTLN(connectingPoint.p() <<" =~= "<< triangleIntersection.to->p());
         BOOL_MESH_DEBUG_PRINTLN("swapping...");
         std::swap(triangleIntersection.from, triangleIntersection.to);
+        std::swap(triangleIntersection.isDirectionOfInnerPartOfTriangle1, triangleIntersection.isDirectionOfInnerPartOfTriangle2);
     }
     else
     {
         BOOL_MESH_DEBUG_PRINTLN("asserting :");
-        BOOL_MESH_DEBUG_SHOW((connectingPoint.p() == triangleIntersection.from->p()));
-        assert (connectingPoint.p() == triangleIntersection.from->p()); // TODO: more libral check
+        BOOL_MESH_DEBUG_SHOW(isEqual(connectingPoint.p(), triangleIntersection.from->p()));
+        assert (isEqual(connectingPoint.p(), triangleIntersection.from->p()));
     }
 
 
@@ -217,7 +243,7 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
         }
     } else
     {
-        if (triangleIntersection.to->getLocation() == result.start->from->data.getLocation()) // TODO: more libral check
+        if (isEqual(triangleIntersection.to->getLocation(), result.start->from->data.getLocation()))
         {
             new_node = result.start->from;
         } else
