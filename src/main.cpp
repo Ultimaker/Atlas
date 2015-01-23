@@ -182,7 +182,5 @@ int main(int argc, char **argv)
 
 //    el::Loggers::flushAll();
     //system("pause");
-    std::cerr << " program finished! looping forever..." << std::endl;
-    while(true) {} ;
     return 0;
 }
