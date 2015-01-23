@@ -61,30 +61,22 @@ public:
 public:
     Arrow* connect(Node& a, Node& b, ArrowT data)
     {
-        DEBUG_HERE;
         Arrow* newArrow = new Arrow(&a, data, &b);
         arrows.push_back(newArrow);
-        DEBUG_HERE;
         GRAPH_DEBUG_PRINTLN(long(&a));
         GRAPH_DEBUG_PRINTLN(a.last_out);
 
         newArrow->prev_same_from = a.last_out;
-        DEBUG_HERE;
         if (a.last_out == nullptr)
         {
-            DEBUG_HERE;
             a.first_out = newArrow;
-            DEBUG_HERE;
             a.last_out = newArrow;
         }
         else
         {
-            DEBUG_HERE;
             a.last_out->next_same_from = newArrow;
-            DEBUG_HERE;
             a.last_out = newArrow;
         }
-        DEBUG_HERE;
 
         newArrow->prev_same_to = b.last_in;
         if (b.last_in == nullptr)
@@ -97,7 +89,6 @@ public:
             b.last_in->next_same_to = newArrow;
             b.last_in = newArrow;
         }
-        DEBUG_HERE;
         return newArrow;
     };
 
