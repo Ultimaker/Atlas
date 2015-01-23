@@ -182,7 +182,7 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
                                 && triangleIntersection->to->type == VERTEX
                                 && triangleIntersection->from->vh != triangleIntersection->to->vh)
                             {
-                                check_faces.insert(newFace.m->getFaceWithPoints(triangleIntersection->from->vh, triangleIntersection->to->vh, newface);
+                                checked_faces.insert(newFace.m->getFaceWithPoints(triangleIntersection->from->vh, triangleIntersection->to->vh, newFace));
                             }
                             addIntersectionToGraphAndTodo(connectingNode, *triangleIntersection, triangle1, newFace, vertex2node, result, todo);
                         }

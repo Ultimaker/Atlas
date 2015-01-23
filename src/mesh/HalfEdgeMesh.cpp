@@ -295,7 +295,7 @@ HE_FaceHandle HE_Mesh::getFaceWithPoints(HE_VertexHandle v1, HE_VertexHandle v2,
         return notFace.getEdgeFrom(v2).converse().face();
     else
     {
-        std::cerr << __FILE__ <<" : " << __LINE__ << " : face isn't connected to the two points provided!:" << std::endl;
+        std::cerr << __FILE__ << " : " << __LINE__ << " : face isn't connected to the two points provided!:" << std::endl;
         return notFace.getEdgeFrom(v2).converse().face();
     }
 }
