@@ -25,7 +25,7 @@
 // enable/disable debug output
 #define TRIANGLE_INTERSECT_DEBUG 1
 
-#if TRIANGLE_INTERSECT_DEBUG == 0
+#if TRIANGLE_INTERSECT_DEBUG == 1
 #   define TRIANGLE_INTERSECT_DEBUG_DO(x) do { x } while (0);
 #   define TRIANGLE_INTERSECT_DEBUG_SHOW(x) do { std::cerr << #x << " = " << x << std::endl; } while (0)
 #   define TRIANGLE_INTERSECT_DEBUG_PRINTLN(x) do { std::cerr <<  x << std::endl; } while (0)
@@ -37,6 +37,11 @@
 
 typedef FPoint3 FPoint;
 
+/*
+TODO:
+make intersection relative to point a
+so that float precision is maximal
+*/
 
 typedef double xType; //!< type of x in the line equation L = ab * x + d
 
@@ -62,7 +67,7 @@ public:
     HE_VertexHandle vh; //!< the handle of the vertex coincident with the endpoint of the intersection line segment
 
     IntersectionPointType type;
-    Point getLocation() //!< the location of the point
+    Point& getLocation() //!< the location of the point
     {
         switch (type) {
         case NEW: return location;
@@ -70,13 +75,14 @@ public:
         }
         return location;
     };
-    Point p() { return getLocation(); }; //!< the location of the point
+    Point& p() { return getLocation(); }; //!< the location of the point
     IntersectionPointType getType() { return type; }; //!< the type of endpoint: existing vertex or new point
 
     IntersectionPoint(HE_VertexHandle vh)               : type(VERTEX), vh(vh),    edge(*vh.m, -1) {};
     IntersectionPoint(Point loc, HE_EdgeHandle edge)    : type(NEW), location(loc), edge(edge),     vh(*edge.m, -1) {};
     IntersectionPoint(Point loc, HE_EdgeHandle edge, HE_VertexHandle vh, IntersectionPointType type) : location(loc), edge(edge), vh(vh), type(type) {};
 
+/*
     IntersectionPoint& operator=(const IntersectionPoint& other)
     {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(" IntersectionPoint location reassignment: " << location << " becomes" << other.location);
@@ -85,7 +91,7 @@ public:
         vh = other.vh;
         return *this;
     }
-
+*/
     IntersectionPoint* clone() { return new IntersectionPoint(location, edge, vh, type); };
 
     void debugOutput()
