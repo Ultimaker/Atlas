@@ -296,10 +296,16 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN("p22 = " << tri2_plane1_ints.line2.intersection
     if ( ( ret->from->p() - ret->to->p() ) .testLength(MELD_DISTANCE))
     { // only return resulting line segment if it contains a vertex and another point (which is not the same vertex)
         if (ret->to->getType() == NEW && ret->from->getType() == NEW)
-            return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, TOUCHING);
+        {
+            TRIANGLE_INTERSECT_DEBUG_PRINTLN("intersection vertices quite close to eachother! (ignoring...)");
+            //return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, TOUCHING);
+        }
         if (ret->to->getType() == VERTEX && ret->from->getType() == VERTEX)
             if (ret->to->vh == ret->from->vh  )
+            {
+                TRIANGLE_INTERSECT_DEBUG_PRINTLN("triangle intersections is vertex point only!");
                 return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, TOUCHING);
+            }
 
     }
 
