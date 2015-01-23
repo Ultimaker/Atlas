@@ -112,6 +112,8 @@ class HE_Mesh : public Mesh<HE_Vertex, HE_VertexHandle, HE_Face, HE_FaceHandle> 
 
         static void testMakeManifold(PrintObject* model);
 
+        HE_FaceHandle getFaceWithPoints(HE_VertexHandle v1, HE_VertexHandle v2, HE_FaceHandle notFace);
+
     protected:
     private:
         //int findIndexOfVertex(Point3& v); //!< find index of vertex close to the given point, or create a new vertex and return its index.

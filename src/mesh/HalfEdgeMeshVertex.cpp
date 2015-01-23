@@ -27,7 +27,7 @@ HE_EdgeHandle HE_VertexHandle::someEdge()
     return HE_EdgeHandle(*m, m->vertices[idx].someEdge_idx);
 }
 
-Point HE_VertexHandle::p() { return vertex().p; };
+Point& HE_VertexHandle::p() { return vertex().p; };
 
 HE_Vertex& HE_VertexHandle::vertex()
 {

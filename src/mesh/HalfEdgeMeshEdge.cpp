@@ -49,7 +49,7 @@ HE_FaceHandle HE_EdgeHandle::face()
     return HE_FaceHandle(*m, m->edges[idx].face_idx);
 }
 
-Point HE_EdgeHandle::p0() { return from_vert().vertex().p; }
-Point HE_EdgeHandle::p1() { return to_vert().vertex().p; }
+Point& HE_EdgeHandle::p0() { return from_vert().vertex().p; }
+Point& HE_EdgeHandle::p1() { return to_vert().vertex().p; }
 
 void HE_EdgeHandle::set(HE_EdgeHandle& b) { idx = b.idx; m=b.m; }

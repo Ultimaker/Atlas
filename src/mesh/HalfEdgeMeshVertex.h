@@ -16,7 +16,7 @@ class HE_Vertex : public MeshVertex
     public:
         //std::vector<HE_Edge> edges;
         int someEdge_idx;
-        HE_Vertex(Point3 p, int someEdge_idx)
+        HE_Vertex(Point p, int someEdge_idx)
         : MeshVertex(p)
         , someEdge_idx(someEdge_idx)
         {};
@@ -40,7 +40,7 @@ struct HE_VertexHandle : public MeshVertexHandle<HE_Vertex, HE_Face, HE_FaceHand
 
     HE_EdgeHandle someEdge();
 
-    Point p();
+    Point& p();
 
     bool isManifold(FVMeshVertexHandle& correspondingFVMeshVertex);
 

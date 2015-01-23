@@ -46,13 +46,13 @@ struct MeshFaceHandle
         return v0();
     }
 
-    Point p0() { return v0().vertex().p; };
-    Point p1() { return v1().vertex().p; };
-    Point p2() { return v2().vertex().p; };
+    Point& p0() { return v0().vertex().p; };
+    Point& p1() { return v1().vertex().p; };
+    Point& p2() { return v2().vertex().p; };
 
     bool hasVertex(VH vh) { return v0()==vh || v1()==vh || v2()==vh; };
 
-    Point p(int i)
+    Point& p(int i)
     {
         switch(i)
         {

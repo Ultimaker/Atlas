@@ -55,8 +55,8 @@ struct HE_EdgeHandle
     HE_EdgeHandle next();
     HE_EdgeHandle converse();
 
-    Point p0();
-    Point p1();
+    Point& p0();
+    Point& p1();
 
     HE_FaceHandle face();
 

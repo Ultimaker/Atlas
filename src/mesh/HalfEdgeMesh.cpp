@@ -288,6 +288,19 @@ HE_Mesh::HE_Mesh(FVMesh& mesh)
 
 }
 
+HE_FaceHandle HE_Mesh::getFaceWithPoints(HE_VertexHandle v1, HE_VertexHandle v2, HE_FaceHandle notFace)
+{
+    if (notFace.getEdgeFrom(v1).to_vert() == v2) return notFace.getEdgeFrom(v1).converse().face();
+    else if (notFace.getEdgeFrom(v2).to_vert() == v1)
+        return notFace.getEdgeFrom(v2).converse().face();
+    else
+    {
+        std::cerr << __FILE__ <<" : " << __LINE__ " : face isn't connected to the two points provided!:" << std::endl;
+        return notFace.getEdgeFrom(v2).converse().face();
+    }
+}
+
+
 void HE_Mesh::debugOutputWholeMesh()
 {
     std::cerr <<  "============================" << std::endl;
