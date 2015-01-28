@@ -14,6 +14,18 @@
 #include "MeshFace.h"
 #include "MeshVertex.h"
 
+
+enum class ModelProblemType { WHOLES, OVERLAPPING_EDGES, DEGENERATE_FACES, UNKNOWN };
+struct ModelProblem
+{
+    ModelProblemType type;
+    // VertexHandle* problematic_vertex;
+    // ... etc.
+    std::string msg;
+    ModelProblem(const std::string& msg_) : type(ModelProblemType::UNKNOWN), msg(msg_) {};
+};
+
+
 /*!
 A Mesh represents the most basic requirements of a 3D model.
 

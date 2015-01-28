@@ -26,23 +26,21 @@ void TriangleIntersectionComputation::test()
     TRIANGLE_INTERSECT_DEBUG_PRINTLN(" test finished ");
 
     TRIANGLE_INTERSECT_DEBUG_DO(
-        if (intersection->intersectionType == LINE_SEGMENT)
+        if (intersection->intersectionType == IntersectionType::LINE_SEGMENT)
         {
-            TRIANGLE_INTERSECT_DEBUG_SHOW(VERTEX);
-            TRIANGLE_INTERSECT_DEBUG_SHOW(NEW);
             if (intersection->from)
             {
-                TRIANGLE_INTERSECT_DEBUG_SHOW(intersection->from->getType());
+                TRIANGLE_INTERSECT_DEBUG_SHOW(toString(intersection->from->getType()));
                 TRIANGLE_INTERSECT_DEBUG_SHOW(intersection->from->getLocation());
-                if (intersection->from->getType() == NEW)
+                if (intersection->from->getType() == IntersectionPointType::NEW)
                     TRIANGLE_INTERSECT_DEBUG_SHOW(intersection->from->edge.from_vert().p() );
             }
 
             if (intersection->to)
             {
-                TRIANGLE_INTERSECT_DEBUG_SHOW(intersection->to->getType());
+                TRIANGLE_INTERSECT_DEBUG_SHOW(toString(intersection->to->getType()));
                 TRIANGLE_INTERSECT_DEBUG_SHOW(intersection->to->getLocation());
-                if (intersection->to->getType() == NEW)
+                if (intersection->to->getType() == IntersectionPointType::NEW)
                     TRIANGLE_INTERSECT_DEBUG_SHOW(intersection->to->edge.from_vert().p() );
             }
             TRIANGLE_INTERSECT_DEBUG_SHOW(intersection->isDirectionOfInnerPartOfTriangle1);
@@ -96,7 +94,7 @@ std::shared_ptr<TriangleIntersection> TriangleIntersectionComputation::intersect
     if (n1==n2)
     {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("parallel triangles! (or coplanar) ");
-        return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, PARALLEL); // parallel triangles! (also in the coplanar case we don't do anything)
+        return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, IntersectionType::PARALLEL); // parallel triangles! (also in the coplanar case we don't do anything)
     }
 
 
@@ -129,12 +127,12 @@ std::shared_ptr<TriangleIntersection> TriangleIntersectionComputation::intersect
     {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(" no intersection, or coplanar! " << sa1);
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(dp2(a1) << "," << dp2(b1) << ","<< dp2(c1));
-        return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, NON_TOUCHING_PLANES); // no intersection (sign >0 or <0), or coplanar (sign=0)!
+        return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, IntersectionType::NON_TOUCHING_PLANES); // no intersection (sign >0 or <0), or coplanar (sign=0)!
     }
     if (sa2 == sb2 && sb2 == sc2)
     {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(" no intersection! ");
-        return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, NON_TOUCHING_PLANES); // no intersection
+        return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, IntersectionType::NON_TOUCHING_PLANES); // no intersection
     }
 
     FPoint O;
@@ -211,7 +209,7 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ");
     xType x21;
     xType x22;
 
-    if (tri1_plane2_ints.line1.intersection->getType() == NEW) {
+    if (tri1_plane2_ints.line1.intersection->getType() == IntersectionPointType::NEW) {
         x11 = i1(*tri1_plane2_ints.line1.from, *tri1_plane2_ints.line1.to);
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(O << " + " << x11 << " * "<<n3<<" = "<< (O + x11 * n3));
         tri1_plane2_ints.line1.intersection->location = (O + x11 * n3 /n3.vSize()).toPoint3();
@@ -221,7 +219,7 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ");
     TRIANGLE_INTERSECT_DEBUG_SHOW(tri1_plane2_ints.line1.intersection->p());
         x11 = divide(FPoint(tri1_plane2_ints.line1.intersection->p()) - O , n3);
     }
-    if (tri1_plane2_ints.line2.intersection->getType() == NEW) {
+    if (tri1_plane2_ints.line2.intersection->getType() == IntersectionPointType::NEW) {
         x12 = i1(*tri1_plane2_ints.line2.from, *tri1_plane2_ints.line2.to);
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(O << " + " << x12 << " * "<<n3<<" = "<< (O + x12 * n3));
         tri1_plane2_ints.line2.intersection->location = (O + x12 * n3 /n3.vSize()).toPoint3();
@@ -234,14 +232,14 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ");
     if ( ! tri2_plane1_ints.line1.intersection)
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(" is null pointer!!!!@!! OMFG");
 
-    if (tri2_plane1_ints.line1.intersection->getType() == NEW) {
+    if (tri2_plane1_ints.line1.intersection->getType() == IntersectionPointType::NEW) {
         x21 = i2(*tri2_plane1_ints.line1.from, *tri2_plane1_ints.line1.to);
         tri2_plane1_ints.line1.intersection->location  = (O + x21 * n3 /n3.vSize()).toPoint3();
     } else {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("using intersection x21 from given vertex ");
         x21 = divide(FPoint(tri2_plane1_ints.line1.intersection->p()) - O , n3);
     }
-    if (tri2_plane1_ints.line2.intersection->getType() == NEW) {
+    if (tri2_plane1_ints.line2.intersection->getType() == IntersectionPointType::NEW) {
         x22 = i2(*tri2_plane1_ints.line2.from, *tri2_plane1_ints.line2.to);
         tri2_plane1_ints.line2.intersection->location = (O + x22 * n3 /n3.vSize()).toPoint3();
     } else {
@@ -279,7 +277,7 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN("p22 = " << tri2_plane1_ints.line2.intersection
     if (x12 < x21 || x22 < x11)
     {
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("no overlap between line segments of intersections of triangles in the plane of the other !");
-        return std::make_shared<TriangleIntersection>(nullptr, nullptr, false, false, NON_TOUCHING); // no overlap!
+        return std::make_shared<TriangleIntersection>(nullptr, nullptr, false, false, IntersectionType::NON_TOUCHING); // no overlap!
     }
 
 
@@ -290,21 +288,21 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN("p22 = " << tri2_plane1_ints.line2.intersection
             , std::move(( (x12 < x22)? tri1_plane2_ints : tri2_plane1_ints ).line2.intersection)
             , tri1_plane2_ints.isDirectionOfInnerFacePart
             , tri2_plane1_ints.isDirectionOfInnerFacePart
-            , LINE_SEGMENT
+            , IntersectionType::LINE_SEGMENT
         );
 
     if ( ( ret->from->p() - ret->to->p() ) .testLength(MELD_DISTANCE))
     { // only return resulting line segment if it contains a vertex and another point (which is not the same vertex)
-        if (ret->to->getType() == NEW && ret->from->getType() == NEW)
+        if (ret->to->getType() == IntersectionPointType::NEW && ret->from->getType() == IntersectionPointType::NEW)
         {
             TRIANGLE_INTERSECT_DEBUG_PRINTLN("intersection vertices quite close to eachother! (ignoring...)");
             //return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, TOUCHING);
         }
-        if (ret->to->getType() == VERTEX && ret->from->getType() == VERTEX)
+        if (ret->to->getType() == IntersectionPointType::VERTEX && ret->from->getType() == IntersectionPointType::VERTEX)
             if (ret->to->vh == ret->from->vh  )
             {
                 TRIANGLE_INTERSECT_DEBUG_PRINTLN("triangle intersections is vertex point only!");
-                return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, TOUCHING);
+                return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, IntersectionType::TOUCHING);
             }
 
     }
@@ -358,14 +356,14 @@ void TriangleIntersectionComputation::TrianglePlaneIntersection::computeIntersec
         TRIANGLE_INTERSECT_DEBUG_PRINTLN("Triangle doesn't intersect plane of other triangle, or is coplanar!");
         if (sa > 0)
         {
-            intersectionType = NON_TOUCHING_PLANES;
+            intersectionType = IntersectionType::NON_TOUCHING_PLANES;
             TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ... triangle lies above");
         } else if (sa < 0)
         {
-            intersectionType = NON_TOUCHING_PLANES;
+            intersectionType = IntersectionType::NON_TOUCHING_PLANES;
             TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ... triangle lies below");
         } else {
-            intersectionType = COPLANAR;
+            intersectionType = IntersectionType::COPLANAR;
             TRIANGLE_INTERSECT_DEBUG_PRINTLN(" ... triangle is coplanar");
         }
         return; // triangle doesn't intersect the plane of the other
@@ -387,7 +385,7 @@ void TriangleIntersectionComputation::TrianglePlaneIntersection::computeIntersec
             if (sc == 0)
             {
                 TRIANGLE_INTERSECT_DEBUG_PRINTLN(" triangle doesn't cross the plane (only touches it)");
-                intersectionType = TOUCHING;
+                intersectionType = IntersectionType::TOUCHING;
                 return; // triangle doesn't cross the plane (only touches it)
             }
             line1.intersection = IntersectionPoint(Point(0,0,0), fh.edge1());
@@ -415,7 +413,7 @@ void TriangleIntersectionComputation::TrianglePlaneIntersection::computeIntersec
             if (sa == 0)
             {
                 TRIANGLE_INTERSECT_DEBUG_PRINTLN(" triangle doesn't cross the plane (only touches it)");
-                intersectionType = TOUCHING;
+                intersectionType = IntersectionType::TOUCHING;
                 return; // triangle doesn't cross the plane (only touches it)
             }
             line1.intersection = IntersectionPoint(Point(0,0,0), fh.edge2());
@@ -443,7 +441,7 @@ void TriangleIntersectionComputation::TrianglePlaneIntersection::computeIntersec
             if (sb == 0)
             {
                 TRIANGLE_INTERSECT_DEBUG_PRINTLN(" triangle doesn't cross the plane (only touches it)");
-                intersectionType = TOUCHING;
+                intersectionType = IntersectionType::TOUCHING;
                 return; // triangle doesn't cross the plane (only touches it)
             }
             line1.intersection = IntersectionPoint(Point(0,0,0), fh.edge0());

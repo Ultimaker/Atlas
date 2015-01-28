@@ -2,7 +2,6 @@
 #define KERNEL_H
 
 
-#define DEBUG_HERE std::cerr << __FILE__ << " : " << __LINE__ << std::endl
 
 #include <stdint.h>
 #include "utils/intpoint.h"

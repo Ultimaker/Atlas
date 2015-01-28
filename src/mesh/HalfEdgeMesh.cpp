@@ -316,11 +316,11 @@ void HE_Mesh::debugOutputWholeMesh()
     for (int f = 0; f < faces.size(); f++)
         std::cerr << f << " " <<(faces[f].toString()) << std::endl;
     std::cerr << ("edges: ") << std::endl;
-    for (int f = 0; f < edges.size(); f++)
-        std::cerr << f << " " <<(edges[f].toString()) << std::endl;
+    for (int e = 0; e < edges.size(); e++)
+        std::cerr << e << " " <<(edges[e].toString()) << std::endl;
     std::cerr << ("vertices: ") << std::endl;
-    for (int f = 0; f < vertices.size(); f++)
-        std::cerr << f << " " <<(vertices[f].toString()) << std::endl;
+    for (int v = 0; v < vertices.size(); v++)
+        std::cerr << v << " " <<(vertices[v].toString()) << std::endl;
     std::cerr <<  "============================" << std::endl;
 }
 
@@ -362,5 +362,33 @@ void HE_Mesh::testMakeManifold(PrintObject* model)
         //    std::cerr << mesh.faces[f].cosAngle() << std::endl;
     }
     std::cerr << "=============================================\n" << std::endl;
+
+}
+
+
+void HE_Mesh::checkModel(std::vector<ModelProblem> problems)
+{
+    for (int f = 0; f < faces.size(); f++)
+    {
+        HE_FaceHandle fh(*this, f);
+        if (fh.edge0().next() != fh.edge1()) problems.emplace_back("disconnected prev-next edges");
+        if (fh.edge1().next() != fh.edge2()) problems.emplace_back("disconnected prev-next edges");
+        if (fh.edge2().next() != fh.edge0()) problems.emplace_back("disconnected prev-next edges");
+        if (fh.edge0().face() != fh) problems.emplace_back("face's edge not connected to face");
+        if (fh.edge1().face() != fh) problems.emplace_back("face's edge not connected to face");
+        if (fh.edge2().face() != fh) problems.emplace_back("face's edge not connected to face");
+    }
+    for (int e = 0; e < edges.size(); e++)
+    {
+        HE_EdgeHandle eh(*this, e);
+        if(eh.converse().converse() != eh) problems.emplace_back("edg");
+
+    }
+    for (int v = 0; v < vertices.size(); v++)
+    {
+        HE_VertexHandle vh(*this, v);
+
+    }
+
 
 }

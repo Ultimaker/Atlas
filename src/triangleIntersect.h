@@ -45,13 +45,13 @@ so that float precision is maximal
 
 typedef double xType; //!< type of x in the line equation L = ab * x + d
 
-enum IntersectionPointType { VERTEX, NEW }; //!< the type of an endpoint of a tri-tri intersection line segment: either an existing vertex or a new point to be made into a new vertex
+enum class IntersectionPointType { VERTEX, NEW }; //!< the type of an endpoint of a tri-tri intersection line segment: either an existing vertex or a new point to be made into a new vertex
 static std::string toString(IntersectionPointType t)
 {
     switch(t)
     {
-	case NEW: return "NEW";
-	case VERTEX: return "VERTEX";
+	case IntersectionPointType::NEW: return "NEW";
+	case IntersectionPointType::VERTEX: return "VERTEX";
     }
 };
 
@@ -70,16 +70,16 @@ public:
     Point& getLocation() //!< the location of the point
     {
         switch (type) {
-        case NEW: return location;
-        case VERTEX: return vh.p();
+        case IntersectionPointType::NEW: return location;
+        case IntersectionPointType::VERTEX: return vh.p();
         }
         return location;
     };
     Point& p() { return getLocation(); }; //!< the location of the point
     IntersectionPointType getType() { return type; }; //!< the type of endpoint: existing vertex or new point
 
-    IntersectionPoint(HE_VertexHandle vh)               : type(VERTEX), vh(vh),    edge(*vh.m, -1) {};
-    IntersectionPoint(Point loc, HE_EdgeHandle edge)    : type(NEW), location(loc), edge(edge),     vh(*edge.m, -1) {};
+    IntersectionPoint(HE_VertexHandle vh)               : type(IntersectionPointType::VERTEX), vh(vh),    edge(*vh.m, -1) {};
+    IntersectionPoint(Point loc, HE_EdgeHandle edge)    : type(IntersectionPointType::NEW), location(loc), edge(edge),     vh(*edge.m, -1) {};
     IntersectionPoint(Point loc, HE_EdgeHandle edge, HE_VertexHandle vh, IntersectionPointType type) : location(loc), edge(edge), vh(vh), type(type) {};
 
 /*
@@ -96,25 +96,25 @@ public:
 
     void debugOutput()
     {
-        std::cerr << getLocation() << "\t " << toString(type) << ",\t idx = " << ((type == NEW)? edge.idx : vh.idx)<< std::endl;
+        std::cerr << getLocation() << "\t " << toString(type) << ",\t idx = " << ((type == IntersectionPointType::NEW)? edge.idx : vh.idx)<< std::endl;
     };
 
 };
 
 
 
-enum IntersectionType { LINE_SEGMENT, COPLANAR, TOUCHING, NON_TOUCHING, NON_TOUCHING_PLANES, PARALLEL, UNKNOWN }; //!< type of (non-)intersection between triangles
+enum class IntersectionType { LINE_SEGMENT, COPLANAR, TOUCHING, NON_TOUCHING, NON_TOUCHING_PLANES, PARALLEL, UNKNOWN }; //!< type of (non-)intersection between triangles
 static std::string toString(IntersectionType t)
 {
     switch(t)
     {
-	case LINE_SEGMENT: return "LINE_SEGMENT";
-	case COPLANAR: return "COPLANAR";
-	case TOUCHING: return "TOUCHING";
-	case NON_TOUCHING: return "NON_TOUCHING";
-	case NON_TOUCHING_PLANES: return "NON_TOUCHING_PLANES";
-	case PARALLEL: return "PARALLEL";
-	case UNKNOWN: return "UNKNOWN";
+	case IntersectionType::LINE_SEGMENT: return "LINE_SEGMENT";
+	case IntersectionType::COPLANAR: return "COPLANAR";
+	case IntersectionType::TOUCHING: return "TOUCHING";
+	case IntersectionType::NON_TOUCHING: return "NON_TOUCHING";
+	case IntersectionType::NON_TOUCHING_PLANES: return "NON_TOUCHING_PLANES";
+	case IntersectionType::PARALLEL: return "PARALLEL";
+	case IntersectionType::UNKNOWN: return "UNKNOWN";
     }
 };
 
@@ -207,7 +207,7 @@ protected:
 
         TrianglePlaneIntersection()
         : isCorrect(false)
-        , intersectionType(UNKNOWN)
+        , intersectionType(IntersectionType::UNKNOWN)
         , O(boost::none)
         {  };
 

@@ -105,6 +105,9 @@ class HE_Mesh : public Mesh<HE_Vertex, HE_VertexHandle, HE_Face, HE_FaceHandle> 
 
 
 
+        void checkModel(std::vector<ModelProblem> result);
+
+
         void debugOuputBasicStats(std::ostream& out);
         void debugOutputWholeMesh();
 

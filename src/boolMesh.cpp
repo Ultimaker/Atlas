@@ -135,7 +135,7 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
 
         switch (connectingPoint.getType())
         {
-        case NEW: // intersection with edge
+        case IntersectionPointType::NEW: // intersection with edge
         {
             HE_FaceHandle newFace = connectingPoint.edge.converse().face();
             BOOL_MESH_DEBUG_PRINTLN(" NEW case for face " << newFace.idx);
@@ -152,7 +152,7 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
             } else BOOL_MESH_DEBUG_PRINTLN("face " << newFace.idx <<" checked already!");
         }
         break;
-        case VERTEX: // intersection lies exactly on vertex
+        case IntersectionPointType::VERTEX: // intersection lies exactly on vertex
             BOOL_MESH_DEBUG_PRINTLN(" VERTEX case ");
             HE_EdgeHandle first_outEdge = connectingPoint.vh.someEdge();
             HE_FaceHandle prevFace = current->data.otherFace;
@@ -174,12 +174,12 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
                     {
                         checked_faces.insert(newFace);
                         std::shared_ptr<TriangleIntersection> triangleIntersection = TriangleIntersectionComputation::intersect(triangle1, newFace, connectingPoint.p());
-                        if (triangleIntersection->intersectionType == LINE_SEGMENT)
+                        if (triangleIntersection->intersectionType == IntersectionType::LINE_SEGMENT)
                         {
                             assert(triangleIntersection->from);
                             assert(triangleIntersection->to);
-                            if ( triangleIntersection->from->type == VERTEX
-                                && triangleIntersection->to->type == VERTEX
+                            if ( triangleIntersection->from->type == IntersectionPointType::VERTEX
+                                && triangleIntersection->to->type == IntersectionPointType::VERTEX
                                 && triangleIntersection->from->vh != triangleIntersection->to->vh)
                             {
                                 checked_faces.insert(newFace.m->getFaceWithPoints(triangleIntersection->from->vh, triangleIntersection->to->vh, newFace));
@@ -225,7 +225,7 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
 
 
     bool new_point_is_already_done = false;
-    if      (triangleIntersection.to->getType() == VERTEX)
+    if      (triangleIntersection.to->getType() == IntersectionPointType::VERTEX)
     {
         std::unordered_map<HE_VertexHandle, Node*>::const_iterator node = vertex2node.find(triangleIntersection.to->vh);
 
@@ -262,7 +262,7 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
         // check whether we reached the end of the triangle
         switch (new_node->data.type)
         {
-        case NEW:
+        case IntersectionPointType::NEW:
             if (new_node->data.edge.face() == originalFace)
             {
                 BOOL_MESH_DEBUG_PRINTLN("exiting triangle");
@@ -274,7 +274,7 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
                 todo.push_front(new_arrow);
             }
         break;
-        case VERTEX:
+        case IntersectionPointType::VERTEX:
             if (originalFace.hasVertex(new_node->data.vh))
             {
                 BOOL_MESH_DEBUG_PRINTLN("exiting triangle");
@@ -322,7 +322,7 @@ void BooleanMeshOps::test_getFacetIntersectionlineSegment(PrintObject* model)
         HE_FaceHandle face(heMesh, f);
         triangleIntersection = TriangleIntersectionComputation::intersect(face, otherFace);
         BOOL_MESH_DEBUG_PRINTLN(toString(triangleIntersection->intersectionType));
-        if (triangleIntersection->intersectionType == LINE_SEGMENT) break;
+        if (triangleIntersection->intersectionType == IntersectionType::LINE_SEGMENT) break;
     }
     if (f == heMesh.faces.size())
     {
