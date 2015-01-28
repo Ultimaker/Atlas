@@ -370,6 +370,9 @@ void HE_Mesh::checkModel(std::vector<ModelProblem> problems)
 {
     for (int f = 0; f < faces.size(); f++)
     {
+        if (faces[f].edge_idx[0] < 0) { problems.emplace_back("face doesn't know its edges!"); continue; }
+        if (faces[f].edge_idx[1] < 0) { problems.emplace_back("face doesn't know its edges!"); continue; }
+        if (faces[f].edge_idx[2] < 0) { problems.emplace_back("face doesn't know its edges!"); continue; }
         HE_FaceHandle fh(*this, f);
         if (fh.edge0().next() != fh.edge1()) problems.emplace_back("disconnected prev-next edges");
         if (fh.edge1().next() != fh.edge2()) problems.emplace_back("disconnected prev-next edges");
@@ -380,14 +383,30 @@ void HE_Mesh::checkModel(std::vector<ModelProblem> problems)
     }
     for (int e = 0; e < edges.size(); e++)
     {
+        bool hasNull = false;
+        if(edges[e].from_vert_idx < 0) { problems.emplace_back("edge doesn't know its vert!"); hasNull = true; }
+        if(edges[e].next_edge_idx < 0) { problems.emplace_back("edge doesn't know its next edge!"); hasNull = true; }
+        if(edges[e].converse_edge_idx < 0) { problems.emplace_back("edge doesn't know its converse!"); hasNull = true; }
+        if(edges[e].face_idx < 0) { problems.emplace_back("edge doesn't know its face!"); hasNull = true; }
+        if (hasNull) continue;
+
         HE_EdgeHandle eh(*this, e);
-        if(eh.converse().converse() != eh) problems.emplace_back("edg");
+        if(eh.converse().converse() != eh) problems.emplace_back("edge isn't the converse of its converse");
 
     }
     for (int v = 0; v < vertices.size(); v++)
     {
+        if (vertices[v].someEdge_idx < 0) { problems.emplace_back("vertex doesn't know any edge!"); continue; }
         HE_VertexHandle vh(*this, v);
 
+        int counter = 0;
+        HE_EdgeHandle eh = vh.someEdge();
+        do
+        {
+            if (counter > 10000) { problems.emplace_back("vertex edges don't form a circular loop!"); break; } // continue outer for-loop
+            eh = eh.converse().next(); counter++;
+        } while (eh != vh.someEdge());
+        // dont put more code here
     }
 
 

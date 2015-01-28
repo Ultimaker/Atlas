@@ -98,7 +98,7 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
 
     std::unordered_set<HE_FaceHandle> checked_faces;
 
-    BOOL_MESH_DEBUG_PRINTLN(toString(first->intersectionType));
+    BOOL_MESH_DEBUG_PRINTLN((first->intersectionType));
 
     Node* first_node = result.fracture.addNode(*first->from);
     Node* second_node = result.fracture.addNode(*first->to);
@@ -145,7 +145,7 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
                 std::shared_ptr<TriangleIntersection> triangleIntersection = TriangleIntersectionComputation::intersect(triangle1, newFace, connectingPoint.p());
                 if (! triangleIntersection->from || ! triangleIntersection->to)
                 {
-                    BOOL_MESH_DEBUG_PRINTLN("no intersection!!! type = " << toString(triangleIntersection->intersectionType));
+                    BOOL_MESH_DEBUG_PRINTLN("no intersection!!! type = " << (triangleIntersection->intersectionType));
                     exit(0);
                 }
                 addIntersectionToGraphAndTodo(connectingNode, *triangleIntersection, triangle1, newFace, vertex2node, result, todo);
@@ -299,6 +299,17 @@ void BooleanMeshOps::test_getFacetIntersectionlineSegment(PrintObject* model)
     HE_Mesh heMesh(mesh);
     heMesh.makeManifold(mesh);
 
+    std::vector<ModelProblem> problems;
+    heMesh.checkModel(problems);
+    if (problems.size() > 0)
+    {
+        std::cout << "Model problems detected!" << std::endl;
+        for (ModelProblem problem : problems)
+        {
+            std::cout << problem.msg << std::endl;
+        }
+    }
+
     HE_Mesh other;
     other.vertices.emplace_back(mesh.bbox.mid() + Point3(2*mesh.bbox.size().x,0,0), 0);
     other.vertices.emplace_back(mesh.bbox.mid() + Point3(-2*mesh.bbox.size().x,2*mesh.bbox.size().y,0), 1);
@@ -321,7 +332,7 @@ void BooleanMeshOps::test_getFacetIntersectionlineSegment(PrintObject* model)
     {
         HE_FaceHandle face(heMesh, f);
         triangleIntersection = TriangleIntersectionComputation::intersect(face, otherFace);
-        BOOL_MESH_DEBUG_PRINTLN(toString(triangleIntersection->intersectionType));
+        BOOL_MESH_DEBUG_PRINTLN((triangleIntersection->intersectionType));
         if (triangleIntersection->intersectionType == IntersectionType::LINE_SEGMENT) break;
     }
     if (f == heMesh.faces.size())

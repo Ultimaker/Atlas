@@ -30,7 +30,7 @@ void TriangleIntersectionComputation::test()
         {
             if (intersection->from)
             {
-                TRIANGLE_INTERSECT_DEBUG_SHOW(toString(intersection->from->getType()));
+                TRIANGLE_INTERSECT_DEBUG_SHOW((intersection->from->getType()));
                 TRIANGLE_INTERSECT_DEBUG_SHOW(intersection->from->getLocation());
                 if (intersection->from->getType() == IntersectionPointType::NEW)
                     TRIANGLE_INTERSECT_DEBUG_SHOW(intersection->from->edge.from_vert().p() );
@@ -38,7 +38,7 @@ void TriangleIntersectionComputation::test()
 
             if (intersection->to)
             {
-                TRIANGLE_INTERSECT_DEBUG_SHOW(toString(intersection->to->getType()));
+                TRIANGLE_INTERSECT_DEBUG_SHOW((intersection->to->getType()));
                 TRIANGLE_INTERSECT_DEBUG_SHOW(intersection->to->getLocation());
                 if (intersection->to->getType() == IntersectionPointType::NEW)
                     TRIANGLE_INTERSECT_DEBUG_SHOW(intersection->to->edge.from_vert().p() );
@@ -48,7 +48,7 @@ void TriangleIntersectionComputation::test()
         }
     )
     TRIANGLE_INTERSECT_DEBUG_PRINTLN("..======================================================================");
-    TRIANGLE_INTERSECT_DEBUG_PRINTLN("|| type of triangle - triangle intersection : " << toString(intersection->intersectionType));
+    TRIANGLE_INTERSECT_DEBUG_PRINTLN("|| type of triangle - triangle intersection : " << (intersection->intersectionType));
     TRIANGLE_INTERSECT_DEBUG_PRINTLN("''======================================================================");
 }
 

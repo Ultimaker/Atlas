@@ -13,6 +13,8 @@
 
 #include <cstdlib> // exit (debug only)
 
+#include "MACROS.h" // ENUM
+
 #include "Kernel.h"
 
 #include "AABB_Tree.h"
@@ -45,15 +47,9 @@ so that float precision is maximal
 
 typedef double xType; //!< type of x in the line equation L = ab * x + d
 
-enum class IntersectionPointType { VERTEX, NEW }; //!< the type of an endpoint of a tri-tri intersection line segment: either an existing vertex or a new point to be made into a new vertex
-static std::string toString(IntersectionPointType t)
-{
-    switch(t)
-    {
-	case IntersectionPointType::NEW: return "NEW";
-	case IntersectionPointType::VERTEX: return "VERTEX";
-    }
-};
+//! the type of an endpoint of a tri-tri intersection line segment: either an existing vertex or a new point to be made into a new vertex
+ENUM(IntersectionPointType , VERTEX, NEW );
+
 
 /*!
 The interface for the two types of endpoint of a tri-tri intersection line segment (ExistingVertexIntersectionPoint and NewIntersectionPoint)
@@ -96,27 +92,15 @@ public:
 
     void debugOutput()
     {
-        std::cerr << getLocation() << "\t " << toString(type) << ",\t idx = " << ((type == IntersectionPointType::NEW)? edge.idx : vh.idx)<< std::endl;
+        std::cerr << getLocation() << "\t " << (type) << ",\t idx = " << ((type == IntersectionPointType::NEW)? edge.idx : vh.idx)<< std::endl;
     };
 
 };
 
 
+//! type of (non-)intersection between triangles
+ENUM(IntersectionType , LINE_SEGMENT, COPLANAR, TOUCHING, NON_TOUCHING, NON_TOUCHING_PLANES, PARALLEL, UNKNOWN );
 
-enum class IntersectionType { LINE_SEGMENT, COPLANAR, TOUCHING, NON_TOUCHING, NON_TOUCHING_PLANES, PARALLEL, UNKNOWN }; //!< type of (non-)intersection between triangles
-static std::string toString(IntersectionType t)
-{
-    switch(t)
-    {
-	case IntersectionType::LINE_SEGMENT: return "LINE_SEGMENT";
-	case IntersectionType::COPLANAR: return "COPLANAR";
-	case IntersectionType::TOUCHING: return "TOUCHING";
-	case IntersectionType::NON_TOUCHING: return "NON_TOUCHING";
-	case IntersectionType::NON_TOUCHING_PLANES: return "NON_TOUCHING_PLANES";
-	case IntersectionType::PARALLEL: return "PARALLEL";
-	case IntersectionType::UNKNOWN: return "UNKNOWN";
-    }
-};
 
 /*!
 The intersection between two triangles: a line segment.

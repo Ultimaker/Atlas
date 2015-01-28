@@ -14,8 +14,9 @@
 #include "MeshFace.h"
 #include "MeshVertex.h"
 
+#include "../MACROS.h" // ENUM
 
-enum class ModelProblemType { WHOLES, OVERLAPPING_EDGES, DEGENERATE_FACES, UNKNOWN };
+ENUM(ModelProblemType , WHOLES, OVERLAPPING_EDGES, DEGENERATE_FACES, UNKNOWN );
 struct ModelProblem
 {
     ModelProblemType type;
