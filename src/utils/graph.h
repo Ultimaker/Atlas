@@ -10,7 +10,7 @@
 
 #include "../MACROS.h" // debug
 // enable/disable debug output
-#define GRAPH_DEBUG 1
+#define GRAPH_DEBUG 0
 
 #if GRAPH_DEBUG == 1
 #   define GRAPH_DEBUG_DO(x) DEBUG_DO(x)

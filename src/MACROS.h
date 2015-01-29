@@ -8,12 +8,22 @@
 
 
 
+
+
 #define DEBUG 1
+
+#define DEBUG_SHOW_LINE 0
+
+#if DEBUG_SHOW_LINE == 1
+#define DEBUG_FILE_LINE __FILE_NAME__ << "." << __LINE__ << ": "
+#else
+#define DEBUG_FILE_LINE  ""
+#endif
 
 #if DEBUG == 1
 #   define DEBUG_DO(x) DEBUG_DO(x)
-#   define DEBUG_SHOW(x) do {       std::cerr << __FILE_NAME__ << "." << __LINE__ << ": " << #x << " = " << x << std::endl; } while (0)
-#   define DEBUG_PRINTLN(x) do {    std::cerr << __FILE_NAME__ << "." << __LINE__ << ": " << x << std::endl; } while (0)
+#   define DEBUG_SHOW(x) do {       std::cerr << DEBUG_FILE_LINE << #x << " = " << x << std::endl; } while (0)
+#   define DEBUG_PRINTLN(x) do {    std::cerr << DEBUG_FILE_LINE << ": " << x << std::endl; } while (0)
 #else
 #   define DEBUG_DO(x)
 #   define DEBUG_SHOW(x)
