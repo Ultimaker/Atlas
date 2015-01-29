@@ -299,7 +299,7 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN("p22 = " << tri2_plane1_ints.line2.intersection
             //return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, TOUCHING);
         }
         if (ret->to->getType() == IntersectionPointType::VERTEX && ret->from->getType() == IntersectionPointType::VERTEX)
-            if (ret->to->vh == ret->from->vh  )
+            if (ret->to->vertex == ret->from->vertex  )
             {
                 TRIANGLE_INTERSECT_DEBUG_PRINTLN("triangle intersections is vertex point only!");
                 return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, IntersectionType::TOUCHING);

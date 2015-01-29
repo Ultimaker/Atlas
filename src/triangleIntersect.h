@@ -62,23 +62,23 @@ public:
     Point location;
     HE_EdgeHandle edge; //!< the handle of the edge which gave rise to the location, when intersecting the edge with the halfplane of the other triangle
 
-    HE_VertexHandle vh; //!< the handle of the vertex coincident with the endpoint of the intersection line segment
+    HE_VertexHandle vertex; //!< the handle of the vertex coincident with the endpoint of the intersection line segment
 
     IntersectionPointType type;
     Point& getLocation() //!< the location of the point
     {
         switch (type) {
         case IntersectionPointType::NEW: return location;
-        case IntersectionPointType::VERTEX: return vh.p();
+        case IntersectionPointType::VERTEX: return vertex.p();
         }
         return location;
     };
     Point& p() { return getLocation(); }; //!< the location of the point
     IntersectionPointType getType() { return type; }; //!< the type of endpoint: existing vertex or new point
 
-    IntersectionPoint(HE_VertexHandle vh)               : type(IntersectionPointType::VERTEX), vh(vh),    edge(*vh.m, -1) {};
-    IntersectionPoint(Point loc, HE_EdgeHandle edge)    : type(IntersectionPointType::NEW), location(loc), edge(edge),     vh(*edge.m, -1) {};
-    IntersectionPoint(Point loc, HE_EdgeHandle edge, HE_VertexHandle vh, IntersectionPointType type) : location(loc), edge(edge), vh(vh), type(type) {};
+    IntersectionPoint(HE_VertexHandle vertex)               : type(IntersectionPointType::VERTEX), vertex(vertex),    edge(*vertex.m, -1) {};
+    IntersectionPoint(Point loc, HE_EdgeHandle edge)    : type(IntersectionPointType::NEW), location(loc), edge(edge),     vertex(*edge.m, -1) {};
+    IntersectionPoint(Point loc, HE_EdgeHandle edge, HE_VertexHandle vertex, IntersectionPointType type) : location(loc), edge(edge), vertex(vertex), type(type) {};
 
 /*
     IntersectionPoint& operator=(const IntersectionPoint& other)
@@ -86,16 +86,28 @@ public:
         TRIANGLE_INTERSECT_DEBUG_PRINTLN(" IntersectionPoint location reassignment: " << location << " becomes" << other.location);
         location = other.location;
         edge = other.edge;
-        vh = other.vh;
+        vertex = other.vertex;
         return *this;
     }
 */
-    IntersectionPoint* clone() { return new IntersectionPoint(location, edge, vh, type); };
+    IntersectionPoint* clone() { return new IntersectionPoint(location, edge, vertex, type); };
 
     void debugOutput()
     {
-        std::cerr << getLocation() << "\t " << (type) << ",\t idx = " << ((type == IntersectionPointType::NEW)? edge.idx : vh.idx)<< std::endl;
+        std::cerr << getLocation() << "\t " << (type) << ",\t idx = " << ((type == IntersectionPointType::NEW)? edge.idx : vertex.idx)<< "\t face :" << ((type == IntersectionPointType::NEW)? edge.face().idx : -1) << std::endl;
     };
+
+    bool compareSource(const IntersectionPoint& other)
+    {
+        if (type != other.type) return false;
+        switch (type)
+        {
+        case IntersectionPointType::NEW:
+            return edge == other.edge;
+        case IntersectionPointType::VERTEX:
+            return vertex == other.vertex;
+        }
+    }
 
 };
 

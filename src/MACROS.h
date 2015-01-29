@@ -23,7 +23,7 @@
 #if DEBUG == 1
 #   define DEBUG_DO(x) DEBUG_DO(x)
 #   define DEBUG_SHOW(x) do {       std::cerr << DEBUG_FILE_LINE << #x << " = " << x << std::endl; } while (0)
-#   define DEBUG_PRINTLN(x) do {    std::cerr << DEBUG_FILE_LINE << ": " << x << std::endl; } while (0)
+#   define DEBUG_PRINTLN(x) do {    std::cerr << DEBUG_FILE_LINE << x << std::endl; } while (0)
 #else
 #   define DEBUG_DO(x)
 #   define DEBUG_SHOW(x)

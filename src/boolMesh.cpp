@@ -149,12 +149,19 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
                     exit(0);
                 }
                 addIntersectionToGraphAndTodo(connectingNode, *triangleIntersection, triangle1, newFace, vertex2node, result, todo);
-            } else BOOL_MESH_DEBUG_PRINTLN("face " << newFace.idx <<" checked already!");
+            } else
+            {
+                BOOL_MESH_DEBUG_PRINTLN("face " << newFace.idx <<" checked already!");
+                BOOL_MESH_DEBUG_PRINTLN("face : " << current->data.lineSegment.to->edge.converse().face().idx);
+                BOOL_MESH_DEBUG_PRINTLN("prev face (from): " << current->data.lineSegment.from->edge.face().idx);
+                BOOL_MESH_DEBUG_PRINTLN("prev face (to): " << current->data.lineSegment.to->edge.face().idx);
+                BOOL_MESH_DEBUG_PRINTLN("prev prev face : " << current->data.lineSegment.from->edge.converse().face().idx);
+            }
         }
         break;
         case IntersectionPointType::VERTEX: // intersection lies exactly on vertex
             BOOL_MESH_DEBUG_PRINTLN(" VERTEX case ");
-            HE_EdgeHandle first_outEdge = connectingPoint.vh.someEdge();
+            HE_EdgeHandle first_outEdge = connectingPoint.vertex.someEdge();
             HE_FaceHandle prevFace = current->data.otherFace;
             HE_EdgeHandle outEdge = first_outEdge;
 
@@ -180,9 +187,9 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
                             assert(triangleIntersection->to);
                             if ( triangleIntersection->from->type == IntersectionPointType::VERTEX
                                 && triangleIntersection->to->type == IntersectionPointType::VERTEX
-                                && triangleIntersection->from->vh != triangleIntersection->to->vh)
+                                && triangleIntersection->from->vertex != triangleIntersection->to->vertex)
                             {
-                                checked_faces.insert(newFace.m->getFaceWithPoints(triangleIntersection->from->vh, triangleIntersection->to->vh, newFace));
+                                checked_faces.insert(newFace.m->getFaceWithPoints(triangleIntersection->from->vertex, triangleIntersection->to->vertex, newFace));
                             }
                             addIntersectionToGraphAndTodo(connectingNode, *triangleIntersection, triangle1, newFace, vertex2node, result, todo);
                         }
@@ -194,9 +201,7 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
         break;
         }
     }
-    BOOL_MESH_DEBUG_PRINTLN("------");
-    result.debugOutput();
-    BOOL_MESH_DEBUG_PRINTLN("------");
+
 }
 
 
@@ -226,12 +231,12 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
     bool new_point_is_already_done = false;
     if      (triangleIntersection.to->getType() == IntersectionPointType::VERTEX)
     {
-        std::unordered_map<HE_VertexHandle, Node*>::const_iterator node = vertex2node.find(triangleIntersection.to->vh);
+        std::unordered_map<HE_VertexHandle, Node*>::const_iterator node = vertex2node.find(triangleIntersection.to->vertex);
 
         if (node == vertex2node.end()) // vertex is not yet present in graph
         {
             new_node = result.fracture.addNode(*triangleIntersection.to);
-            vertex2node.insert( { {triangleIntersection.to->vh, new_node} } );
+            vertex2node.insert( { {triangleIntersection.to->vertex, new_node} } );
 
         } else
         {
@@ -275,7 +280,7 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
             }
         break;
         case IntersectionPointType::VERTEX:
-            if (originalFace.hasVertex(new_node->data.vh))
+            if (originalFace.hasVertex(new_node->data.vertex))
             {
                 BOOL_MESH_DEBUG_PRINTLN("exiting triangle");
                 result.endPoints.push_back(new_arrow);
@@ -300,6 +305,10 @@ void BooleanMeshOps::test_getFacetIntersectionlineSegment(PrintObject* model)
     HE_Mesh heMesh(mesh);
     DEBUG_HERE;
 
+    heMesh.makeManifold(mesh);
+
+    DEBUG_HERE;
+
     std::vector<ModelProblem> problems;
     heMesh.checkModel(problems);
     if (problems.size() > 0)
@@ -313,15 +322,12 @@ void BooleanMeshOps::test_getFacetIntersectionlineSegment(PrintObject* model)
     } else std::cout << " no problems! :D" << std::endl;
 
 
-    heMesh.makeManifold(mesh);
-
-    DEBUG_HERE;
 
 
     HE_Mesh other;
-    other.vertices.emplace_back(mesh.bbox.mid() + Point3(2*mesh.bbox.size().x,0,0), 0);
-    other.vertices.emplace_back(mesh.bbox.mid() + Point3(-2*mesh.bbox.size().x,2*mesh.bbox.size().y,0), 1);
-    other.vertices.emplace_back(mesh.bbox.mid() + Point3(-2*mesh.bbox.size().x,-2*mesh.bbox.size().y,0), 2);
+    other.vertices.emplace_back(mesh.bbox.mid() + Point3(2*mesh.bbox.size().x,0,100), 0);
+    other.vertices.emplace_back(mesh.bbox.mid() + Point3(-2*mesh.bbox.size().x,2*mesh.bbox.size().y,100), 1);
+    other.vertices.emplace_back(mesh.bbox.mid() + Point3(-2*mesh.bbox.size().x,-2*mesh.bbox.size().y,100), 2);
     other.edges.emplace_back(0,1);
     other.edges.emplace_back(1,2);
     other.edges.emplace_back(2,0);
@@ -343,9 +349,7 @@ void BooleanMeshOps::test_getFacetIntersectionlineSegment(PrintObject* model)
         //BOOL_MESH_DEBUG_PRINTLN((triangleIntersection->intersectionType));
         if (triangleIntersection->intersectionType == IntersectionType::LINE_SEGMENT) break;
     }
-    if (f == heMesh.faces.size())
     {
-        BOOL_MESH_DEBUG_PRINTLN("mesh doesn't intersect the face defined to go through its middle!");
         BOOL_MESH_DEBUG_SHOW(mesh.bbox.min);
         BOOL_MESH_DEBUG_SHOW(mesh.bbox.max);
         BOOL_MESH_DEBUG_SHOW(mesh.bbox.mid());
@@ -356,7 +360,7 @@ void BooleanMeshOps::test_getFacetIntersectionlineSegment(PrintObject* model)
 
         BOOL_MESH_DEBUG_SHOW(" \n==============\n");
 
-        heMesh.debugOutputWholeMesh();
+        //heMesh.debugOutputWholeMesh();
 
         int vi = heMesh.vertices.size();
         int ei = heMesh.edges.size();
@@ -375,10 +379,14 @@ void BooleanMeshOps::test_getFacetIntersectionlineSegment(PrintObject* model)
         heMesh.edges[ei+1].face_idx = fi;
         heMesh.edges[ei+2].face_idx = fi;
         saveMeshToFile<HE_Mesh, HE_VertexHandle, HE_FaceHandle>(heMesh, "crappa.stl");
-        BOOL_MESH_DEBUG_PRINTLN(other.vertices[0].p);
-        BOOL_MESH_DEBUG_PRINTLN(other.vertices[1].p);
-        BOOL_MESH_DEBUG_PRINTLN(other.vertices[2].p);
-        exit(0);
+        BOOL_MESH_DEBUG_SHOW(other.vertices[0].p);
+        BOOL_MESH_DEBUG_SHOW(other.vertices[1].p);
+        BOOL_MESH_DEBUG_SHOW(other.vertices[2].p);
+        if (f == heMesh.faces.size())
+        {
+            BOOL_MESH_DEBUG_PRINTLN("mesh doesn't intersect the face defined to go through its middle!");
+            exit(0);
+        }
     }
 
     //heMesh.debugOutputWholeMesh();
@@ -400,5 +408,7 @@ void BooleanMeshOps::test_getFacetIntersectionlineSegment(PrintObject* model)
     std::cerr << "=============================================\n" << std::endl;
     std::cerr << std::endl;
 
-    //result.debugOutput();
+    BOOL_MESH_DEBUG_PRINTLN("------");
+    //result.debugOutputNodePoints();
+    BOOL_MESH_DEBUG_PRINTLN("------");
 }

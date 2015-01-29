@@ -11,7 +11,7 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters='-v &quot;/home/tim/Dropbox/3D_models/connected_meshes.stl&quot; ' />
+				<Option parameters='-v &quot;/home/tim/Dropbox/3D_models/Atlas_test.stl&quot; ' />
 				<Compiler>
 					<Add option="-Wzero-as-null-pointer-constant" />
 					<Add option="-std=c++11" />
@@ -19,6 +19,7 @@
 					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-Wno-sign-compare" />
+					<Add option="-Wno-trigraphs" />
 					<Add directory="include" />
 				</Compiler>
 				<Linker>
@@ -55,6 +56,8 @@
 		<Unit filename="src/BoundingBox.h" />
 		<Unit filename="src/Kernel.cpp" />
 		<Unit filename="src/Kernel.h" />
+		<Unit filename="src/MACROS.cpp" />
+		<Unit filename="src/MACROS.h" />
 		<Unit filename="src/boolMesh.cpp" />
 		<Unit filename="src/boolMesh.h" />
 		<Unit filename="src/commandSocket.cpp" />

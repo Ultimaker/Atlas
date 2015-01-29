@@ -72,11 +72,6 @@ struct FractureLinePart
         {
             node->data.debugOutput();
         }
-        std::cerr << "fracture node locations: " << std::endl;
-        for (Node* node : fracture.nodes)
-        {
-            BOOL_MESH_DEBUG_PRINTLN(node->data.p().x <<", " << node->data.p().y << ", " << node->data.p().z);
-        }
         std::cerr << "endPoints: " << std::endl;
         for (Arrow* a : endPoints)
             a->to->data.debugOutput();
@@ -84,6 +79,14 @@ struct FractureLinePart
         for (Arrow* a : fracture.arrows)
             std::cerr << " "<< a->from->data.getLocation() << "=" << a->data.lineSegment.from->getLocation() << " -> " << a->data.lineSegment.to->getLocation() << "=" << a->to->data.getLocation() << std::endl;
 
+    }
+    void debugOutputNodePoints()
+    {
+        std::cerr << "fracture node locations: " << std::endl;
+        for (Node* node : fracture.nodes)
+        {
+            BOOL_MESH_DEBUG_PRINTLN(node->data.p().x <<", " << node->data.p().y << ", " << node->data.p().z);
+        }
     }
 };
 
