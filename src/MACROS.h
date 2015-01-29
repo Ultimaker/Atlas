@@ -1,6 +1,25 @@
 
+#include <string.h>
 
-#define DEBUG_HERE std::cerr << __FILE__ << " : " << __LINE__ << std::endl
+#define __FILE_NAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
+
+#define DEBUG_HERE std::cerr << __FILE_NAME__ << " : " << __LINE__ << std::endl
+
+
+
+#define DEBUG 1
+
+#if DEBUG == 1
+#   define DEBUG_DO(x) DEBUG_DO(x)
+#   define DEBUG_SHOW(x) do {       std::cerr << __FILE_NAME__ << "." << __LINE__ << ": " << #x << " = " << x << std::endl; } while (0)
+#   define DEBUG_PRINTLN(x) do {    std::cerr << __FILE_NAME__ << "." << __LINE__ << ": " << x << std::endl; } while (0)
+#else
+#   define DEBUG_DO(x)
+#   define DEBUG_SHOW(x)
+#   define DEBUG_PRINTLN(x)
+#endif
+
 
 
 
@@ -23,3 +42,5 @@ if(isspace(str[i])) continue; \
 strings.push_back(temp.str()); \
 os << enumName << "::" << strings[static_cast<int>(value)]; \
 return os;}
+
+

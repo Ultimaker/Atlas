@@ -5,13 +5,19 @@
 
 #include "polyhedra.h" // for in testMakeManifold
 
+#include "../settings.h" // MAX_EDGES_PER_VERTEX
+
+#include "../MACROS.h" // debug
+
+
+#include "../MACROS.h" // debug
 // enable/disable debug output
 #define HE_MESH_DEBUG 0
 
-#define HE_MESH_DEBUG_SHOW(x) do { std::cerr << #x << " = " << x << std::endl; } while (0)
-#define HE_MESH_DEBUG_PRINTLN(x) do { std::cerr <<  x << std::endl; } while (0)
+#define HE_MESH_DEBUG_SHOW(x) DEBUG_SHOW(x)
+#define HE_MESH_DEBUG_PRINTLN(x) DEBUG_PRINTLN(x)
 #if HE_MESH_DEBUG == 1
-#  define HE_MESH_DEBUG_DO(x) do { x } while (0);
+#  define HE_MESH_DEBUG_DO(x) DEBUG_DO(x)
 #else
 #  define HE_MESH_DEBUG_DO(x)
 #endif
@@ -366,47 +372,57 @@ void HE_Mesh::testMakeManifold(PrintObject* model)
 }
 
 
-void HE_Mesh::checkModel(std::vector<ModelProblem> problems)
+void HE_Mesh::checkModel(std::vector<ModelProblem>& problems)
 {
     for (int f = 0; f < faces.size(); f++)
     {
-        if (faces[f].edge_idx[0] < 0) { problems.emplace_back("face doesn't know its edges!"); continue; }
-        if (faces[f].edge_idx[1] < 0) { problems.emplace_back("face doesn't know its edges!"); continue; }
-        if (faces[f].edge_idx[2] < 0) { problems.emplace_back("face doesn't know its edges!"); continue; }
+        if (faces[f].edge_idx[0] < 0) { problems.emplace_back("face doesn't know its edges! : " + std::to_string(f)); continue; }
+        if (faces[f].edge_idx[1] < 0) { problems.emplace_back("face doesn't know its edges! : " + std::to_string(f)); continue; }
+        if (faces[f].edge_idx[2] < 0) { problems.emplace_back("face doesn't know its edges! : " + std::to_string(f)); continue; }
         HE_FaceHandle fh(*this, f);
-        if (fh.edge0().next() != fh.edge1()) problems.emplace_back("disconnected prev-next edges");
-        if (fh.edge1().next() != fh.edge2()) problems.emplace_back("disconnected prev-next edges");
-        if (fh.edge2().next() != fh.edge0()) problems.emplace_back("disconnected prev-next edges");
-        if (fh.edge0().face() != fh) problems.emplace_back("face's edge not connected to face");
-        if (fh.edge1().face() != fh) problems.emplace_back("face's edge not connected to face");
-        if (fh.edge2().face() != fh) problems.emplace_back("face's edge not connected to face");
+        if (fh.edge0().next() != fh.edge1()) problems.emplace_back("disconnected prev-next edges : " + std::to_string(f));
+        if (fh.edge1().next() != fh.edge2()) problems.emplace_back("disconnected prev-next edges : " + std::to_string(f));
+        if (fh.edge2().next() != fh.edge0()) problems.emplace_back("disconnected prev-next edges : " + std::to_string(f));
+        if (fh.edge0().face() != fh) problems.emplace_back("face's edge not connected to face : " + std::to_string(f));
+        if (fh.edge1().face() != fh) problems.emplace_back("face's edge not connected to face : " + std::to_string(f));
+        if (fh.edge2().face() != fh) problems.emplace_back("face's edge not connected to face : " + std::to_string(f));
     }
     for (int e = 0; e < edges.size(); e++)
     {
         bool hasNull = false;
-        if(edges[e].from_vert_idx < 0) { problems.emplace_back("edge doesn't know its vert!"); hasNull = true; }
-        if(edges[e].next_edge_idx < 0) { problems.emplace_back("edge doesn't know its next edge!"); hasNull = true; }
-        if(edges[e].converse_edge_idx < 0) { problems.emplace_back("edge doesn't know its converse!"); hasNull = true; }
-        if(edges[e].face_idx < 0) { problems.emplace_back("edge doesn't know its face!"); hasNull = true; }
+        if(edges[e].from_vert_idx < 0) { problems.emplace_back("edge doesn't know its vert! : " + std::to_string(e)); hasNull = true; }
+        if(edges[e].next_edge_idx < 0) { problems.emplace_back("edge doesn't know its next edge! : " + std::to_string(e)); hasNull = true; }
+        if(edges[e].converse_edge_idx < 0) { problems.emplace_back("edge doesn't know its converse! : " + std::to_string(e)); hasNull = true; }
+        if(edges[e].face_idx < 0) { problems.emplace_back("edge doesn't know its face! : " + std::to_string(e)); hasNull = true; }
         if (hasNull) continue;
 
         HE_EdgeHandle eh(*this, e);
-        if(eh.converse().converse() != eh) problems.emplace_back("edge isn't the converse of its converse");
+        if(eh.converse().converse() != eh) problems.emplace_back("edge isn't the converse of its converse : " + std::to_string(e));
 
+        int counter = 0;
+        HE_EdgeHandle eh2 = eh;
+        do
+        {
+            if (counter > MAX_EDGES_PER_VERTEX) {
+                problems.emplace_back("edges don't form a circular loop! : " + std::to_string(e)); break; } // continue outer for-loop
+            eh2 = eh2.converse().next(); counter++;
+        } while (eh2 != eh);
+        // dont put more code here
     }
     for (int v = 0; v < vertices.size(); v++)
     {
-        if (vertices[v].someEdge_idx < 0) { problems.emplace_back("vertex doesn't know any edge!"); continue; }
+        if (vertices[v].someEdge_idx < 0) { problems.emplace_back("vertex doesn't know any edge! : " + std::to_string(v)); continue; }
         HE_VertexHandle vh(*this, v);
 
-        int counter = 0;
-        HE_EdgeHandle eh = vh.someEdge();
-        do
-        {
-            if (counter > 10000) { problems.emplace_back("vertex edges don't form a circular loop!"); break; } // continue outer for-loop
-            eh = eh.converse().next(); counter++;
-        } while (eh != vh.someEdge());
-        // dont put more code here
+// done for each edge!
+//        int counter = 0;
+//        HE_EdgeHandle eh = vh.someEdge();
+//        do
+//        {
+//            if (counter > MAX_EDGES_PER_VERTEX) { problems.emplace_back("vertex edges don't form a circular loop!"); break; } // continue outer for-loop
+//            eh = eh.converse().next(); counter++;
+//        } while (eh != vh.someEdge());
+//        // dont put more code here
     }
 
 

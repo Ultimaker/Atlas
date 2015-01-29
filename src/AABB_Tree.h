@@ -8,13 +8,15 @@
 
 #include "BoundingBox.h"
 
+#include "MACROS.h" // debug
+
 // enable/disable debug output
 #define AABB_DEBUG 0
 
 #if AABB_DEBUG == 1
-#   define AABB_DEBUG_DO(x) do { x } while (0);
-#   define AABB_DEBUG_SHOW(x) do { std::cerr << #x << " = " << x << std::endl; } while (0)
-#   define AABB_DEBUG_PRINTLN(x) do { std::cerr <<  x << std::endl; } while (0)
+#   define AABB_DEBUG_DO(x) DEBUG_DO(x)
+#   define AABB_DEBUG_SHOW(x) DEBUG_SHOW(x)
+#   define AABB_DEBUG_PRINTLN(x) DEBUG_PRINTLN(x)
 #else
 #   define AABB_DEBUG_DO(x)
 #   define AABB_DEBUG_SHOW(x)

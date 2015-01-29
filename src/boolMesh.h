@@ -25,13 +25,15 @@
 
 #include "utils/graph.h"
 
+
+#include "MACROS.h" // debug
 // enable/disable debug output
 #define BOOL_MESH_DEBUG 1
 
 #if BOOL_MESH_DEBUG == 1
-#   define BOOL_MESH_DEBUG_DO(x) do { x } while (0);
-#   define BOOL_MESH_DEBUG_SHOW(x) do { std::cerr << #x << " = " << x << std::endl; } while (0)
-#   define BOOL_MESH_DEBUG_PRINTLN(x) do { std::cerr <<  x << std::endl; } while (0)
+#   define BOOL_MESH_DEBUG_DO(x) DEBUG_DO(x)
+#   define BOOL_MESH_DEBUG_SHOW(x) DEBUG_SHOW(x)
+#   define BOOL_MESH_DEBUG_PRINTLN(x) DEBUG_PRINTLN(x)
 #else
 #   define BOOL_MESH_DEBUG_DO(x)
 #   define BOOL_MESH_DEBUG_SHOW(x)
@@ -73,7 +75,7 @@ struct FractureLinePart
         std::cerr << "fracture node locations: " << std::endl;
         for (Node* node : fracture.nodes)
         {
-            BOOL_MESH_DEBUG_PRINTLN(node->data.p());
+            BOOL_MESH_DEBUG_PRINTLN(node->data.p().x <<", " << node->data.p().y << ", " << node->data.p().z);
         }
         std::cerr << "endPoints: " << std::endl;
         for (Arrow* a : endPoints)

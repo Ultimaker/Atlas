@@ -4,13 +4,15 @@
 #include "HEPMeshEdge.h"
 #include "HEPMeshVertex.h"
 
+
+#include "../MACROS.h" // debug
 // enable/disable debug output
 #define HEP_MESH_DEBUG 0
 
 #define HEP_MESH_DEBUG_SHOW(x) do { std::cerr << #x << ": " << x << std::endl; } while (0)
-#define HEP_MESH_DEBUG_PRINTLN(x) do { std::cerr <<  x << std::endl; } while (0)
+#define HEP_MESH_DEBUG_PRINTLN(x) DEBUG_PRINTLN(x)
 #if HEP_MESH_DEBUG == 1
-#  define HEP_MESH_DEBUG_DO(x) do { x } while (0);
+#  define HEP_MESH_DEBUG_DO(x) DEBUG_DO(x)
 #else
 #  define HEP_MESH_DEBUG_DO(x)
 #endif

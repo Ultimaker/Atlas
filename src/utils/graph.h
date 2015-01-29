@@ -7,13 +7,15 @@
 
 #include "../Kernel.h"
 
+
+#include "../MACROS.h" // debug
 // enable/disable debug output
 #define GRAPH_DEBUG 1
 
 #if GRAPH_DEBUG == 1
-#   define GRAPH_DEBUG_DO(x) do { x } while (0);
-#   define GRAPH_DEBUG_SHOW(x) do { std::cerr << #x << " = " << x << std::endl; } while (0)
-#   define GRAPH_DEBUG_PRINTLN(x) do { std::cerr <<  x << std::endl; } while (0)
+#   define GRAPH_DEBUG_DO(x) DEBUG_DO(x)
+#   define GRAPH_DEBUG_SHOW(x) DEBUG_SHOW(x)
+#   define GRAPH_DEBUG_PRINTLN(x) DEBUG_PRINTLN(x)
 #else
 #   define GRAPH_DEBUG_DO(x)
 #   define GRAPH_DEBUG_SHOW(x)

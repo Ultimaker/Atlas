@@ -13,13 +13,15 @@
 
 #include "mesh/HalfEdgeMesh.h"
 
+
+#include "MACROS.h" // debug
 // enable/disable debug output
 #define ADV_SUP_DEBUG 0
 
-#define ADV_SUP_DEBUG_SHOW(x) do { std::cerr << #x << " = " << x << std::endl; } while (0)
-#define ADV_SUP_DEBUG_PRINTLN(x) do { std::cerr <<  x << std::endl; } while (0)
+#define ADV_SUP_DEBUG_SHOW(x) DEBUG_SHOW(x)
+#define ADV_SUP_DEBUG_PRINTLN(x) DEBUG_PRINTLN(x)
 #if ADV_SUP_DEBUG == 1
-#  define ADV_SUP_DEBUG_DO(x) do { x } while (0);
+#  define ADV_SUP_DEBUG_DO(x) DEBUG_DO(x)
 #else
 #  define ADV_SUP_DEBUG_DO(x)
 #endif

@@ -24,13 +24,15 @@
 
 #include <boost/optional.hpp> // ==maybe
 
+
+#include "MACROS.h" // debug
 // enable/disable debug output
-#define TRIANGLE_INTERSECT_DEBUG 1
+#define TRIANGLE_INTERSECT_DEBUG 0
 
 #if TRIANGLE_INTERSECT_DEBUG == 1
-#   define TRIANGLE_INTERSECT_DEBUG_DO(x) do { x } while (0);
-#   define TRIANGLE_INTERSECT_DEBUG_SHOW(x) do { std::cerr << #x << " = " << x << std::endl; } while (0)
-#   define TRIANGLE_INTERSECT_DEBUG_PRINTLN(x) do { std::cerr <<  x << std::endl; } while (0)
+#   define TRIANGLE_INTERSECT_DEBUG_DO(x) DEBUG_DO(x)
+#   define TRIANGLE_INTERSECT_DEBUG_SHOW(x) DEBUG_SHOW(x)
+#   define TRIANGLE_INTERSECT_DEBUG_PRINTLN(x) DEBUG_PRINTLN(x)
 #else
 #   define TRIANGLE_INTERSECT_DEBUG_DO(x)
 #   define TRIANGLE_INTERSECT_DEBUG_SHOW(x)

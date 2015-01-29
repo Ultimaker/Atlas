@@ -6,13 +6,15 @@
 
 #include "Kernel.h"
 
+
+#include "MACROS.h" // debug
 // enable/disable debug output
 #define BBOX_DEBUG 0
 
 #if BBOX_DEBUG == 1
-#   define BBOX_DEBUG_DO(x) do { x } while (0);
-#   define BBOX_DEBUG_SHOW(x) do { std::cerr << #x << " = " << x << std::endl; } while (0)
-#   define BBOX_DEBUG_PRINTLN(x) do { std::cerr <<  x << std::endl; } while (0)
+#   define BBOX_DEBUG_DO(x) DEBUG_DO(x)
+#   define BBOX_DEBUG_SHOW(x) DEBUG_SHOW(x)
+#   define BBOX_DEBUG_PRINTLN(x) DEBUG_PRINTLN(x)
 #else
 #   define BBOX_DEBUG_DO(x)
 #   define BBOX_DEBUG_SHOW(x)

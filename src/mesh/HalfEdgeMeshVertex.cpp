@@ -10,13 +10,15 @@
 
 #include <set>
 
+
+#include "../MACROS.h" // debug
 // enable/disable debug output
 #define HE_MESH_DEBUG 1
 
-#define HE_MESH_DEBUG_SHOW(x) do { std::cerr << #x << " = " << x << std::endl; } while (0)
-#define HE_MESH_DEBUG_PRINTLN(x) do { std::cerr <<  x << std::endl; } while (0)
+#define HE_MESH_DEBUG_SHOW(x) DEBUG_SHOW(x)
+#define HE_MESH_DEBUG_PRINTLN(x) DEBUG_PRINTLN(x)
 #if HE_MESH_DEBUG == 1
-#  define HE_MESH_DEBUG_DO(x) do { x } while (0);
+#  define HE_MESH_DEBUG_DO(x) DEBUG_DO(x)
 #else
 #  define HE_MESH_DEBUG_DO(x)
 #endif
@@ -61,13 +63,28 @@ void HE_VertexHandle::getConnectedEdgeGroups(FVMeshVertexHandle& correspondingFV
         HE_EdgeHandle outEdgeFirst = fh.getEdgeFrom(*this);
 
         HE_EdgeHandle outEdge = outEdgeFirst;
+        int counter = 0;
         do
         {
+            if (counter > MAX_EDGES_PER_VERTEX)
+            {
+                std::cout << "too many edges on vertex!!" << std::endl;
+                        std::cout << outEdgeFirst.idx << std::endl;
+
+                        int c2 = 0;
+                        do
+                        {
+                            if (++c2 > 20) break;
+                            std::cout << outEdge.idx << std::endl;
+                            outEdge = outEdge.converse().next();
+                        } while (outEdge != outEdgeFirst);
+                break;
+            }
             currentGroup.push_back(outEdge);
             checkedFaces.insert(outEdge.face().idx);
 //            HE_EdgeHandle nxt = outEdge.converse().next();
 //            outEdge = nxt;
-            outEdge = outEdge.converse().next();
+            outEdge = outEdge.converse().next(); counter++;
         } while (outEdge != outEdgeFirst);
 
         result.push_back(currentGroup);
@@ -155,6 +172,6 @@ void HE_VertexHandle::splitWhenNonManifold(FVMeshVertexHandle& correspondingFVMe
 
     }
 
-
+    DEBUG_HERE;
 }
 

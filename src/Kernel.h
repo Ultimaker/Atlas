@@ -15,6 +15,5 @@ typedef Point3 Point;
 
 typedef Point3d PointD; // double precision / double the size
 
-static const spaceType MELD_DISTANCE = 30;
 
 #endif // KERNEL_H

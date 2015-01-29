@@ -6,6 +6,10 @@
 
 #include "modelFile/modelFile.h" // PrintObject
 
+#include "settings.h" // MAX_EDGES_PER_VERTEX
+
+#include "MACROS.h" // debug
+
 void BooleanMeshOps::subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& result)
 {
 //! is more efficient when keep is smaller than subtracted.
@@ -76,12 +80,8 @@ void BooleanMeshOps::completeFractureLine(std::shared_ptr<TriangleIntersection> 
 
 }
 
-spaceType inaccuracy = 20;
+spaceType inaccuracy = 20; //!< the margin of error between the endpoint of the first triangle and the startpoint of the second
 
-inline bool isEqual(Point& a, Point& b)
-{
-    return (a-b).testLength(inaccuracy);
-}
 
 
 void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, std::shared_ptr<TriangleIntersection> first, FractureLinePart& result)
@@ -106,8 +106,6 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
 
     result.start = first_arrow;
 
-    result.debugOutput();
-
     checked_faces.insert(triangle2);
 
 
@@ -123,9 +121,11 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
     while (!todo.empty())
     {
         counter++;
-        if (counter % 1000000 == 0)
+        if (counter == MAX_EDGES_PER_VERTEX)
+        {
             std::cerr << "triangle seems to intersect with over " << counter << " triangles in the other mesh! infinite loop?" << std::endl;
-
+            break;
+        }
         Arrow* current = todo.back();
         todo.pop_back();
 
@@ -161,7 +161,7 @@ void BooleanMeshOps::getFacetIntersectionlineSegment(HE_FaceHandle& triangle1, H
             int edge_counter = 0;
             do {
                 edge_counter++;
-                if (edge_counter > 1000)
+                if (edge_counter > MAX_EDGES_PER_VERTEX)
                 {
                     std::cerr << "Vertex seems to be connected to over 1000 edges, breaking edges-around-vertex-iteration!" << std::endl;
                     break;
@@ -209,18 +209,17 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
 
     Node* new_node;
 
-    if (isEqual(connectingPoint.p(), triangleIntersection.to->p()))
+    if ((connectingPoint.p() - triangleIntersection.to->p()).vSize2() < (connectingPoint.p() - triangleIntersection.from->p()).vSize2() )
     {
         BOOL_MESH_DEBUG_PRINTLN(connectingPoint.p() <<" =~= "<< triangleIntersection.to->p());
         BOOL_MESH_DEBUG_PRINTLN("swapping...");
         std::swap(triangleIntersection.from, triangleIntersection.to);
         std::swap(triangleIntersection.isDirectionOfInnerPartOfTriangle1, triangleIntersection.isDirectionOfInnerPartOfTriangle2);
     }
-    else
+    if ( ! (connectingPoint.p() - triangleIntersection.from->p()).testLength(inaccuracy)  )
     {
-        BOOL_MESH_DEBUG_PRINTLN("asserting :");
-        BOOL_MESH_DEBUG_SHOW(isEqual(connectingPoint.p(), triangleIntersection.from->p()));
-        assert (isEqual(connectingPoint.p(), triangleIntersection.from->p()));
+        BOOL_MESH_DEBUG_PRINTLN("warning! large difference between endpoint of first triangle intersection and start point of second! :");
+        BOOL_MESH_DEBUG_SHOW((connectingPoint.p() - triangleIntersection.from->p()).vSize2());
     }
 
 
@@ -243,8 +242,9 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
         }
     } else
     {
-        if (isEqual(triangleIntersection.to->getLocation(), result.start->from->data.getLocation()))
+        if ( (triangleIntersection.to->getLocation() - result.start->from->data.getLocation()).testLength(inaccuracy) )
         {
+            BOOL_MESH_DEBUG_PRINTLN("connecting to starting node...");
             new_node = result.start->from;
         } else
         {
@@ -295,20 +295,28 @@ void BooleanMeshOps::test_getFacetIntersectionlineSegment(PrintObject* model)
 
     FVMesh& mesh = model->meshes[0];
 
+    DEBUG_HERE;
 
     HE_Mesh heMesh(mesh);
-    heMesh.makeManifold(mesh);
+    DEBUG_HERE;
 
     std::vector<ModelProblem> problems;
     heMesh.checkModel(problems);
     if (problems.size() > 0)
     {
-        std::cout << "Model problems detected!" << std::endl;
+        std::cout << "Model problems detected! :" << std::endl;
         for (ModelProblem problem : problems)
         {
             std::cout << problem.msg << std::endl;
         }
-    }
+        std::exit(0);
+    } else std::cout << " no problems! :D" << std::endl;
+
+
+    heMesh.makeManifold(mesh);
+
+    DEBUG_HERE;
+
 
     HE_Mesh other;
     other.vertices.emplace_back(mesh.bbox.mid() + Point3(2*mesh.bbox.size().x,0,0), 0);
@@ -332,7 +340,7 @@ void BooleanMeshOps::test_getFacetIntersectionlineSegment(PrintObject* model)
     {
         HE_FaceHandle face(heMesh, f);
         triangleIntersection = TriangleIntersectionComputation::intersect(face, otherFace);
-        BOOL_MESH_DEBUG_PRINTLN((triangleIntersection->intersectionType));
+        //BOOL_MESH_DEBUG_PRINTLN((triangleIntersection->intersectionType));
         if (triangleIntersection->intersectionType == IntersectionType::LINE_SEGMENT) break;
     }
     if (f == heMesh.faces.size())
@@ -373,7 +381,7 @@ void BooleanMeshOps::test_getFacetIntersectionlineSegment(PrintObject* model)
         exit(0);
     }
 
-    heMesh.debugOutputWholeMesh();
+    //heMesh.debugOutputWholeMesh();
 
 
     HE_FaceHandle intersectingFace(heMesh, f);
@@ -392,5 +400,5 @@ void BooleanMeshOps::test_getFacetIntersectionlineSegment(PrintObject* model)
     std::cerr << "=============================================\n" << std::endl;
     std::cerr << std::endl;
 
-    result.debugOutput();
+    //result.debugOutput();
 }

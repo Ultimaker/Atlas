@@ -6,6 +6,8 @@
 
 #include "utils/floatpoint.h"
 
+#include "Kernel.h" // spaceType
+
 #ifndef VERSION
 #define VERSION "DEV"
 #endif
@@ -34,6 +36,10 @@ enum Support_Pattern
 #define CONFIG_MULTILINE_SEPARATOR "\"\"\""
 
 
+
+static const spaceType MELD_DISTANCE = 30;
+
+#define MAX_EDGES_PER_VERTEX 1000
 
 
 class SettingsBase
