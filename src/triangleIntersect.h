@@ -108,6 +108,17 @@ public:
             return vertex == other.vertex;
         }
     }
+    bool compareSourceConverse(const IntersectionPoint& other)
+    {
+        if (type != other.type) return false;
+        switch (type)
+        {
+        case IntersectionPointType::NEW:
+            return edge.converse() == other.edge;
+        case IntersectionPointType::VERTEX:
+            return vertex == other.vertex;
+        }
+    }
 
 };
 

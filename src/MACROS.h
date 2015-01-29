@@ -33,8 +33,10 @@
 
 
 
-
-#define ENUM(name, ...) enum class name { __VA_ARGS__, __COUNT}; \
+#if 0==1
+#define ENUM(name, ...) enum class name { __VA_ARGS__, __COUNT};
+#endif
+#define ENUM(name, ...) enum class name { __VA_ARGS__}; \
 inline std::ostream& operator<<(std::ostream& os, name value) { \
 std::string enumName = #name; \
 std::string str = #__VA_ARGS__; \

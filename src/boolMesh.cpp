@@ -214,7 +214,7 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
 
     Node* new_node;
 
-    if ((connectingPoint.p() - triangleIntersection.to->p()).vSize2() < (connectingPoint.p() - triangleIntersection.from->p()).vSize2() )
+    if ( triangleIntersection.to->compareSourceConverse(*triangleIntersection.from) )
     {
         BOOL_MESH_DEBUG_PRINTLN(connectingPoint.p() <<" =~= "<< triangleIntersection.to->p());
         BOOL_MESH_DEBUG_PRINTLN("swapping...");
@@ -247,7 +247,7 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
         }
     } else
     {
-        if ( (triangleIntersection.to->getLocation() - result.start->from->data.getLocation()).testLength(inaccuracy) )
+        if ( triangleIntersection.to->compareSourceConverse( result.start->from->data ) )
         {
             BOOL_MESH_DEBUG_PRINTLN("connecting to starting node...");
             new_node = result.start->from;
