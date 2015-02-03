@@ -46,15 +46,15 @@ struct HE_FaceHandle : public MeshFaceHandle<HE_Vertex, HE_VertexHandle, HE_Face
 {
     HE_FaceHandle(HE_Mesh& m, int idx) : MeshFaceHandle(m, idx) {};
 
-    HE_VertexHandle v0();
-    HE_VertexHandle v1();
-    HE_VertexHandle v2();
+    HE_VertexHandle v0() const ;
+    HE_VertexHandle v1() const ;
+    HE_VertexHandle v2() const ;
 
-    HE_EdgeHandle edge0();
-    HE_EdgeHandle edge1();
-    HE_EdgeHandle edge2();
+    HE_EdgeHandle edge0() const ;
+    HE_EdgeHandle edge1() const ;
+    HE_EdgeHandle edge2() const ;
 
-    HE_EdgeHandle getEdgeFrom(HE_VertexHandle& v);
+    HE_EdgeHandle getEdgeFrom(HE_VertexHandle& v) const ;
 
 };
 

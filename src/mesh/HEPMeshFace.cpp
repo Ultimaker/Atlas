@@ -18,36 +18,36 @@
 #endif
 
 
-HEP_EdgeHandle HEP_FaceHandle::edge0()
+HEP_EdgeHandle HEP_FaceHandle::edge0() const
 {
     return HEP_EdgeHandle(*m, f.edge[0]);
 }
 
-HEP_EdgeHandle HEP_FaceHandle::edge1()
+HEP_EdgeHandle HEP_FaceHandle::edge1() const
 {
     return HEP_EdgeHandle(*m, f.edge[1]);
 }
 
-HEP_EdgeHandle HEP_FaceHandle::edge2()
+HEP_EdgeHandle HEP_FaceHandle::edge2() const
 {
     return HEP_EdgeHandle(*m, f.edge[2]);
 }
 
-HEP_VertexHandle HEP_FaceHandle::v0()
+HEP_VertexHandle HEP_FaceHandle::v0() const
 {
     return edge0().from_vert();
 }
 
-HEP_VertexHandle HEP_FaceHandle::v1()
+HEP_VertexHandle HEP_FaceHandle::v1() const
 {
     return edge1().from_vert();
 }
 
-HEP_VertexHandle HEP_FaceHandle::v2()
+HEP_VertexHandle HEP_FaceHandle::v2() const
 {
     return edge2().from_vert();
 }
-HEP_EdgeHandle HEP_FaceHandle::getEdgeFrom(HEP_VertexHandle& v)
+HEP_EdgeHandle HEP_FaceHandle::getEdgeFrom(HEP_VertexHandle& v) const
 {
     if (edge0().from_vert() == v) return edge0();
     if (edge1().from_vert() == v) return edge1();

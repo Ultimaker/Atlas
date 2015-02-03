@@ -18,37 +18,37 @@
 #endif
 
 
-HE_EdgeHandle HE_FaceHandle::edge0()
+HE_EdgeHandle HE_FaceHandle::edge0() const
 {
     return HE_EdgeHandle(*m, m->faces[idx].edge_idx[0]);
 }
 
-HE_EdgeHandle HE_FaceHandle::edge1()
+HE_EdgeHandle HE_FaceHandle::edge1() const
 {
     return HE_EdgeHandle(*m, m->faces[idx].edge_idx[1]);
 }
 
-HE_EdgeHandle HE_FaceHandle::edge2()
+HE_EdgeHandle HE_FaceHandle::edge2() const
 {
     return HE_EdgeHandle(*m, m->faces[idx].edge_idx[2]);
 }
 
-HE_VertexHandle HE_FaceHandle::v0()
+HE_VertexHandle HE_FaceHandle::v0() const
 {
     return edge0().from_vert();
 }
 
-HE_VertexHandle HE_FaceHandle::v1()
+HE_VertexHandle HE_FaceHandle::v1() const
 {
     return edge1().from_vert();
 }
 
-HE_VertexHandle HE_FaceHandle::v2()
+HE_VertexHandle HE_FaceHandle::v2() const
 {
     return edge2().from_vert();
 }
 
-HE_EdgeHandle HE_FaceHandle::getEdgeFrom(HE_VertexHandle& v)
+HE_EdgeHandle HE_FaceHandle::getEdgeFrom(HE_VertexHandle& v) const
 {
     if (edge0().from_vert() == v) return edge0();
     if (edge1().from_vert() == v) return edge1();

@@ -47,20 +47,20 @@ struct HEP_FaceHandle : public MeshFaceHandle<HEP_Vertex, HEP_VertexHandle, HEP_
     HEP_Face& face() { return f; };
     HEP_FaceHandle(HEP_Mesh& m, HEP_Face* face) : MeshFaceHandle(m, -1), f(*face) {};
 
-    HEP_VertexHandle v0();
-    HEP_VertexHandle v1();
-    HEP_VertexHandle v2();
+    HEP_VertexHandle v0() const ;
+    HEP_VertexHandle v1() const ;
+    HEP_VertexHandle v2() const ;
 
-    HEP_EdgeHandle edge0();
-    HEP_EdgeHandle edge1();
-    HEP_EdgeHandle edge2();
+    HEP_EdgeHandle edge0() const ;
+    HEP_EdgeHandle edge1() const ;
+    HEP_EdgeHandle edge2() const ;
 
     bool operator==(const HEP_FaceHandle& b) const { return &f==&b.f; };
     bool operator!=(const HEP_FaceHandle &other) const {
         return !(*this == other);
     };
 
-    HEP_EdgeHandle getEdgeFrom(HEP_VertexHandle& v);
+    HEP_EdgeHandle getEdgeFrom(HEP_VertexHandle& v) const ;
 };
 
 #endif // HEPMESHFACE_H

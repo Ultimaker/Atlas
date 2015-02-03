@@ -32,11 +32,11 @@ struct MeshFaceHandle
 
     F& face() { return m->faces[idx]; };
 
-    virtual VH v0() =0;
-    virtual VH v1() =0;
-    virtual VH v2() =0;
+    virtual VH v0() const =0;
+    virtual VH v1() const =0;
+    virtual VH v2() const =0;
 
-    VH v(int i) {
+    VH v(int i) const {
         switch(i)
         {
         case 0: return v0();
@@ -46,13 +46,13 @@ struct MeshFaceHandle
         return v0();
     }
 
-    Point& p0() { return v0().vertex().p; };
-    Point& p1() { return v1().vertex().p; };
-    Point& p2() { return v2().vertex().p; };
+    Point& p0() const { return v0().vertex().p; };
+    Point& p1() const { return v1().vertex().p; };
+    Point& p2() const { return v2().vertex().p; };
 
-    bool hasVertex(VH vh) { return v0()==vh || v1()==vh || v2()==vh; };
+    bool hasVertex(VH vh) const { return v0()==vh || v1()==vh || v2()==vh; };
 
-    Point& p(int i)
+    Point& p(int i)  const
     {
         switch(i)
         {

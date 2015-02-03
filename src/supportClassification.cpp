@@ -653,7 +653,7 @@ void SupportPointsGenerator::testSupportPointsGenerator(PrintObject* model)
 
         SupportPointsGenerator pg(supporter, 1, 2, 3, 300);
         std::cerr << "n points generated: " << pg.supportPoints.size() << std::endl;
-        std::ofstream out("bs/supportClassification.obj");
+        std::ofstream out("supportClassification.obj");
         for (int p = 0; p < pg.supportPoints.size() ; p++)
         {
             Point3 pp = pg.supportPoints[p].p;

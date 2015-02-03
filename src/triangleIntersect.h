@@ -27,7 +27,7 @@
 
 #include "MACROS.h" // debug
 // enable/disable debug output
-#define TRIANGLE_INTERSECT_DEBUG 1
+#define TRIANGLE_INTERSECT_DEBUG 0
 
 #if TRIANGLE_INTERSECT_DEBUG == 1
 #   define TRIANGLE_INTERSECT_DEBUG_DO(x) DEBUG_DO(x)
@@ -97,6 +97,14 @@ public:
         std::cerr << getLocation() << "\t " << (type) << ",\t idx = " << ((type == IntersectionPointType::NEW)? edge.idx : vertex.idx)<< "\t face :" << ((type == IntersectionPointType::NEW)? edge.face().idx : -1) << std::endl;
     };
 
+    HE_Mesh* getSourceMesh()
+    {
+        switch (type) {
+        case IntersectionPointType::NEW: return edge.m;
+        case IntersectionPointType::VERTEX: return vertex.m;
+        }
+        return edge.m;
+    };
     bool compareSource(const IntersectionPoint& other)
     {
         if (type != other.type) return false;
@@ -119,7 +127,15 @@ public:
             return vertex == other.vertex;
         }
     }
-
+    bool belongsToSource(const HE_FaceHandle fh)
+    {
+        switch(type) {
+        case IntersectionPointType::NEW:
+            return edge.face() == fh;
+        case IntersectionPointType::VERTEX:
+            return fh.hasVertex(vertex);
+        }
+    }
 };
 
 

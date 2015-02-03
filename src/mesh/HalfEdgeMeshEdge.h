@@ -69,5 +69,14 @@ struct HE_EdgeHandle
     HE_EdgeHandle& operator =(const HE_EdgeHandle& other);
 };
 
-
+namespace std {
+template <>
+class hash<HE_EdgeHandle> {
+public:
+    size_t operator()(const HE_EdgeHandle & eh) const
+    {
+    return eh.idx;
+    }
+};
+}
 #endif // HALFEDGEMESHEDGE_H

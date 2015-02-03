@@ -10,6 +10,7 @@
 #include <list> // == double-linked list, used as queue
 
 #include <unordered_map> // == hash_map
+#include <unordered_set> // == hash_set
 
 #include <string>       // std::string
 #include <sstream>      // std::stringstream,
@@ -59,9 +60,21 @@ struct FractureLinePart
 {
     // when two triangles are coplanar, the intersection is non-linear ( => graph-like)
     // also where a vertex lies exactly on a triangle of the other mesh, the intersection can be non-linear ( => graph-like)
+    HE_FaceHandle face;
     Graph<IntersectionPoint, IntersectionSegment> fracture;
     Arrow* start;
     std::vector<Arrow*> endPoints;
+
+    FractureLinePart(HE_FaceHandle face) : face(face) {};
+
+    void endPointsFaces(std::unordered_set<HE_FaceHandle>& result)
+    {
+        for (Arrow* a : endPoints)
+            result.emplace(a->data.otherFace);
+        if (start==nullptr)
+            BOOL_MESH_DEBUG_PRINTLN("start of fracture is NULL!");
+        result.emplace(start->data.otherFace);
+    }
 
     void debugOutput()
     {
@@ -103,10 +116,10 @@ protected:
     HE_Mesh& keep, subtracted;
     std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fracturelines_mesh1;
     std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fracturelines_mesh2;
-    static void getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, std::shared_ptr<TriangleIntersection> first, FractureLinePart& result); //!< adds all intersections connected to the first which intersect with the triangle to the mapping of the triangle
+    static void getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, TriangleIntersection& first, FractureLinePart& result); //!< adds all intersections connected to the first which intersect with the triangle to the mapping of the triangle
     static void addIntersectionToGraphAndTodo(Node& connectingNode, TriangleIntersection& triangleIntersection, HE_FaceHandle originalFace, HE_FaceHandle newFace, std::unordered_map<HE_VertexHandle, Node*>& vertex2node, FractureLinePart& result, std::list<Arrow*>& todo);
 
-    static void completeFractureLine(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, std::shared_ptr<TriangleIntersection> first, std::unordered_map<HE_FaceHandle, FractureLinePart>& face2fracture); //!< walks along (each) fracture line part recording all fracture line segemnts in the maps, until whole fracture is explored (a fracture line can split)
+    static void completeFractureLine(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, TriangleIntersection& first, std::unordered_map<HE_FaceHandle, FractureLinePart>& face2fracture); //!< walks along (each) fracture line part recording all fracture line segemnts in the maps, until whole fracture is explored (a fracture line can split)
 
 };
 

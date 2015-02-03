@@ -124,7 +124,7 @@ public:
 
 
         std::cerr << " >>>>>>>>>>>>> saving to file " << std::endl;
-        saveFVMeshToFile(supportFVMesh, "bs/blockSupport.stl");
+        saveFVMeshToFile(supportFVMesh, "blockSupport.stl");
 
 */
 //        TriangleIntersectionComputation::test();
