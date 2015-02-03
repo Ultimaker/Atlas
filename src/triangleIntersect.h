@@ -27,7 +27,7 @@
 
 #include "MACROS.h" // debug
 // enable/disable debug output
-#define TRIANGLE_INTERSECT_DEBUG 0
+#define TRIANGLE_INTERSECT_DEBUG 1
 
 #if TRIANGLE_INTERSECT_DEBUG == 1
 #   define TRIANGLE_INTERSECT_DEBUG_DO(x) DEBUG_DO(x)

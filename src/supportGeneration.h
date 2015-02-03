@@ -27,7 +27,7 @@ class SupportBlockGenerator
     public:
 
 
-        SupportBlockGenerator(SupportChecker& checker, HE_Mesh& mesh) : dz(0,0,dZ_to_object), checker(checker), mesh(mesh), bbox(mesh.bbox()) {};
+        SupportBlockGenerator(SupportChecker& checker, HE_Mesh& mesh) : dz(0,0,dZ_to_object), checker(checker), mesh(mesh), bbox(mesh.computeBbox()) {};
         virtual ~SupportBlockGenerator();
 
 

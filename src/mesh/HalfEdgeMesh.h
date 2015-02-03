@@ -95,7 +95,7 @@ class HE_Mesh : public Mesh<HE_Vertex, HE_VertexHandle, HE_Face, HE_FaceHandle> 
         int createVertex(Point p);
         int createConverse(int e_idx);
 
-        BoundingBox bbox();
+        BoundingBox computeBbox();
         BoundingBox computeFaceBbox(int f);
 
 

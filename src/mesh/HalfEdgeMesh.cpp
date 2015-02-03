@@ -138,7 +138,7 @@ int HE_Mesh::createFace(int v0_idx, int v1_idx, int v2_idx)
 //}
 
 
-BoundingBox HE_Mesh::bbox()
+BoundingBox HE_Mesh::computeBbox()
 {
     BoundingBox ret(vertices[0].p, vertices[0].p);
     for (HE_Vertex& v : vertices)
@@ -152,6 +152,7 @@ BoundingBox HE_Mesh::bbox()
         ret.max.z = std::max(ret.max.z, v.p.z);
 
     }
+    bbox = ret;
     return ret;
 }
 BoundingBox HE_Mesh::computeFaceBbox(int f)

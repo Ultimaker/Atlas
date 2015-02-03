@@ -20,7 +20,7 @@ void TriangleIntersectionComputation::test()
     HE_FaceHandle fh1(mesh, 0);
     HE_FaceHandle fh2(mesh, 1);
 
-    TRIANGLE_INTERSECT_DEBUG_DO(mesh.debugOutputWholeMesh();)
+    TRIANGLE_INTERSECT_DEBUG_DO(mesh.debugOutputWholeMesh(););
 
     std::shared_ptr<TriangleIntersection> intersection = TriangleIntersectionComputation::intersect(fh1, fh2);
     TRIANGLE_INTERSECT_DEBUG_PRINTLN(" test finished ");
@@ -61,7 +61,10 @@ std::shared_ptr<TriangleIntersection> TriangleIntersectionComputation::intersect
     TRIANGLE_INTERSECT_DEBUG_PRINTLN("intersecting");
     //! see Tomas Moller - A Fast Triangle-Triangle Intersection Test
 
-
+    if (&fh1.m == &fh2.m)
+    {
+        TRIANGLE_INTERSECT_DEBUG_PRINTLN("WARNING!!!  intersecting triangles of the same mesh! ");
+    }
 
     FPoint a1(fh1.p0());
     FPoint b1(fh1.p1());

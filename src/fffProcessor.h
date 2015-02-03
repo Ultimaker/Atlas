@@ -124,12 +124,13 @@ public:
 
 
         std::cerr << " >>>>>>>>>>>>> saving to file " << std::endl;
-        saveFVMeshToFile(supportFVMesh, "blockSupport.stl");
+        saveFVMeshToFile(supportFVMesh, "bs/blockSupport.stl");
 
 */
 //        TriangleIntersectionComputation::test();
 
-        BooleanMeshOps::test_getFacetIntersectionlineSegment(model);
+//        BooleanMeshOps::test_getFacetFractureLinePart(model);
+        BooleanMeshOps::test_completeFractureLine(model);
         std::cerr << std::endl << " Test finished!" << std::endl << std::endl;
 
 

@@ -116,7 +116,7 @@ HEP_Face* HEP_Mesh::createFace(HEP_Vertex* v0, HEP_Vertex* v1, HEP_Vertex* v2)
 //}
 
 
-BoundingBox HEP_Mesh::bbox()
+BoundingBox HEP_Mesh::computeBbox()
 {
     BoundingBox ret(vertices[0].p, vertices[0].p);
     for (HEP_Vertex& v : vertices)
@@ -130,6 +130,7 @@ BoundingBox HEP_Mesh::bbox()
         ret.max.z = std::max(ret.max.z, v.p.z);
 
     }
+    bbox = ret;
     return ret;
 }
 BoundingBox HEP_Mesh::computeFaceBbox(HEP_Face* f)
