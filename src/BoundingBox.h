@@ -92,9 +92,9 @@ struct BoundingBox
     {
         return !(
             (min.x >= b.max.x || max.x <= b.min.x)
-            &&
+            ||
             (min.y >= b.max.y || max.y <= b.min.y)
-            &&
+            ||
             (min.z >= b.max.z || max.z <= b.min.z)
             );
     };
