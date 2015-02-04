@@ -50,6 +50,8 @@ struct MeshFaceHandle
     Point& p1() const { return v1().vertex().p; };
     Point& p2() const { return v2().vertex().p; };
 
+    FPoint normal() { return FPoint( (p1-p0).cross(p2-p0) ).normalized(); };
+
     bool hasVertex(VH vh) const { return v0()==vh || v1()==vh || v2()==vh; };
 
     Point& p(int i)  const
