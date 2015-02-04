@@ -11,6 +11,10 @@
 
 #include "../BoundingBox.h"
 
+#include "../utils/floatpoint.h" // FPoint
+
+#include "../CSV.h"
+
 #include "MeshVertex.h"
 
 template<typename Vertex>
@@ -50,7 +54,19 @@ struct MeshFaceHandle
     Point& p1() const { return v1().vertex().p; };
     Point& p2() const { return v2().vertex().p; };
 
-    FPoint normal() { return FPoint( (p1-p0).cross(p2-p0) ).normalized(); };
+    FPoint normal() const { return FPoint( ( p1() - p0() ).cross( p2() - p0() ) ).normalized(); };
+
+    BoundingBox bbox() const { return BoundingBox(p0(), p1()) + p2(); };
+
+    CSVi toLines()
+    {
+        CSVi csv;
+        csv.addLine({p0().x, p0().y,p0().z});
+        csv.addLine({p1().x, p1().y,p1().z});
+        csv.addLine({p2().x, p2().y,p2().z});
+        csv.addLine({p0().x, p0().y,p0().z});
+        return csv;
+    }
 
     bool hasVertex(VH vh) const { return v0()==vh || v1()==vh || v2()==vh; };
 
