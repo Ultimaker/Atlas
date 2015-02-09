@@ -40,7 +40,6 @@ public:
 
     void debugOuputBasicStats(std::ostream& out);
 
-    BoundingBox computeFaceBbox(int f);
 
 private:
     int findIndexOfVertex(Point3& v); //!< find index of vertex close to the given point, or create a new vertex and return its index.

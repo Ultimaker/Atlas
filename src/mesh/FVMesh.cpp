@@ -21,15 +21,6 @@ void FVMesh::debugOuputBasicStats(std::ostream& out)
 
 }
 
-BoundingBox FVMesh::computeFaceBbox(int f)
-{
-    FVMeshVertex& v0 = vertices[faces[f].vertex_index[0]];
-    FVMeshVertex& v1 = vertices[faces[f].vertex_index[1]];
-    FVMeshVertex& v2 = vertices[faces[f].vertex_index[2]];
-
-
-    return BoundingBox(v0.p, v1.p) + v2.p;
-}
 
 
 void FVMesh::addFace(Point3& v0, Point3& v1, Point3& v2)

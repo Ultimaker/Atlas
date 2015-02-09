@@ -6,6 +6,8 @@
 
 #include "Kernel.h"
 
+
+
 #include "BoundingBox.h"
 
 #include "MACROS.h" // debug
@@ -23,13 +25,17 @@
 #   define AABB_DEBUG_PRINTLN(x)
 #endif
 
-
+template<typename T>
+struct DefaultBoxer
+{
+    static BoundingBox bbox(T& t) { return t.bbox(); };
+};
 
 /*!
 Axis Aligned Bounding Box search tree.
 @param T the type of object to be stored with/in the bounding boxes of leaves.
 */
-template<typename T>
+template<typename T, typename Boxer = DefaultBoxer<T>>
 class AABB_Tree
 {
 public:
@@ -57,14 +63,14 @@ public:
 
         std::cerr << " TEST intersecting AABB_Tree... " << std::endl;
 
-        std::vector<int*> intersections;
+        std::vector<int> intersections;
         Point p_a(2,3,4);
         Point3 p_b(5,6,7);
         BoundingBox bbox(p_a, p_b);
         tree.getIntersections(bbox, intersections);
 
-        for (int* i : intersections)
-            std::cerr << *i << " ";
+        for (int i : intersections)
+            std::cerr << i << " ";
         std::cerr << std::endl;
 
     }
@@ -82,13 +88,35 @@ public:
     std::vector<Node*> allnodes; //!< allNodes[i].childA = allnodes[2*i+1] ; allNodes[i].childB = allnodes[2*i+2] ; allNodes[i].parent = allNodes[(i-1)/2]
     int depth; //!< the depth of the tree
 
+private:
+    template<typename iterator>
+//    typename enable_if<
+//        is_same<typename iterator_traits<I>::value_type, T>
+//        >:type
+    static std::vector<Node*> objects2nodes(iterator begin, iterator end)
+    {
+        std::vector<Node*> leaves;
+        for (iterator it = begin; it != end; it++)
+            leaves.push_back(new Node(Boxer::bbox(*it), &*it));
+        return leaves;
+    };
+public:
 
-    AABB_Tree(std::vector<Node*>& objects)
+    template<typename iterator>
+//    typename enable_if<
+//        is_same<typename iterator_traits<I>::value_type, T>
+//        >:type
+    AABB_Tree(iterator begin, iterator end)
+    : AABB_Tree(objects2nodes(begin, end))
+    { };
+
+private:
+    AABB_Tree(std::vector<Node*> objects)
     {
         if (objects.size() == 0) return;
 
-        int leavesSize = 1;
-        int totalSize = 1;
+        long leavesSize = 1;
+        long totalSize = 1;
         depth = 0;
         while (leavesSize < objects.size())
         {
@@ -97,7 +125,7 @@ public:
             depth++;
         }
 
-        allnodes.resize(totalSize);
+        allnodes.resize(totalSize, nullptr);
 
 //        std::cerr << "treeSize = " << leavesSize << std::endl;
 //        std::cerr << "tree_list_pos , dim , left , right , depth " << std::endl;
@@ -106,6 +134,7 @@ public:
 
 
     };
+public:
     ~AABB_Tree()
     {
         allnodes.clear();
@@ -114,7 +143,7 @@ public:
     void debugPrint()
     {
 
-        AABB_DEBUG_PRINTLN("  allnodes.size()  = "<<  allnodes.size() );
+        AABB_DEBUG_PRINTLN("  allnodes.size()  = " <<  allnodes.size() );
 
         int width = 1;
         int last_depth = 0;
@@ -154,7 +183,7 @@ protected:
 
                 }
                 std::cerr << std::endl;
-            )
+            );
 
         if (right == left)
         {
@@ -214,28 +243,54 @@ public:
         else return allnodes[(c.pos - 1)/2];
     }
 
-    void getIntersections(BoundingBox& bbox, std::vector<T*>& result)
+    void getIntersections(BoundingBox& bbox, std::vector<T>& result)
     {
+        AABB_DEBUG_PRINTLN("getIntersections for box " << bbox.min << " - " << bbox.max << ");");
+        getIntersections(bbox, result, getRoot());
+    }
+    void getIntersections(BoundingBox& bbox, std::vector<std::pair<BoundingBox, T>>& result)
+    {
+        AABB_DEBUG_PRINTLN("getIntersections2 for box " << bbox.min << " - " << bbox.max << ");");
         getIntersections(bbox, result, getRoot());
     }
 protected:
-    void getIntersections(BoundingBox& bbox, std::vector<T*>& result, Node* node)
+    void getIntersections(BoundingBox& bbox, std::vector<T>& result, Node* node)
     {
         if (node->object == nullptr && node->box.intersectsWith(bbox))
         {
             getIntersections(bbox, result, getLeftChild(*node));
             getIntersections(bbox, result, getRightChild(*node));
-        } else
-        if (node->box.intersectsWith(bbox))
+        } else if (node->box.intersectsWith(bbox))
         {
-            result.push_back(node->object);
+            AABB_DEBUG_PRINTLN("add element with box " << node->box.min << " - " << node->box.max << ");");
+            AABB_DEBUG_DO(
+                node->box.print_lines_csv(std::cerr);
+            );
+
+            result.push_back(*node->object);
+        }
+    }
+    void getIntersections(BoundingBox& bbox, std::vector<std::pair<BoundingBox, T>>& result, Node* node)
+    {
+        if (node->object == nullptr && node->box.intersectsWith(bbox))
+        {
+            getIntersections(bbox, result, getLeftChild(*node));
+            getIntersections(bbox, result, getRightChild(*node));
+        } else if (node->box.intersectsWith(bbox))
+        {
+            AABB_DEBUG_PRINTLN("add element with box " << node->box.min << " - " << node->box.max << ");");
+            AABB_DEBUG_DO(
+                node->box.print_lines_csv(std::cerr);
+            );
+
+            result.push_back(std::pair<BoundingBox, T>(node->box, *node->object));
         }
     }
 private:
     template<typename GetVal>
     static int partition(std::vector<Node*>& list, int left, int right, int pivotIndex, GetVal getVal)
     {
-        AABB_DEBUG_DO(std::cerr << " :: "; for (int i=0;i<list.size();i++) std::cerr << *list[i]->object; std::cerr << std::endl;)
+//        AABB_DEBUG_DO(std::cerr << " :: "; for (int i=0;i<list.size();i++) std::cerr << *list[i]->object; std::cerr << std::endl;)
         spaceType pivotValue = getVal(*list[pivotIndex]);
         std::swap(list[pivotIndex], list[right]);  // Move pivot to end
         int storeIndex = left;
@@ -246,11 +301,11 @@ private:
                 std::swap(list[storeIndex], list[i]);
                 storeIndex++;
             }
-            AABB_DEBUG_DO(std::cerr << " :: "; for (int i=0;i<list.size();i++) std::cerr << *list[i]->object; std::cerr << " : " << pivotValue << " , " << pivotIndex << std::endl;)
+//            AABB_DEBUG_DO(std::cerr << " :: "; for (int i=0;i<list.size();i++) std::cerr << *list[i]->object; std::cerr << " : " << pivotValue << " , " << pivotIndex << std::endl;)
         }
         std::swap(list[right], list[storeIndex]);  // Move pivot to its final place
 
-        AABB_DEBUG_DO(std::cerr << " :: "; for (int i=0;i<list.size();i++) std::cerr << *list[i]->object; std::cerr << std::endl;)
+//        AABB_DEBUG_DO(std::cerr << " :: "; for (int i=0;i<list.size();i++) std::cerr << *list[i]->object; std::cerr << std::endl;)
 
         return storeIndex;
     };

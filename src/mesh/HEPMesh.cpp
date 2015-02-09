@@ -133,19 +133,7 @@ BoundingBox HEP_Mesh::computeBbox()
     bbox = ret;
     return ret;
 }
-BoundingBox HEP_Mesh::computeFaceBbox(HEP_Face* f)
-{
-//    HEP_Vertex& v0 = *getTo(edges[faces[f].edge[0]]);
-//    HEP_Vertex& v1 = *getTo(edges[faces[f].edge[1]]);
-//    HEP_Vertex& v2 = *getTo(edges[faces[f].edge[2]]);
-//
-//    return BoundingBox(v0.p, v1.p) + v2.p;
 
-    Point p0 = HEP_FaceHandle(*this, f).p0();
-    Point p1 = HEP_FaceHandle(*this, f).p1();
-    Point p2 = HEP_FaceHandle(*this, f).p2();
-    return BoundingBox(p0, p1) + p2;
-}
 
 //Point3 HEP_Mesh::getNormal(HEP_Face& face) const
 //{

@@ -130,7 +130,8 @@ public:
 //        TriangleIntersectionComputation::test();
 
 //        BooleanMeshOps::test_getFacetFractureLinePart(model);
-        BooleanMeshOps::test_completeFractureLine(model);
+//        BooleanMeshOps::test_completeFractureLine(model);
+        BooleanMeshOps::test_subtract(model);
         std::cerr << std::endl << " Test finished!" << std::endl << std::endl;
 
 

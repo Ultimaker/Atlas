@@ -86,7 +86,6 @@ class HEP_Mesh : public Mesh<HEP_Vertex, HEP_VertexHandle, HEP_Face, HEP_FaceHan
         HEP_Edge* createConverse(HEP_Edge* e);
 
         BoundingBox computeBbox();
-        BoundingBox computeFaceBbox(HEP_Face* f);
 
         void debugOuputBasicStats(std::ostream& out);
 

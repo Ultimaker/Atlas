@@ -6,6 +6,7 @@
 
 #include "Kernel.h"
 
+#include "CSV.h"
 
 #include "MACROS.h" // debug
 // enable/disable debug output
@@ -34,7 +35,7 @@ struct BoundingBox
 
     BoundingBox(spaceType minx, spaceType miny, spaceType minz, spaceType maxx, spaceType maxy, spaceType maxz)
     : min(minx, miny, minz)
-    , max(maxx, maxy, maxz)
+   ,  max(maxx, maxy, maxz)
     {};
 
     /*!
@@ -42,10 +43,10 @@ struct BoundingBox
     */
     BoundingBox(const Point& a, const Point& b)
     : min(std::min(a.x, b.x),std::min(a.y, b.y),std::min(a.z, b.z))
-    , max(std::max(a.x, b.x),std::max(a.y, b.y),std::max(a.z, b.z))
+   ,  max(std::max(a.x, b.x),std::max(a.y, b.y),std::max(a.z, b.z))
     { };
 
-//        : min(xmin_, xmax_, ymin_) , max(ymax_, zmin_, zmax_) {};
+//        : min(xmin_, xmax_, ymin_),  max(ymax_, zmin_, zmax_) {};
 
     BoundingBox() {};
 
@@ -54,7 +55,7 @@ struct BoundingBox
     */
     BoundingBox(const BoundingBox& a, const BoundingBox& b)
     : min(std::min(a.min.x, b.min.x),std::min(a.min.y, b.min.y),std::min(a.min.z, b.min.z))
-    , max(std::max(a.max.x, b.max.x),std::max(a.max.y, b.max.y),std::max(a.max.z, b.max.z))
+   ,  max(std::max(a.max.x, b.max.x),std::max(a.max.y, b.max.y),std::max(a.max.z, b.max.z))
     { };
 
     BoundingBox operator +(const BoundingBox& b)
@@ -88,7 +89,7 @@ struct BoundingBox
 
     If the intersection consists of a plane, line or vertex it returns false.
     */
-    bool intersectsWith(const BoundingBox& b) // TODO : what if a.xmax == b.xmin???
+    bool intersectsWith(const BoundingBox& b)  const // TODO : what if a.xmax == b.xmin???
     {
         return !(
             (min.x >= b.max.x || max.x <= b.min.x)
@@ -99,9 +100,9 @@ struct BoundingBox
             );
     };
 
-    Point mid() { return (max+min)/2; }; //!< the geometric middle of the box
+    Point mid() const { return (max+min)/2; }; //!< the geometric middle of the box
 
-    Point size() { return max-min; }; //!< a point containing the width, height and depth information
+    Point size() const { return max-min; }; //!< a point containing the width, height and depth information
 
     template<class CharT, class TraitsT>
     friend
@@ -109,7 +110,60 @@ struct BoundingBox
     operator <<(std::basic_ostream<CharT, TraitsT>& os, const BoundingBox& b)
     {
         return os << b.min << "-" << b.max;
-    }
+    };
+
+    template<class CharT, class TraitsT>
+    std::basic_ostream<CharT, TraitsT>& print_lines_csv(std::basic_ostream<CharT, TraitsT>& stream) const
+    {
+        stream << min.x <<", " << min.y << ", " << min.z << std::endl;
+        stream << min.x <<", " << min.y << ", " << max.z << std::endl;
+        stream << min.x <<", " << max.y << ", " << max.z << std::endl;
+        stream << min.x <<", " << max.y << ", " << min.z << std::endl;
+        stream << min.x <<", " << min.y << ", " << min.z << std::endl;
+
+        stream << max.x <<", " << min.y << ", " << min.z << std::endl;
+        stream << max.x <<", " << min.y << ", " << max.z << std::endl;
+        stream << max.x <<", " << max.y << ", " << max.z << std::endl;
+        stream << max.x <<", " << max.y << ", " << min.z << std::endl;
+        stream << max.x <<", " << min.y << ", " << min.z << std::endl;
+
+        stream << max.x <<", " << max.y << ", " << min.z << std::endl;
+        stream << min.x <<", " << max.y << ", " << min.z << std::endl;
+
+        stream << min.x <<", " << max.y << ", " << max.z << std::endl;
+        stream << max.x <<", " << max.y << ", " << max.z << std::endl;
+
+        stream << max.x <<", " << min.y << ", " << max.z << std::endl;
+        stream << min.x <<", " << min.y << ", " << max.z << std::endl;
+        return stream;
+    };
+
+    CSVi toLines() const
+    {
+        CSVi csv;
+        csv.addLine({ min.x, min.y, min.z});
+        csv.addLine({ min.x, min.y, max.z});
+        csv.addLine({ min.x, max.y, max.z});
+        csv.addLine({ min.x, max.y, min.z});
+        csv.addLine({ min.x, min.y, min.z});
+
+        csv.addLine({ max.x, min.y, min.z});
+        csv.addLine({ max.x, min.y, max.z});
+        csv.addLine({ max.x, max.y, max.z});
+        csv.addLine({ max.x, max.y, min.z});
+        csv.addLine({ max.x, min.y, min.z});
+
+        csv.addLine({ max.x, max.y, min.z});
+        csv.addLine({ min.x, max.y, min.z});
+
+        csv.addLine({ min.x, max.y, max.z});
+        csv.addLine({ max.x, max.y, max.z});
+
+        csv.addLine({ max.x, min.y, max.z});
+        csv.addLine({ min.x, min.y, max.z});
+        return csv;
+    };
+
 };
 
 

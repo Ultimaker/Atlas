@@ -8,7 +8,7 @@
 
 
 
-
+#define ERROR(msg) do {    std::cerr << "ERROR: " << DEBUG_FILE_LINE << msg << std::endl; } while (0)
 
 #define DEBUG 1
 

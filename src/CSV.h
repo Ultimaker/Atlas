@@ -5,6 +5,7 @@
 
 #include "MACROS.h" // debug
 
+#include "Kernel.h"
 
 #include <initializer_list> // {..}
 
@@ -28,11 +29,11 @@
 
 //! class used for csv output
 template<typename T>
-class CSV
+struct CSV
 {
     std::vector<std::vector<T>> lines;
 
-    void addLine(std::initializer_list<T>& args)
+    void addLine(std::initializer_list<T> args)
     {
         lines.emplace_back(args);
         //lines.back().insert(args);
@@ -49,8 +50,10 @@ class CSV
     {
         for (std::vector<T> line : b.lines)
         {
-            for (T item : line)
-                os << item;
+            if (line.size() > 0)
+                os<< line[0];
+            for (int i = 1; i < line.size(); i++)
+                os << ", " << line[i];
             os << std::endl;
         }
 

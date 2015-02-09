@@ -64,14 +64,6 @@ public:
 
     BoundingBox bbox;
 
-    virtual BoundingBox computeFaceBbox(FaceHandle& fh)
-    {
-        Point& p0 = fh.p0();
-        Point& p1 = fh.p1();
-        Point& p2 = fh.p2();
-        return BoundingBox(p0, p1) + p2;
-    };
-
     //virtual VertexHandle findVert(Point& p) =0;
 
 };

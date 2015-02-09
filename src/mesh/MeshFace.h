@@ -58,13 +58,13 @@ struct MeshFaceHandle
 
     BoundingBox bbox() const { return BoundingBox(p0(), p1()) + p2(); };
 
-    CSVi toLines()
+    CSVi toLines() const
     {
         CSVi csv;
-        csv.addLine({p0().x, p0().y,p0().z});
-        csv.addLine({p1().x, p1().y,p1().z});
-        csv.addLine({p2().x, p2().y,p2().z});
-        csv.addLine({p0().x, p0().y,p0().z});
+        csv.addLine({p0().x, p0().y, p0().z});
+        csv.addLine({p1().x, p1().y, p1().z});
+        csv.addLine({p2().x, p2().y, p2().z});
+        csv.addLine({p0().x, p0().y, p0().z});
         return csv;
     }
 
@@ -84,6 +84,16 @@ struct MeshFaceHandle
     virtual bool operator==(const MeshFaceHandle& b) const { return idx==b.idx && m==b.m; }; // TODO: more sophisticated check
     virtual bool operator!=(const MeshFaceHandle &other) const {
         return !(*this == other);
+    };
+
+    template<class CharT, class TraitsT>
+    friend
+    std::basic_ostream<CharT, TraitsT>&
+    operator <<(std::basic_ostream<CharT, TraitsT>& os, const MeshFaceHandle<V,VH,F,M>& b)
+    {
+        os << b.m <<" . " << b.idx;
+
+        return os;
     };
 };
 

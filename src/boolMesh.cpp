@@ -14,6 +14,45 @@
 
 #include <fstream> // write to file (debug)
 
+#include <boost/iterator/transform_iterator.hpp>
+
+
+void debug_csv(std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> & face2fractures)
+{
+    DEBUG_DO(
+        std::ofstream csv;
+        csv.open("CRAP.csv", std::fstream::out | std::fstream::app);
+        csv << "0,0,0" << std::endl;
+        csv.close();
+    );
+
+    std::ofstream csv;
+    csv.open("WHOLE.csv", std::fstream::out | std::fstream::app);
+
+    const Point offset(200, 200, 200);
+
+    Point offset_now(0,0,0);
+    Point p(0,0,0);
+    for (auto mapping: face2fractures)
+    {
+        for (FractureLinePart frac : mapping.second)
+        {
+            for (auto arrow : frac.fracture.arrows)
+            {
+                p = arrow->to->data.p() + offset_now;
+                csv << p.x <<", " << p.y << ", " << p.z << std::endl;
+                p = arrow->from->data.p() + offset_now;
+                csv << p.x <<", " << p.y << ", " << p.z << std::endl;
+            }
+            offset_now += offset;
+        }
+    }
+    csv << p.x <<", " << p.y << ", " << p.z << std::endl;
+    csv << "0,0,0" << std::endl;
+    csv.close();
+};
+
+
 void BooleanMeshOps::subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& result)
 {
 //! is more efficient when keep is smaller than subtracted.
@@ -35,27 +74,116 @@ void BooleanMeshOps::subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& resul
 3) Do 2 breadth-first exhaustive searches starting from the fracture, copying all triangles to the new mesh.
 */
 
-    // : \/ construct an AABB tree from the keep-mesh
-    typedef AABB_Tree<HE_FaceHandle>::Node Node;
 
-    std::vector<Node*> leaves;
+
+    std::vector<HE_FaceHandle> keep_faces;
     for (int f = 0; f < keep.faces.size(); f++)
     {
-        HE_FaceHandle fh(keep, f);
-        leaves.push_back(new Node(keep.computeFaceBbox(f), &fh));
+        keep_faces.emplace_back(keep, f);
     }
 
-    AABB_Tree<HE_FaceHandle> keep_aabb(leaves);
+BOOL_MESH_DEBUG_PRINTLN("constructing AABB-tree...");
+    AABB_Tree<HE_FaceHandle> keep_aabb(keep_faces.begin(), keep_faces.end());
+BOOL_MESH_DEBUG_PRINTLN("finished constructing AABB-tree");
+
+
+
+    typedef std::unordered_map<HE_FaceHandle, std::unordered_set<HE_FaceHandle> > Face2Faces;
+    Face2Faces face2intersectingFaces;
+
+    long totalTriTriIntersectionComputations = 0;
+    long totalTriTriIntersections = 0;
+
+                std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fractures;
 
     for (int f = 0 ; f < subtracted.faces.size() ; f++)
     {
-        BoundingBox tribbox = subtracted.computeFaceBbox(f);
-        std::vector<HE_FaceHandle*> intersectingFaces;
-        keep_aabb.getIntersections(tribbox, intersectingFaces);
-
         HE_FaceHandle face(subtracted, f);
 
-    }
+        BoundingBox tribbox = face.bbox();
+        std::vector<HE_FaceHandle> intersectingBboxFaces;
+        keep_aabb.getIntersections(tribbox, intersectingBboxFaces);
+        std::vector<std::pair<BoundingBox, HE_FaceHandle>> intersectingBboxFaces2;
+        keep_aabb.getIntersections(tribbox, intersectingBboxFaces2);
+
+        totalTriTriIntersectionComputations += intersectingBboxFaces.size();
+
+        for (const HE_FaceHandle intersectingBboxFace : intersectingBboxFaces)
+        {
+
+            HE_FaceHandle tri1 = HE_FaceHandle(intersectingBboxFace);
+            HE_FaceHandle& tri2 = face;
+
+            std::shared_ptr<TriangleIntersection> triangleIntersection = TriangleIntersectionComputation::intersect(tri1, tri2);
+
+            if (!triangleIntersection->from || !triangleIntersection->to)
+                continue; // they don't intersect!
+            else
+            {
+                totalTriTriIntersections++;
+                Face2Faces::const_iterator result;
+                if ( (result = face2intersectingFaces.find(tri1)) != face2intersectingFaces.end()
+                && result->second.find(tri2) != result->second.end())
+                {
+BOOL_MESH_DEBUG_PRINTLN("face intersection already performed!");
+                    continue;
+                }
+                if ( (result = face2intersectingFaces.find(tri2)) != face2intersectingFaces.end()
+                && result->second.find(tri1) != result->second.end())
+                {
+BOOL_MESH_DEBUG_PRINTLN("face intersection already contained in some fracture line part!");
+                    continue;
+                }
+
+
+//BOOL_MESH_DEBUG_PRINTLN("subtract > walking along face");
+//                std::unordered_map<HE_FaceHandle, FractureLinePart> face2fracture_here;
+//                typedef std::unordered_map<HE_FaceHandle, FractureLinePart>::iterator val_it;
+//                completeFractureLine(tri1, face, *triangleIntersection, face2fracture_here);
+                completeFractureLine(tri1, face, *triangleIntersection, face2fractures);
+
+//                for (auto mapping : face2fracture_here)
+//                    if (!(std::pair<val_it, bool> result = face2fracture.emplace(mapping.first, mapping.second)).second)
+//                        result.
+
+
+
+                debug_csv(face2fractures);
+
+
+
+
+                for (std::pair<HE_FaceHandle, std::vector<FractureLinePart>> face_intersectingFaces : face2fractures)
+                {
+                    std::unordered_set<HE_FaceHandle> intersectingFaces;
+                    for (FractureLinePart& frac : face_intersectingFaces.second)
+                        for (Arrow* arrow : frac.fracture.arrows)
+                            intersectingFaces.insert(arrow->data.otherFace);
+
+                    std::pair<Face2Faces::iterator, bool> result = face2intersectingFaces.emplace(face_intersectingFaces.first, intersectingFaces);
+                    if (!result.second) // if key was already present
+                        result.first->second.insert(intersectingFaces.begin(), intersectingFaces.end()); // insert all faces in set
+                }
+//
+//                for (auto face_faces : face2intersectingFaces)
+//                {
+//                    std::cerr << face_faces.first << std::endl;
+//                    for (auto face : face_faces.second)
+//                        std::cerr << face << ", " ;
+//                    std::cerr << std::endl;
+//                }
+//                exit(0);
+            }
+
+        }
+   }
+
+BOOL_MESH_DEBUG_SHOW(keep.faces.size());
+BOOL_MESH_DEBUG_SHOW(totalTriTriIntersectionComputations);
+BOOL_MESH_DEBUG_SHOW(totalTriTriIntersections);
+BOOL_MESH_DEBUG_PRINTLN("average # intersection computations per triangle: "<< float(totalTriTriIntersectionComputations) / subtracted.faces.size());
+BOOL_MESH_DEBUG_PRINTLN("\t( brute force would be: "<<keep.faces.size() * subtracted.faces.size() << ")");
+BOOL_MESH_DEBUG_PRINTLN("average # intersections per triangle: "<< float(totalTriTriIntersections) / subtracted.faces.size());
 
 }
 
@@ -79,31 +207,80 @@ void BooleanMeshOps::subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& resul
 
 
 
-void BooleanMeshOps::completeFractureLine(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, TriangleIntersection& first, std::unordered_map<HE_FaceHandle, FractureLinePart>& face2fracture)
+/*!
+Make a complete a fracture line by walking along an intersection between two meshes.
+Start from an intersection segment [first] between faces [triangle1] and [triangle2].
+
+*/
+void BooleanMeshOps::completeFractureLine(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, TriangleIntersection& first, std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>>& face2fractures)
 {
     BOOL_MESH_DEBUG_PRINTLN("completeFractureLine");
     BOOL_MESH_DEBUG_SHOW(triangle1.m << ","<<triangle1.idx);
     BOOL_MESH_DEBUG_SHOW(triangle2.m << ","<<triangle2.idx);
 
-    std::vector<FractureLinePart> fractureLines;
+    //std::vector<FractureLinePart> fractureLines;
     std::list<FractureLinePart*> todo;
 
     std::unordered_map<HE_FaceHandle, std::unordered_set<HE_FaceHandle> > walkedFacesFromEndpoints; // the faces for which a fracture line has been created and which faces of the other mesh are the starting and end_points
-    // TODO /\ get as parameter
+    // TODO /\ get as parameter ?
 
 
-    fractureLines.emplace_back(triangle1);
+    bool throwAwayFirstFracLinePart = true; // TODO: choose and throw away rest of code!
+    // true cause it can start somewhere in the middle of the fractureline
+    if (throwAwayFirstFracLinePart)
+    {
+        FractureLinePart* first_frac;
+        first_frac = new FractureLinePart(triangle1); // TODO: delete!
+        getFacetFractureLinePart(triangle1, triangle2, first, *first_frac);
 
-    FractureLinePart& first_frac = fractureLines.back();
-    getFacetFractureLinePart(triangle1, triangle2, first, first_frac);
 
-    std::unordered_set<HE_FaceHandle> endPointFaces;
-    first_frac.endPointsFaces(endPointFaces);
-    walkedFacesFromEndpoints.insert(std::pair<HE_FaceHandle, std::unordered_set<HE_FaceHandle> >(triangle1, endPointFaces) );
+//        std::unordered_set<HE_FaceHandle> endPointFaces;
+//        first_frac->endPointsFacesWithoutFirst(endPointFaces);
+//        walkedFacesFromEndpoints.insert(std::pair<HE_FaceHandle, std::unordered_set<HE_FaceHandle> >(triangle1, endPointFaces) );
 
-    todo.push_front(&first_frac);
+        // dont add to face2fracture
 
-    face2fracture.insert(std::pair<HE_FaceHandle, FractureLinePart>(triangle1, first_frac));
+        todo.push_front(first_frac);
+        if (first_frac->endPoints.size()==0)
+        {
+            std::vector<FractureLinePart> fracs;
+            fracs.emplace_back(*first_frac);
+            face2fractures.emplace(triangle1, fracs);
+            BOOL_MESH_DEBUG_PRINTLN("First fracture line part covers whole fracture!");
+            return;
+        }
+//    DEBUG_DO(
+//        std::ofstream csv;
+//        csv.open("CRAP.csv", std::fstream::out | std::fstream::app);
+//        csv << "50000,50000,60000" << std::endl;
+//        csv.close();
+//    );
+    } else
+    {
+
+//        fractureLines.emplace_back(triangle1);
+//        FractureLinePart& first_frac = fractureLines.back();
+
+        typedef std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>>::iterator val_it;
+        std::vector<FractureLinePart> fracs;
+        fracs.emplace_back(triangle1);
+        std::pair<val_it, bool> new_mapping = face2fractures.emplace(triangle1, fracs);
+        if (!new_mapping.second)
+            new_mapping.first->second.emplace_back(triangle1);
+
+        FractureLinePart& first_frac = new_mapping.first->second.back();
+
+        getFacetFractureLinePart(triangle1, triangle2, first, first_frac);
+
+        std::unordered_set<HE_FaceHandle> endPointFaces;
+        first_frac.endPointsFaces(endPointFaces);
+        walkedFacesFromEndpoints.insert(std::pair<HE_FaceHandle, std::unordered_set<HE_FaceHandle> >(triangle1, endPointFaces) );
+
+
+        todo.push_front(&first_frac);
+    }
+
+
     while (!todo.empty())
     {
         FractureLinePart& current_frac = *todo.back();
@@ -136,27 +313,34 @@ void BooleanMeshOps::completeFractureLine(HE_FaceHandle& triangle1, HE_FaceHandl
                     {
                         BOOL_MESH_DEBUG_PRINTLN("already walked face fracture! skipping");
                         continue; // skip the fracture line! it has already been checked!
-                    }
+                    } else
+                        BOOL_MESH_DEBUG_PRINTLN(", but with other endpoint/startingpoint...");
                 }
             }
 
+            typedef std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>>::iterator val_it;
+            std::vector<FractureLinePart> fracs;
+            fracs.emplace_back(next_face);
+            std::pair<val_it, bool> new_mapping = face2fractures.emplace(next_face, fracs);
+            if (!new_mapping.second)
+                new_mapping.first->second.emplace_back(next_face);
 
-            fractureLines.emplace_back(next_face);
-
-            FractureLinePart& next_frac = fractureLines.back();
+            FractureLinePart& next_frac = new_mapping.first->second.back();
             getFacetFractureLinePart(next_face, start_face, arrow->data.lineSegment, next_frac);
+
+//            fractureLines.emplace_back(next_face);
+//            FractureLinePart& next_frac = fractureLines.back();
+//
+//            getFacetFractureLinePart(next_face, start_face, arrow->data.lineSegment, next_frac);
+//
+//            face2fractures.insert(std::pair<HE_FaceHandle, FractureLinePart>(next_face, next_frac));
 
             todo.push_front(&next_frac);
 
+
+
             std::unordered_set<HE_FaceHandle> endPointFaces;
             next_frac.endPointsFaces(endPointFaces);
-//            BOOL_MESH_DEBUG_PRINTLN("endPointFaces:");
-//            for (HE_FaceHandle fh : endPointFaces)
-//                BOOL_MESH_DEBUG_PRINTLN(fh.idx);
-//            BOOL_MESH_DEBUG_PRINTLN("\\\\endPointFaces");
-            BOOL_MESH_DEBUG_SHOW(endPointFaces.size());
-            BOOL_MESH_DEBUG_SHOW(next_frac.endPoints.size());
-
             if (addNewFaceToMap)
             {
                 walkedFacesFromEndpoints.insert(std::pair<HE_FaceHandle, std::unordered_set<HE_FaceHandle> >(next_face, endPointFaces) );
@@ -172,9 +356,28 @@ void BooleanMeshOps::completeFractureLine(HE_FaceHandle& triangle1, HE_FaceHandl
 spaceType inaccuracy = 20; //!< the margin of error between the endpoint of the first triangle and the startpoint of the second
 
 
+/*!
+Walk over [triangle1] along the intersections it has with faces connected to [triangle2],
+starting at the [first] intersection and going in the direction first.from -> first.to until we would exit [triangle1].
 
+Store the intersection segments in a graph in the [result].
+
+Also the [result] stores the starting intersection segment, the endpoints where the fracture exits [triangle1] and the faces involved in each intersection segment.
+
+In case the [first] intersection is not an entering intersection of [triangle1], i.e. when [first].from is not on an edge/vertex of triangle1,
+the fracture stored in result is not the whole fracture covering [triangle1], but is may cover only half the fracture line part.
+
+In case the intersection doesn't exit [triangle1] the graph of intersection segments in [result] will be a cyclic graph, with no endpoints.
+*/
 void BooleanMeshOps::getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, TriangleIntersection& first, FractureLinePart& result)
 {
+//    DEBUG_DO(
+//        std::ofstream csv;
+//        csv.open("CRAP.csv", std::fstream::out | std::fstream::app);
+//        csv << "100000,100000,100000" << std::endl;
+//        csv.close();
+//    );
+
     BOOL_MESH_DEBUG_PRINTLN(" starting getFacetFractureLinePart");
     BOOL_MESH_DEBUG_PRINTLN("\n\n\n\n\n\n\n\n");
 
@@ -349,7 +552,7 @@ void BooleanMeshOps::getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceH
 
     DEBUG_DO(
         std::ofstream csv;
-        csv.open("BS.csv", std::fstream::out | std::fstream::app);
+        csv.open("CRAP.csv", std::fstream::out | std::fstream::app);
 //        for (Node* node : result.fracture.nodes)
 //        {
 //            csv << node->data.p().x <<", " << node->data.p().y << ", " << node->data.p().z << std::endl;
@@ -364,9 +567,8 @@ void BooleanMeshOps::getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceH
         csv.close();
     );
 
-    BOOL_MESH_DEBUG_PRINTLN("FractureLinePart:");
-    result.debugOutput();
-
+//    BOOL_MESH_DEBUG_PRINTLN("FractureLinePart:");
+//    result.debugOutput();
 }
 
 
@@ -388,7 +590,7 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
     }
     if (! triangleIntersection.from->compareSourceConverse(connectingPoint)  )
     {
-        BOOL_MESH_DEBUG_PRINTLN("warning! consequent intersection segments do not connect at source mesh!");
+        BOOL_MESH_DEBUG_PRINTLN("WARNING! subsequent intersection segments do not connect at source mesh!");
         if ( (triangleIntersection.to->p() - connectingPoint.p()).vSize2() < (triangleIntersection.from->p() - connectingPoint.p()).vSize2() )
         {
             BOOL_MESH_DEBUG_PRINTLN(connectingPoint.p() <<" =~= "<< triangleIntersection.to->p());
@@ -399,7 +601,7 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
     }
     if ( ! (connectingPoint.p() - triangleIntersection.from->p()).testLength(inaccuracy)  )
     {
-        BOOL_MESH_DEBUG_PRINTLN("warning! large difference between endpoint of first triangle intersection and start point of second! :");
+        BOOL_MESH_DEBUG_PRINTLN("WARNING! large difference between endpoint of first triangle intersection and start point of second! :");
         BOOL_MESH_DEBUG_SHOW((connectingPoint.p() - triangleIntersection.from->p()).vSize());
         //BOOL_MESH_DEBUG_DO(
         {
@@ -484,11 +686,17 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
         //);
     }
 
+    { //update old point:
+        PointD middle = PointD(connectingPoint.p()) + PointD(triangleIntersection.from->p());
+        connectingPoint.p() = (middle / 2).downCast();
+        // TODO: more advanced middling scheme when multiple l;ines connect to the same point
+    }
 
     bool new_point_is_already_done = false;
     if      (triangleIntersection.to->getType() == IntersectionPointType::VERTEX)
     {
-        std::unordered_map<HE_VertexHandle, Node*>::const_iterator node = vertex2node.find(triangleIntersection.to->vertex);
+        std::unordered_map<HE_VertexHandle, Node*>::const_iterator
+            node = vertex2node.find(triangleIntersection.to->vertex);
 
         if (node == vertex2node.end()) // vertex is not yet present in graph
         {
@@ -501,6 +709,9 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
             new_point_is_already_done = true;
             // dont push to todo! it is already there!
             BOOL_MESH_DEBUG_PRINTLN("vertex is already in graph!");
+
+            PointD middle = PointD(new_node->data.p()) + PointD(triangleIntersection.to->p());
+            new_node->data.p() = (middle / 2).downCast();
         }
     } else
     {
@@ -508,6 +719,9 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
         {
             BOOL_MESH_DEBUG_PRINTLN("connecting to starting node...");
             new_node = result.start->from;
+
+            PointD middle = PointD(new_node->data.p()) + PointD(triangleIntersection.to->p());
+            new_node->data.p() = (middle / 2).downCast();
         } else
         {
             BOOL_MESH_DEBUG_PRINTLN("normal case: adding node...");
@@ -566,9 +780,18 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
 
 
 
+
+
+
+
+
+
+
+
+
 void BooleanMeshOps::test_getFacetFractureLinePart(PrintObject* model)
 {
-    std::remove("BS.csv");
+    std::remove("CRAP.csv");
     std::cerr << "=============================================\n" << std::endl;
 
     FVMesh& mesh = model->meshes[0];
@@ -679,8 +902,10 @@ void BooleanMeshOps::test_getFacetFractureLinePart(PrintObject* model)
     std::cerr << "=============================================\n" << std::endl;
     std::cerr << std::endl;
 
-    std::unordered_map<HE_FaceHandle, FractureLinePart> face2fracture;
-    completeFractureLine(otherFace, intersectingFace, *triangleIntersection, face2fracture);
+    std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fractures;
+    //std::unordered_set<HE_FaceHandle>  walkedFacesFromEndpoints;
+
+    completeFractureLine(otherFace, intersectingFace, *triangleIntersection, face2fractures);
 
 //    FractureLinePart result;
 //    getFacetFractureLinePart(otherFace, intersectingFace, triangleIntersection, result);
@@ -693,7 +918,7 @@ void BooleanMeshOps::test_getFacetFractureLinePart(PrintObject* model)
     //result.debugOutputNodePoints();
     //BOOL_MESH_DEBUG_PRINTLN("------");
 
-//    std::ofstream csv("BS.csv");
+//    std::ofstream csv("CRAP.csv");
 //    for (Node* node : result.fracture.nodes)
 //    {
 //        csv << node->data.p().x <<", " << node->data.p().y << ", " << node->data.p().z << std::endl;
@@ -703,7 +928,7 @@ void BooleanMeshOps::test_getFacetFractureLinePart(PrintObject* model)
 
 void BooleanMeshOps::test_completeFractureLine(PrintObject* model)
 {
-    std::remove("BS.csv");
+    std::remove("CRAP.csv");
     std::cerr << "=============================================\n" << std::endl;
 
     FVMesh& mesh = model->meshes[0];
@@ -830,8 +1055,126 @@ void BooleanMeshOps::test_completeFractureLine(PrintObject* model)
     std::cerr << "=============================================\n" << std::endl;
     std::cerr << std::endl;
 
-    std::unordered_map<HE_FaceHandle, FractureLinePart> face2fracture;
-    completeFractureLine(otherFace, intersectingFace, *triangleIntersection, face2fracture);
+    std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fractures;
+    completeFractureLine(otherFace, intersectingFace, *triangleIntersection, face2fractures);
+
+//    FractureLinePart result;
+//    getFacetFractureLinePart(otherFace, intersectingFace, triangleIntersection, result);
+
+    std::cerr << std::endl;
+    std::cerr << "=============================================\n" << std::endl;
+    std::cerr << std::endl;
+
+    //BOOL_MESH_DEBUG_PRINTLN("------");
+    //result.debugOutputNodePoints();
+    //BOOL_MESH_DEBUG_PRINTLN("------");
+
+
+}
+
+
+void BooleanMeshOps::test_subtract(PrintObject* model)
+{
+    std::remove("CRAP.csv");
+    std::remove("WHOLE.csv");
+
+    std::cerr << "=============================================\n" << std::endl;
+
+    FVMesh& mesh = model->meshes[0];
+
+    DEBUG_HERE;
+
+    HE_Mesh heMesh(mesh);
+    DEBUG_HERE;
+
+    heMesh.makeManifold(mesh);
+
+    DEBUG_HERE;
+
+    std::vector<ModelProblem> problems;
+    heMesh.checkModel(problems);
+    if (problems.size() > 0)
+    {
+        std::cout << "Model problems detected! :" << std::endl;
+        for (ModelProblem problem : problems)
+        {
+            std::cout << problem.msg << std::endl;
+        }
+        std::exit(0);
+    } else std::cout << " no problems! :D" << std::endl;
+
+
+
+
+    HE_Mesh other(heMesh);
+//    other.vertices.emplace_back(mesh.bbox.mid() + Point3(2*mesh.bbox.size().x,0,1000), 0);
+//    other.vertices.emplace_back(mesh.bbox.mid() + Point3(-2*mesh.bbox.size().x,2*mesh.bbox.size().y,-1000), 1);
+//    other.vertices.emplace_back(mesh.bbox.mid() + Point3(-2*mesh.bbox.size().x,-2*mesh.bbox.size().y,-1000), 2);
+    for (HE_Vertex& v : other.vertices)
+        v.p += mesh.bbox.size()*3/10;
+
+    other.bbox = other.computeBbox();
+
+
+    std::ofstream out("test_subtract.stl");
+
+    out << "solid name" << std::endl;
+
+    {
+        auto getPoint = [&heMesh](int f, int v) { return HE_FaceHandle(heMesh, f).p(v); } ;
+
+        Point3 vert;
+        for (int f = 0; f < heMesh.faces.size() ; f++)
+        {
+
+            out << "facet normal 0 0 0" << std::endl;
+            out << "    outer loop" << std::endl;
+            vert = getPoint(f,0);
+            out << "        vertex " <<vert.x <<" "<<vert.y<<" "<<vert.z  << std::endl;
+            vert = getPoint(f,1);
+            out << "        vertex " <<vert.x <<" "<<vert.y<<" "<<vert.z  << std::endl;
+            vert = getPoint(f,2);
+            out << "        vertex " <<vert.x <<" "<<vert.y<<" "<<vert.z  << std::endl;
+            out << "    endloop" << std::endl;
+            out << "endfacet" << std::endl;
+
+        }
+    }
+
+    out << "\n\n\n\n\n\n\n\n\n\n\n\n" << std::endl;
+    {
+        auto getPoint = [&other](int f, int v) { return HE_FaceHandle(other, f).p(v); } ;
+
+        Point3 vert;
+
+        for (int f = 0; f < other.faces.size() ; f++)
+        {
+
+            out << "facet normal 0 0 0" << std::endl;
+            out << "    outer loop" << std::endl;
+            vert = getPoint(f,0);
+            out << "        vertex " <<vert.x <<" "<<vert.y<<" "<<vert.z  << std::endl;
+            vert = getPoint(f,1);
+            out << "        vertex " <<vert.x <<" "<<vert.y<<" "<<vert.z  << std::endl;
+            vert = getPoint(f,2);
+            out << "        vertex " <<vert.x <<" "<<vert.y<<" "<<vert.z  << std::endl;
+            out << "    endloop" << std::endl;
+            out << "endfacet" << std::endl;
+
+        }
+    }
+    out << "endsolid name" << std::endl;
+    out.close();
+
+
+    std::cerr << std::endl;
+    std::cerr << "=============================================\n" << std::endl;
+    std::cerr << "=== start subtract ===\n" << std::endl;
+    std::cerr << "=============================================\n" << std::endl;
+    std::cerr << std::endl;
+
+    HE_Mesh result;
+    subtract(heMesh, other, result);
 
 //    FractureLinePart result;
 //    getFacetFractureLinePart(otherFace, intersectingFace, triangleIntersection, result);
