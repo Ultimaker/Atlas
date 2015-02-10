@@ -47,9 +47,14 @@ typedef FPoint3 FPoint;
 
 struct IntersectionSegment
 {
-    TriangleIntersection lineSegment; //! the intersection as computed by triangleIntersect.cpp
-    HE_FaceHandle otherFace; //! the other face than the one for which this IntersectionSegment is used
-    IntersectionSegment(TriangleIntersection lineSegment_, HE_FaceHandle otherFace_) : lineSegment(lineSegment_), otherFace(otherFace_) {};
+    TriangleIntersection lineSegment; //!< the intersection as computed by triangleIntersect.cpp
+    HE_FaceHandle otherFace; //!< the other face than the one for which this IntersectionSegment is used
+    bool otherFace_is_second_triangle; //!< whether [otherFace] is triangle2 of the intersection
+    IntersectionSegment(TriangleIntersection lineSegment_, HE_FaceHandle otherFace_, bool otherFace_is_second_triangle)
+    : lineSegment(lineSegment_)
+    , otherFace(otherFace_)
+    , otherFace_is_second_triangle(otherFace_is_second_triangle)
+    { };
 };
 
 //! intersection line a.k.a. fracture line is a polyline
@@ -89,6 +94,7 @@ struct FractureLinePart
         for (Arrow* a : endPoints)
             result.emplace(a->data.otherFace);
     }
+
 
     void debugOutput()
     {

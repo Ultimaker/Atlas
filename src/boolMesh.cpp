@@ -16,8 +16,47 @@
 
 #include <boost/iterator/transform_iterator.hpp>
 
+long errorCounter = 0;
+long nonErrorCounter = 0;
 
-void debug_csv(std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> & face2fractures)
+void getFaceEdgeSegments(bool aboveIntersection, std::vector<FractureLinePart>& fracturesOnFace, std::vector<std::pair<IntersectionPoint, IntersectionPoint>>& segments) //!< get the segments belonging to the face
+{
+    if (fracturesOnFace.size() == 0) return;
+
+
+    HE_FaceHandle face = fracturesOnFace[0].face;
+    #if BOOL_MESH_DEBUG == 1
+    for (FractureLinePart p : fracturesOnFace)
+    {
+        if (p.face != face)
+        {
+            BOOL_MESH_DEBUG_PRINTLN("ERROR! getFaceEdgeSegments called for different faces!");
+        }
+
+        for (Arrow* a : p.fracture.arrows)
+        {
+            Arrow* prev = a->from->last_in;
+            if (prev != nullptr)
+            {
+                auto direction = [](Arrow* prev) { return (prev->data.otherFace_is_second_triangle)?
+                                prev->data.lineSegment.isDirectionOfInnerPartOfTriangle1
+                                : prev->data.lineSegment.isDirectionOfInnerPartOfTriangle2; };
+
+//                if (direction(a) != direction(prev))
+                if (a->data.lineSegment.isDirectionOfInnerPartOfTriangle2 != prev->data.lineSegment.isDirectionOfInnerPartOfTriangle2)
+                {
+                    BOOL_MESH_DEBUG_PRINTLN("ERROR! subsequent intersections not directed the same way!");
+                    BOOL_MESH_DEBUG_SHOW(prev->data.lineSegment.isDirectionOfInnerPartOfTriangle2);
+                    BOOL_MESH_DEBUG_SHOW(a->data.lineSegment.isDirectionOfInnerPartOfTriangle2);
+                    errorCounter++;
+                } else nonErrorCounter++;
+            }
+        }
+    }
+    #endif
+}
+
+void debug_csv(std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> & face2fractures, std::string filename = "WHOLE.csv")
 {
     DEBUG_DO(
         std::ofstream csv;
@@ -27,9 +66,9 @@ void debug_csv(std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> 
     );
 
     std::ofstream csv;
-    csv.open("WHOLE.csv", std::fstream::out | std::fstream::app);
+    csv.open(filename, std::fstream::out | std::fstream::app);
 
-    const Point offset(200, 200, 200);
+    const Point offset(1, 1, 1);
 
     Point offset_now(0,0,0);
     Point p(0,0,0);
@@ -44,12 +83,19 @@ void debug_csv(std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> 
                 p = arrow->from->data.p() + offset_now;
                 csv << p.x <<", " << p.y << ", " << p.z << std::endl;
             }
+
+            bool aboveIntersection = true; // TODO
+            std::vector<std::pair<IntersectionPoint, IntersectionPoint>> segments;
+            getFaceEdgeSegments(aboveIntersection, mapping.second, segments);
+
             offset_now += offset;
         }
     }
     csv << p.x <<", " << p.y << ", " << p.z << std::endl;
-    csv << "0,0,0" << std::endl;
+    csv << "5000,0,30000" << std::endl;
     csv.close();
+    BOOL_MESH_DEBUG_SHOW(errorCounter);
+    BOOL_MESH_DEBUG_SHOW(nonErrorCounter);
 };
 
 
@@ -140,6 +186,12 @@ BOOL_MESH_DEBUG_PRINTLN("face intersection already contained in some fracture li
 //                std::unordered_map<HE_FaceHandle, FractureLinePart> face2fracture_here;
 //                typedef std::unordered_map<HE_FaceHandle, FractureLinePart>::iterator val_it;
 //                completeFractureLine(tri1, face, *triangleIntersection, face2fracture_here);
+
+
+
+
+
+
                 completeFractureLine(tri1, face, *triangleIntersection, face2fractures);
 
 //                for (auto mapping : face2fracture_here)
@@ -147,8 +199,6 @@ BOOL_MESH_DEBUG_PRINTLN("face intersection already contained in some fracture li
 //                        result.
 
 
-
-                debug_csv(face2fractures);
 
 
 
@@ -177,6 +227,33 @@ BOOL_MESH_DEBUG_PRINTLN("face intersection already contained in some fracture li
 
         }
    }
+
+// verification
+std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fractures_keep;
+std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fractures_subtracted;
+
+for (std::pair<HE_FaceHandle, std::vector<FractureLinePart>> face_intersectingFaces : face2fractures)
+{
+    if (face_intersectingFaces.first.m == &keep)
+    {
+        face2fractures_keep.insert(face_intersectingFaces);
+    } else if (face_intersectingFaces.first.m == &subtracted)
+    {
+        face2fractures_subtracted.insert(face_intersectingFaces);
+    } else
+    {
+        DEBUG_PRINTLN("face belongs to no mesh!");
+        exit(0);
+
+    }
+}
+
+
+debug_csv(face2fractures_keep, "WHOLE_keep.csv");
+debug_csv(face2fractures_subtracted, "WHOLE_subtracted.csv");
+
+
+                debug_csv(face2fractures, "WHOLE.csv");
 
 BOOL_MESH_DEBUG_SHOW(keep.faces.size());
 BOOL_MESH_DEBUG_SHOW(totalTriTriIntersectionComputations);
@@ -325,8 +402,14 @@ void BooleanMeshOps::completeFractureLine(HE_FaceHandle& triangle1, HE_FaceHandl
             if (!new_mapping.second)
                 new_mapping.first->second.emplace_back(next_face);
 
+
+
+
             FractureLinePart& next_frac = new_mapping.first->second.back();
             getFacetFractureLinePart(next_face, start_face, arrow->data.lineSegment, next_frac);
+
+
+
 
 //            fractureLines.emplace_back(next_face);
 //            FractureLinePart& next_frac = fractureLines.back();
@@ -395,12 +478,13 @@ void BooleanMeshOps::getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceH
     if (first.to->belongsToSource(triangle1))
     {
         std::swap(first.to, first.from);
-        std::swap(first.isDirectionOfInnerPartOfTriangle1, first.isDirectionOfInnerPartOfTriangle2);
+        first.isDirectionOfInnerPartOfTriangle1 = ! first.isDirectionOfInnerPartOfTriangle1;
+        first.isDirectionOfInnerPartOfTriangle2 = ! first.isDirectionOfInnerPartOfTriangle2;
     }
 
     Node* first_node = result.fracture.addNode(*first.from);
     Node* second_node = result.fracture.addNode(*first.to);
-    Arrow* first_arrow = result.fracture.connect(*first_node, *second_node, IntersectionSegment(first, triangle2));
+    Arrow* first_arrow = result.fracture.connect(*first_node, *second_node, IntersectionSegment(first, triangle2, false)); // triangleIntersection was computed on (triangle2, triangle1) !
 
     result.start = first_arrow;
 
@@ -586,7 +670,8 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
         BOOL_MESH_DEBUG_PRINTLN(connectingPoint.p() <<" =~= "<< triangleIntersection.to->p());
         BOOL_MESH_DEBUG_PRINTLN("swapping...");
         std::swap(triangleIntersection.from, triangleIntersection.to);
-        std::swap(triangleIntersection.isDirectionOfInnerPartOfTriangle1, triangleIntersection.isDirectionOfInnerPartOfTriangle2);
+        triangleIntersection.isDirectionOfInnerPartOfTriangle1 = ! triangleIntersection.isDirectionOfInnerPartOfTriangle1;
+        triangleIntersection.isDirectionOfInnerPartOfTriangle2 = ! triangleIntersection.isDirectionOfInnerPartOfTriangle2;
     }
     if (! triangleIntersection.from->compareSourceConverse(connectingPoint)  )
     {
@@ -596,7 +681,8 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
             BOOL_MESH_DEBUG_PRINTLN(connectingPoint.p() <<" =~= "<< triangleIntersection.to->p());
             BOOL_MESH_DEBUG_PRINTLN("swapping...");
             std::swap(triangleIntersection.from, triangleIntersection.to);
-            std::swap(triangleIntersection.isDirectionOfInnerPartOfTriangle1, triangleIntersection.isDirectionOfInnerPartOfTriangle2);
+            triangleIntersection.isDirectionOfInnerPartOfTriangle1 = ! triangleIntersection.isDirectionOfInnerPartOfTriangle1;
+            triangleIntersection.isDirectionOfInnerPartOfTriangle2 = ! triangleIntersection.isDirectionOfInnerPartOfTriangle2;
         }
     }
     if ( ! (connectingPoint.p() - triangleIntersection.from->p()).testLength(inaccuracy)  )
@@ -731,7 +817,7 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
 
     // make the new arrow
     BOOL_MESH_DEBUG_PRINTLN("making new arrow with face: " << newFace.m <<" "<<newFace.idx);
-    Arrow* new_arrow = result.fracture.connect(connectingNode, *new_node, IntersectionSegment(triangleIntersection, newFace));
+    Arrow* new_arrow = result.fracture.connect(connectingNode, *new_node, IntersectionSegment(triangleIntersection, newFace, true));
 
 
     if (!new_point_is_already_done)
@@ -1077,6 +1163,8 @@ void BooleanMeshOps::test_subtract(PrintObject* model)
 {
     std::remove("CRAP.csv");
     std::remove("WHOLE.csv");
+    std::remove("WHOLE_keep.csv");
+    std::remove("WHOLE_subtracted.csv");
 
     std::cerr << "=============================================\n" << std::endl;
 

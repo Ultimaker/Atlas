@@ -39,12 +39,12 @@ public:
         Arrow *first_in, *last_in, *first_out, *last_out;
         bool points() { return first_out != nullptr; }
         Node(NodeT& data_) : data(data_), first_in(nullptr), last_in(nullptr), first_out(nullptr), last_out(nullptr) {};
-        Node& operator=(const Node& b)
-        {
-            GRAPH_DEBUG_PRINTLN("changing Node data!");
-            data = b.data; first_in = b.first_in; last_in = b.last_in; first_out=b.first_out; last_out=b.last_out;
-            return *this;
-        }
+//        Node& operator=(const Node& b)
+//        {
+//            GRAPH_DEBUG_PRINTLN("changing Node data!");
+//            data = b.data; first_in = b.first_in; last_in = b.last_in; first_out=b.first_out; last_out=b.last_out;
+//            return *this;
+//        }
     };
 
     struct Arrow

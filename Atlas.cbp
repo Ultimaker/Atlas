@@ -54,6 +54,8 @@
 		</Unit>
 		<Unit filename="src/BoundingBox.cpp" />
 		<Unit filename="src/BoundingBox.h" />
+		<Unit filename="src/CSV.cpp" />
+		<Unit filename="src/CSV.h" />
 		<Unit filename="src/Kernel.cpp" />
 		<Unit filename="src/Kernel.h" />
 		<Unit filename="src/MACROS.cpp" />
