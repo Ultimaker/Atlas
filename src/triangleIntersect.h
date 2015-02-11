@@ -131,7 +131,7 @@ public:
     {
         switch(type) {
         case IntersectionPointType::NEW:
-            return edge.face() == fh;
+            return edge.face() == fh || edge.converse().face() == fh;
         case IntersectionPointType::VERTEX:
             return fh.hasVertex(vertex);
         }

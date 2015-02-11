@@ -41,40 +41,49 @@ void getFaceEdgeSegments(bool aboveIntersection, std::vector<FractureLinePart>& 
     // TODO: check whether fracture is simple (1 or 2 segments?) and do it the simple way in that case
 
     HE_FaceHandle face = fracturesOnFace[0].face;
+
     #if BOOL_MESH_DEBUG == 1
-    for (FractureLinePart p : fracturesOnFace)
-    {
-        if (p.face != face)
+        // check fractures on bugs!
+        // : check whether all fractures lie on same face
+        // : check whether all fracture lines are aligned correctly
+        // : check whether a fracture line lies on an edge (warning)
+        for (FractureLinePart p : fracturesOnFace)
         {
-            BOOL_MESH_DEBUG_PRINTLN("ERROR! getFaceEdgeSegments called for different faces!");
-        }
-
-        for (Arrow* a : p.fracture.arrows)
-        {
-            Arrow* prev = a->from->last_in;
-            if (prev != nullptr)
+            if (p.face != face)
             {
-                auto direction = [](Arrow* prev) { return (prev->data.otherFace_is_second_triangle)?
-                                prev->data.lineSegment.isDirectionOfInnerPartOfTriangle1
-                                : prev->data.lineSegment.isDirectionOfInnerPartOfTriangle2; };
+                BOOL_MESH_DEBUG_PRINTLN("ERROR! getFaceEdgeSegments called for different faces!");
+            }
 
-                if (direction(a) != direction(prev))
+            for (Arrow* a : p.fracture.arrows)
+            {
+                Arrow* prev = a->from->last_in;
+                if (prev != nullptr)
                 {
-                    BOOL_MESH_DEBUG_PRINTLN("ERROR! subsequent intersections not directed the same way!");
-                    BOOL_MESH_DEBUG_SHOW(direction(a));
-                    BOOL_MESH_DEBUG_SHOW(direction(prev));
+                    auto direction = [](Arrow* prev) { return (prev->data.otherFace_is_second_triangle)?
+                                    prev->data.lineSegment.isDirectionOfInnerPartOfTriangle1
+                                    : prev->data.lineSegment.isDirectionOfInnerPartOfTriangle2; };
+
+                    if (direction(a) != direction(prev))
+                    {
+                        BOOL_MESH_DEBUG_PRINTLN("ERROR! subsequent intersections not directed the same way!");
+                        BOOL_MESH_DEBUG_SHOW(direction(a));
+                        BOOL_MESH_DEBUG_SHOW(direction(prev));
+                    }
                 }
+                if (a->from->data.compareSource(a->to->data))
+                    BOOL_MESH_DEBUG_PRINTLN("WARNING! intersection segment lies on the edge of a face!");
             }
         }
-    }
     #endif
+
+
     struct DirectedPoint
     {
         IntersectionPoint p;
-        bool direction;
-        DirectedPoint(IntersectionPoint p, bool direction) : p(p), direction(direction) { };
+        bool upToDown;
+        DirectedPoint(IntersectionPoint p, bool upToDown) : p(p), upToDown(upToDown) { };
     };
-    auto isEdgeStart = [&aboveIntersection] (DirectedPoint dp) { return dp.direction != aboveIntersection; };  // TODO: other way around??
+    auto isEdgeStart = [&aboveIntersection] (DirectedPoint dp) { return dp.upToDown != aboveIntersection; };  // TODO: other way around??
 
 
     DirectedPoint* v0 = nullptr;
@@ -85,24 +94,28 @@ void getFaceEdgeSegments(bool aboveIntersection, std::vector<FractureLinePart>& 
     std::vector<DirectedPoint> endPoints_e2;
 
 
-    auto processArrow = [&] (Arrow* a)
+    auto processArrow = [&] (Arrow* a, bool endPoint)
     {
-        DirectedPoint dp(a->to->data,
+        DirectedPoint dp( (endPoint)? a->to->data : a->from->data,
             (a->data.otherFace_is_second_triangle)?
-            a->data.lineSegment.isDirectionOfInnerPartOfTriangle1
-            : a->data.lineSegment.isDirectionOfInnerPartOfTriangle2
+            a->data.lineSegment.isDirectionOfInnerPartOfTriangle1 == endPoint
+            : a->data.lineSegment.isDirectionOfInnerPartOfTriangle2 == endPoint
             );
         switch (dp.p.type)
         {
         case IntersectionPointType::NEW:
-            if      (dp.p.edge == face.edge0()) endPoints_e0.push_back(dp);
-            else if (dp.p.edge == face.edge1()) endPoints_e1.push_back(dp);
-            else if (dp.p.edge == face.edge2()) endPoints_e2.push_back(dp);
-        break;
+        {
+            HE_EdgeHandle face_edge = (dp.p.edge.face() == face)? dp.p.edge : dp.p.edge.converse();
+            if      (face_edge == face.edge0()) endPoints_e0.push_back(dp);
+            else if (face_edge == face.edge1()) endPoints_e1.push_back(dp);
+            else if (face_edge == face.edge2()) endPoints_e2.push_back(dp);
+            else BOOL_MESH_DEBUG_PRINTLN("WARNING! didn't recognize edge to lie on face!!");
+        } break;
         case IntersectionPointType::VERTEX:
             if      (dp.p.vertex == face.v0()) v0 = new DirectedPoint(dp);
             else if (dp.p.vertex == face.v1()) v1 = new DirectedPoint(dp);
             else if (dp.p.vertex == face.v2()) v2 = new DirectedPoint(dp);
+            else BOOL_MESH_DEBUG_PRINTLN("WARNING! didn't recognize vertex to lie on face!!");
         break;
         }
     };
@@ -111,9 +124,9 @@ void getFaceEdgeSegments(bool aboveIntersection, std::vector<FractureLinePart>& 
     {
         for (Arrow* a : p.endPoints)
         {
-            processArrow(a);
+            processArrow(a, true);
         }
-        processArrow(p.start);
+        processArrow(p.start, false);
     }
 
 
@@ -169,6 +182,7 @@ void getFaceEdgeSegments(bool aboveIntersection, std::vector<FractureLinePart>& 
     processEdge(endPoints_e2, face.edge2(), &edgeNeedsYetToBeProcessed[2], v2, v0);
 
     // some whole edges may still need to be included
+    if (true)
     {
         auto processWholeEdge = [&](bool edgeNeedsYetToBeProcessed, bool prev_edgeNeedsYetToBeProcessed, bool next_edgeNeedsYetToBeProcessed
                                     , HE_EdgeHandle e, HE_EdgeHandle e_prev, HE_EdgeHandle e_next
@@ -391,6 +405,25 @@ void debug_csv(std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> 
 };
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void BooleanMeshOps::subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& result)
 {
 //! is more efficient when keep is smaller than subtracted.
@@ -524,14 +557,21 @@ BOOL_MESH_DEBUG_PRINTLN("face intersection already contained in some fracture li
 std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fractures_keep;
 std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fractures_subtracted;
 
+int innerSize = 0;
+int innerSize_k = 0;
+int innerSize_s = 0;
+
 for (std::pair<HE_FaceHandle, std::vector<FractureLinePart>> face_intersectingFaces : face2fractures)
 {
+    innerSize += face_intersectingFaces.second[0].fracture.arrows.size();
     if (face_intersectingFaces.first.m == &keep)
     {
         face2fractures_keep.insert(face_intersectingFaces);
+        innerSize_k += face_intersectingFaces.second[0].fracture.arrows.size();
     } else if (face_intersectingFaces.first.m == &subtracted)
     {
         face2fractures_subtracted.insert(face_intersectingFaces);
+        innerSize_s += face_intersectingFaces.second[0].fracture.arrows.size();
     } else
     {
         DEBUG_PRINTLN("face belongs to no mesh!");
@@ -540,6 +580,12 @@ for (std::pair<HE_FaceHandle, std::vector<FractureLinePart>> face_intersectingFa
     }
 }
 
+BOOL_MESH_DEBUG_SHOW(face2fractures.size());
+BOOL_MESH_DEBUG_SHOW(face2fractures_keep.size());
+BOOL_MESH_DEBUG_SHOW(face2fractures_subtracted.size());
+BOOL_MESH_DEBUG_SHOW(innerSize);
+BOOL_MESH_DEBUG_SHOW(innerSize_k);
+BOOL_MESH_DEBUG_SHOW(innerSize_s);
 
 debug_csv(face2fractures_keep, "WHOLE_keep.csv");
 debug_csv(face2fractures_subtracted, "WHOLE_subtracted.csv");
