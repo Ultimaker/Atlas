@@ -52,6 +52,9 @@ struct HE_EdgeHandle
     HE_VertexHandle from_vert();
     HE_VertexHandle to_vert();
 
+    HE_VertexHandle v0(); // { return from_vert(); }
+    HE_VertexHandle v1(); // { return to_vert(); }
+
     HE_EdgeHandle next();
     HE_EdgeHandle converse();
 

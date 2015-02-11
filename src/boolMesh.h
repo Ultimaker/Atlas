@@ -68,7 +68,7 @@ struct FractureLinePart
     HE_FaceHandle face;
     Graph<IntersectionPoint, IntersectionSegment> fracture;
     Arrow* start;
-    std::vector<Arrow*> endPoints;
+    std::vector<Arrow*> endPoints; //!< does this include start?!
 
     FractureLinePart(HE_FaceHandle face) : face(face) {};
 

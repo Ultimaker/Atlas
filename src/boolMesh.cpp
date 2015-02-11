@@ -8,6 +8,8 @@
 
 #include <stdio.h>
 
+#include <cmath> // acos
+
 #include "settings.h" // MAX_EDGES_PER_VERTEX
 
 #include "MACROS.h" // debug
@@ -16,13 +18,27 @@
 
 #include <boost/iterator/transform_iterator.hpp>
 
-long errorCounter = 0;
-long nonErrorCounter = 0;
+/*!
+get the segments belonging to the edges of the face which belong to the part above/below the fracture lines
 
-void getFaceEdgeSegments(bool aboveIntersection, std::vector<FractureLinePart>& fracturesOnFace, std::vector<std::pair<IntersectionPoint, IntersectionPoint>>& segments) //!< get the segments belonging to the face
+algorithm idea:
+1) order all endPoints on angle from the middle point of the face
+2) group consecutive pairs
+    (uneven, uneven+1) or (even, even+1) depending on the direction of the intersection segments at the endpoints
+-) add indirection via vertices of face which are not already present in the endpoints
+
+idea2:
+-order endPoints per edge on distance to first vertex of edge
+    keep vertices separate
+    check which vertices are occupied
+-divide edges into parts
+-leave out edges which have no endPoints on it and for which the previous or next edge doesn't begin on the vertex
+*/
+void getFaceEdgeSegments(bool aboveIntersection, std::vector<FractureLinePart>& fracturesOnFace, std::vector<std::pair<IntersectionPoint, IntersectionPoint>>& segments)
 {
     if (fracturesOnFace.size() == 0) return;
 
+    // TODO: check whether fracture is simple (1 or 2 segments?) and do it the simple way in that case
 
     HE_FaceHandle face = fracturesOnFace[0].face;
     #if BOOL_MESH_DEBUG == 1
@@ -42,19 +58,289 @@ void getFaceEdgeSegments(bool aboveIntersection, std::vector<FractureLinePart>& 
                                 prev->data.lineSegment.isDirectionOfInnerPartOfTriangle1
                                 : prev->data.lineSegment.isDirectionOfInnerPartOfTriangle2; };
 
-//                if (direction(a) != direction(prev))
-                if (a->data.lineSegment.isDirectionOfInnerPartOfTriangle2 != prev->data.lineSegment.isDirectionOfInnerPartOfTriangle2)
+                if (direction(a) != direction(prev))
                 {
                     BOOL_MESH_DEBUG_PRINTLN("ERROR! subsequent intersections not directed the same way!");
-                    BOOL_MESH_DEBUG_SHOW(prev->data.lineSegment.isDirectionOfInnerPartOfTriangle2);
-                    BOOL_MESH_DEBUG_SHOW(a->data.lineSegment.isDirectionOfInnerPartOfTriangle2);
-                    errorCounter++;
-                } else nonErrorCounter++;
+                    BOOL_MESH_DEBUG_SHOW(direction(a));
+                    BOOL_MESH_DEBUG_SHOW(direction(prev));
+                }
             }
         }
     }
     #endif
+    struct DirectedPoint
+    {
+        IntersectionPoint p;
+        bool direction;
+        DirectedPoint(IntersectionPoint p, bool direction) : p(p), direction(direction) { };
+    };
+    auto isEdgeStart = [&aboveIntersection] (DirectedPoint dp) { return dp.direction != aboveIntersection; };  // TODO: other way around??
+
+
+    DirectedPoint* v0 = nullptr;
+    DirectedPoint* v1 = nullptr;
+    DirectedPoint* v2 = nullptr;
+    std::vector<DirectedPoint> endPoints_e0;
+    std::vector<DirectedPoint> endPoints_e1;
+    std::vector<DirectedPoint> endPoints_e2;
+
+
+    auto processArrow = [&] (Arrow* a)
+    {
+        DirectedPoint dp(a->to->data,
+            (a->data.otherFace_is_second_triangle)?
+            a->data.lineSegment.isDirectionOfInnerPartOfTriangle1
+            : a->data.lineSegment.isDirectionOfInnerPartOfTriangle2
+            );
+        switch (dp.p.type)
+        {
+        case IntersectionPointType::NEW:
+            if      (dp.p.edge == face.edge0()) endPoints_e0.push_back(dp);
+            else if (dp.p.edge == face.edge1()) endPoints_e1.push_back(dp);
+            else if (dp.p.edge == face.edge2()) endPoints_e2.push_back(dp);
+        break;
+        case IntersectionPointType::VERTEX:
+            if      (dp.p.vertex == face.v0()) v0 = new DirectedPoint(dp);
+            else if (dp.p.vertex == face.v1()) v1 = new DirectedPoint(dp);
+            else if (dp.p.vertex == face.v2()) v2 = new DirectedPoint(dp);
+        break;
+        }
+    };
+
+    for (FractureLinePart p : fracturesOnFace)
+    {
+        for (Arrow* a : p.endPoints)
+        {
+            processArrow(a);
+        }
+        processArrow(p.start);
+    }
+
+
+    auto compareDistTo = [](Point& to)
+    {
+        return [&to](DirectedPoint& a, DirectedPoint& b) { return (a.p.p()-to).vSize2() < (b.p.p()-to).vSize2(); };
+    };
+
+    std::sort(endPoints_e0.begin(), endPoints_e0.end(), compareDistTo(face.p0()));
+    std::sort(endPoints_e1.begin(), endPoints_e1.end(), compareDistTo(face.p1()));
+    std::sort(endPoints_e2.begin(), endPoints_e2.end(), compareDistTo(face.p2()));
+
+
+    bool edgeNeedsYetToBeProcessed[3] = { }; // initialize as false
+
+    //                 / face, &segments, &aboveIntersection
+    auto processEdge = [&](std::vector<DirectedPoint>& endPoints, HE_EdgeHandle edge, bool* edgeNeedsYetToBeProcessed, DirectedPoint* v0, DirectedPoint* v1)
+    {
+        if (endPoints.size() > 0)
+        {
+            int pairing = -1;
+            if ( ! isEdgeStart(endPoints[0]))
+            {
+                pairing = 0;
+                segments.emplace_back(IntersectionPoint(edge.v0()), endPoints[0].p);
+            }
+            for (int i = 1; i < endPoints.size(); i+=2)
+            {
+                DirectedPoint a = endPoints[i+pairing];
+                DirectedPoint b = endPoints[i+1+pairing];
+                segments.emplace_back(a.p, b.p);
+            }
+
+            if ( isEdgeStart(endPoints.back()))
+            {
+                segments.emplace_back(endPoints.back().p, IntersectionPoint(edge.v1()));
+            }
+        } else
+        {
+            if (v0 != nullptr)
+            {
+                if (isEdgeStart(*v0))
+                    segments.emplace_back(v0->p, IntersectionPoint(edge.v1()));
+            } else if (v1 != nullptr)
+            {   if (!isEdgeStart(*v1))
+                    segments.emplace_back(IntersectionPoint(edge.v0()), v1->p);
+            } else *edgeNeedsYetToBeProcessed = true;
+        }
+    };
+
+    processEdge(endPoints_e0, face.edge0(), &edgeNeedsYetToBeProcessed[0], v0, v1);
+    processEdge(endPoints_e1, face.edge1(), &edgeNeedsYetToBeProcessed[1], v1, v2);
+    processEdge(endPoints_e2, face.edge2(), &edgeNeedsYetToBeProcessed[2], v2, v0);
+
+    // some whole edges may still need to be included
+    {
+        auto processWholeEdge = [&](bool edgeNeedsYetToBeProcessed, bool prev_edgeNeedsYetToBeProcessed, bool next_edgeNeedsYetToBeProcessed
+                                    , HE_EdgeHandle e, HE_EdgeHandle e_prev, HE_EdgeHandle e_next
+                                    , std::vector<DirectedPoint>& endPoints, std::vector<DirectedPoint>& prev_endPoints, std::vector<DirectedPoint>& next_endPoints
+                                    , DirectedPoint* v0, DirectedPoint* v1, DirectedPoint* vother)
+        {
+            if (edgeNeedsYetToBeProcessed && !prev_edgeNeedsYetToBeProcessed)
+            {
+                // note that v0 of this edge is not in the fracture, see code 20 lines up
+                bool includeEdge = false;
+                if (prev_endPoints.size() == 0 && vother != nullptr)
+                    includeEdge = isEdgeStart(*vother);
+                else includeEdge = isEdgeStart(prev_endPoints.back());
+
+                if (includeEdge)
+                {
+                    segments.emplace_back(IntersectionPoint(e.v0()), IntersectionPoint(e.v1()));
+                    if (next_edgeNeedsYetToBeProcessed)
+                        segments.emplace_back(IntersectionPoint(e_next.v0()), IntersectionPoint(e_next.v1()));
+                }
+            }
+
+        };
+        processWholeEdge(edgeNeedsYetToBeProcessed[0], edgeNeedsYetToBeProcessed[2], edgeNeedsYetToBeProcessed[1], face.edge0(), face.edge2(), face.edge1(), endPoints_e0, endPoints_e2, endPoints_e1, v0, v1, v2);
+        processWholeEdge(edgeNeedsYetToBeProcessed[1], edgeNeedsYetToBeProcessed[0], edgeNeedsYetToBeProcessed[2], face.edge1(), face.edge0(), face.edge2(), endPoints_e1, endPoints_e0, endPoints_e2, v1, v2, v0);
+        processWholeEdge(edgeNeedsYetToBeProcessed[2], edgeNeedsYetToBeProcessed[1], edgeNeedsYetToBeProcessed[0], face.edge2(), face.edge1(), face.edge0(), endPoints_e2, endPoints_e1, endPoints_e0, v2, v0, v1);
+
+    //    if ( !  (
+    //               !edgeNeedsYetToBeProcessed[0] && !edgeNeedsYetToBeProcessed[1] && !edgeNeedsYetToBeProcessed[2]
+    //            || edgeNeedsYetToBeProcessed[0] && edgeNeedsYetToBeProcessed[1] && edgeNeedsYetToBeProcessed[2]
+    //            )   )
+    //    { // some whole edges may still need to be included
+    //
+    //    }
+
+    }
+
+    if (v0 != nullptr) delete v0;
+    if (v1 != nullptr) delete v1;
+    if (v2 != nullptr) delete v2;
 }
+
+
+/*
+
+void getFaceEdgeSegments_OLD(bool aboveIntersection, std::vector<FractureLinePart>& fracturesOnFace, std::vector<std::pair<IntersectionPoint, IntersectionPoint>>& segments)
+{
+    if (fracturesOnFace.size() == 0) return;
+
+    // TODO: check whether fracture is simple (1 or 2 segments?) and do it the simple way in that case
+
+    HE_FaceHandle face = fracturesOnFace[0].face;
+    #if BOOL_MESH_DEBUG == 1
+    for (FractureLinePart p : fracturesOnFace)
+    {
+        if (p.face != face)
+        {
+            BOOL_MESH_DEBUG_PRINTLN("ERROR! getFaceEdgeSegments called for different faces!");
+        }
+
+        for (Arrow* a : p.fracture.arrows)
+        {
+            Arrow* prev = a->from->last_in;
+            if (prev != nullptr)
+            {
+                auto direction = [](Arrow* prev) { return (prev->data.otherFace_is_second_triangle)?
+                                prev->data.lineSegment.isDirectionOfInnerPartOfTriangle1
+                                : prev->data.lineSegment.isDirectionOfInnerPartOfTriangle2; };
+
+                if (direction(a) != direction(prev))
+                {
+                    BOOL_MESH_DEBUG_PRINTLN("ERROR! subsequent intersections not directed the same way!");
+                    BOOL_MESH_DEBUG_SHOW(direction(a));
+                    BOOL_MESH_DEBUG_SHOW(direction(prev));
+                }
+            }
+        }
+    }
+    #endif
+    struct DirectedPoint
+    {
+        IntersectionPoint p;
+        bool direction;
+        float angle = 666;
+        DirectedPoint(IntersectionPoint p, bool direction) : p(p), direction(direction) { };
+    };
+
+    bool v0_is_included_already = false; auto check_v0 = [&v0_is_included_already, face] (IntersectionPoint& a) { if (a.type == IntersectionPointType::VERTEX && a.vertex == face.v0()) v0_is_included_already = true; };
+    bool v1_is_included_already = false; auto check_v1 = [&v1_is_included_already, face] (IntersectionPoint& a) { if (a.type == IntersectionPointType::VERTEX && a.vertex == face.v1()) v1_is_included_already = true; };
+    bool v2_is_included_already = false; auto check_v2 = [&v2_is_included_already, face] (IntersectionPoint& a) { if (a.type == IntersectionPointType::VERTEX && a.vertex == face.v2()) v2_is_included_already = true; };
+    auto check_vertex = [&check_v0, &check_v1, &check_v2] (IntersectionPoint& a) { check_v0(a); check_v1(a); check_v2(a); };
+
+    std::vector<DirectedPoint> endPoints;
+    for (FractureLinePart p : fracturesOnFace)
+    {
+        for (Arrow* a : p.endPoints)
+        {
+            if (a->data.otherFace_is_second_triangle)
+                endPoints.emplace_back(a->to->data, a->data.lineSegment.isDirectionOfInnerPartOfTriangle1);
+            else
+                endPoints.emplace_back(a->to->data, a->data.lineSegment.isDirectionOfInnerPartOfTriangle2);
+
+            check_vertex(a->to->data);
+        }
+        if (p.start->data.otherFace_is_second_triangle)
+            endPoints.emplace_back(p.start->from->data, ! p.start->data.lineSegment.isDirectionOfInnerPartOfTriangle1);
+        else
+            endPoints.emplace_back(p.start->from->data, ! p.start->data.lineSegment.isDirectionOfInnerPartOfTriangle2);
+        check_vertex(p.start->from->data);
+    }
+
+
+
+    FPoint normal = FPoint(  (face.p1() - face.p0()).cross(face.p2() - face.p0())  ).normalized();
+    Point middle = ( face.p0() + face.p1() + face.p2() ) / 3;
+    FPoint some = FPoint( face.p0() - middle ).normalized();
+
+    auto get_angle = [&normal, &middle, &some] (IntersectionPoint& p)
+    {
+        FPoint b = FPoint( p.p() - middle ).normalized();
+        float aa = some.dot(b);
+        double theta = std::acos(aa);
+        if (some.cross(b) .dot( normal ) < 0)
+            theta = -theta;
+        return theta;
+    };
+    auto compare_angle = [&get_angle] (DirectedPoint& a, DirectedPoint& b)
+    {
+        if (a.angle == 666) a.angle = get_angle(a.p);
+        if (b.angle == 666) b.angle = get_angle(b.p);
+        return a.angle > b.angle; // TODO: other way around?
+    };
+
+
+    std::sort(endPoints.begin(), endPoints.end(), compare_angle);
+
+    float v0_angle = get_angle(face.p0());
+    float v1_angle = get_angle(face.p1());
+    float v2_angle = get_angle(face.p2());
+
+
+    if (endPoints.size() < 2)
+    {
+        std::cerr << "warning! fracture has less than 2 endpoints..." << std::endl;
+        return;
+    }
+
+    int pairing = -1;
+    if (endPoints[0].direction == aboveIntersection) // TODO: other way around??
+        pairing = 0;
+
+    for (int i = 1; i < endPoints.size(); i+=2)
+    {
+        DirectedPoint a = endPoints[(i+pairing)%endPoints.size()];
+        DirectedPoint b = endPoints[(i+1+pairing)%endPoints.size()];
+
+//        std::vector<DirectedPoint> via;
+//        if (!v0_is_included_already && a.angle < v0_angle && v0_angle < b.angle)
+//            via.add(
+
+        segments.emplace_back(a.p, b.p);
+    }
+
+    std::cerr << "TODO: indirection via vertices of face where needed!" << std::endl;
+    // TODO: indirection via vertices of face where needed!
+
+}
+
+*/
+
+
+
 
 void debug_csv(std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> & face2fractures, std::string filename = "WHOLE.csv")
 {
@@ -88,14 +374,20 @@ void debug_csv(std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> 
             std::vector<std::pair<IntersectionPoint, IntersectionPoint>> segments;
             getFaceEdgeSegments(aboveIntersection, mapping.second, segments);
 
+            for (std::pair<IntersectionPoint, IntersectionPoint> segment : segments)
+            {
+                p = segment.first.p() + offset_now;
+                csv << p.x <<", " << p.y << ", " << p.z << std::endl;
+                p = segment.second.p() + offset_now;
+                csv << p.x <<", " << p.y << ", " << p.z << std::endl;
+            }
+
             offset_now += offset;
         }
     }
     csv << p.x <<", " << p.y << ", " << p.z << std::endl;
     csv << "5000,0,30000" << std::endl;
     csv.close();
-    BOOL_MESH_DEBUG_SHOW(errorCounter);
-    BOOL_MESH_DEBUG_SHOW(nonErrorCounter);
 };
 
 

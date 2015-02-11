@@ -69,7 +69,7 @@ public:
         return (*this)/vSize();
     }
 
-    FPoint3 cross(const FPoint3& p)
+    FPoint3 cross(const FPoint3& p) const
     {
         return FPoint3(
             y*p.z-z*p.y,
@@ -86,7 +86,7 @@ public:
 //            a.x*b.y-a.y*b.x);
     }
 
-    float dot(const FPoint3& p)
+    float dot(const FPoint3& p) const
     {
         return x*p.x + y*p.y + z*p.z;
     }

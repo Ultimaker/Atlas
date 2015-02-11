@@ -45,6 +45,9 @@ HE_VertexHandle HE_EdgeHandle::to_vert()
 {
     return next().from_vert();
 };
+HE_VertexHandle HE_EdgeHandle::v0() { return from_vert(); }
+HE_VertexHandle HE_EdgeHandle::v1() { return to_vert(); }
+
 
 HE_FaceHandle HE_EdgeHandle::face()
 {
