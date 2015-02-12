@@ -305,7 +305,7 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN("p22 = " << tri2_plane1_ints.line2.intersection
             if (ret->to->vertex == ret->from->vertex  )
             {
                 TRIANGLE_INTERSECT_DEBUG_PRINTLN("triangle intersections is vertex point only!");
-                return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, IntersectionType::TOUCHING);
+                return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, IntersectionType::TOUCHING_POINT);
             }
 
     }
@@ -373,120 +373,79 @@ void TriangleIntersectionComputation::TrianglePlaneIntersection::computeIntersec
     }
 
     // check which two lines of triangle  cross the plane of triangle , and check if the plane is crossed in a vertex
-    if (sa == sb)
+
+    // lambda abstraction to reduce code duplication:
+    // for the general case in which two points lie on one side of the plane (and the other point either on the plane or on the other side of the plane)
+    // returns whether the computation is finished
+    auto computeIntersectingEdgesInner = [&](char sign_either, char sign_other, HE_EdgeHandle same_side_edge, FPoint& other, FPoint& prev, FPoint& next)
     {
-        if (sa==0) // whole line lies on segment
+        if (sign_either==0) // whole line lies on segment
         {
-            line1.intersection = IntersectionPoint(fh.v0());
-            line2.intersection = IntersectionPoint(fh.v1());
+            line1.intersection = IntersectionPoint(same_side_edge.v0());
+            line2.intersection = IntersectionPoint(same_side_edge.v1());
             O = FPoint(line2.intersection->p());
-            isDirectionOfInnerFacePart = sc < 0;
-            std::cerr<< "use line segment ab below, instead of the computed line segment" << std::endl;
+            isDirectionOfInnerFacePart = sign_other < 0;
+            std::cerr<< "use line segment of face, instead of the computed line segment" << std::endl;
         }
         else
         {
-            if (sc == 0)
+            if (sign_other == 0)
             {
-                TRIANGLE_INTERSECT_DEBUG_PRINTLN(" triangle doesn't cross the plane (only touches it)");
-                intersectionType = IntersectionType::TOUCHING;
-                return; // triangle doesn't cross the plane (only touches it)
+                TRIANGLE_INTERSECT_DEBUG_PRINTLN(" triangle doesn't cross the plane (only touches it with one vertex)");
+                intersectionType = IntersectionType::TOUCHING_POINT;
+                return true; // triangle doesn't cross the plane (only touches it)
             }
-            line1.intersection = IntersectionPoint(Point(0,0,0), fh.edge1());
-            line1.from  = FPoint3(b);
-            line1.to    = FPoint3(c);
-            line2.intersection = IntersectionPoint(Point(0,0,0), fh.edge2());
-            line2.from  = FPoint3(c);
-            line2.to    = FPoint3(a);
-            isDirectionOfInnerFacePart = sc > 0;
+            line1.intersection = IntersectionPoint(Point(0,0,0), same_side_edge.next());
+            line1.from  = FPoint3(prev);
+            line1.to    = FPoint3(other);
+            line2.intersection = IntersectionPoint(Point(0,0,0), same_side_edge.next().next());
+            line2.from  = FPoint3(other);
+            line2.to    = FPoint3(next);
+            isDirectionOfInnerFacePart = sign_other > 0;
         }
+        return false;
+    };
 
+
+    if (sa == sb)
+    {
+        bool finished = computeIntersectingEdgesInner(sa, sc, fh.edge0(), c, b, a);
+        if (finished) return;
     }
     else if (sb == sc)
     {
-        if (sb==0) // whole line lies on segment
-        {
-            line1.intersection = IntersectionPoint(fh.v1());
-            line2.intersection = IntersectionPoint(fh.v2());
-            O = FPoint(line2.intersection->p());
-            isDirectionOfInnerFacePart = sa < 0;
-            std::cerr<< "use line segment bc below, instead of the computed line segment" << std::endl;
-        }
-        else
-        {
-            if (sa == 0)
-            {
-                TRIANGLE_INTERSECT_DEBUG_PRINTLN(" triangle doesn't cross the plane (only touches it)");
-                intersectionType = IntersectionType::TOUCHING;
-                return; // triangle doesn't cross the plane (only touches it)
-            }
-            line1.intersection = IntersectionPoint(Point(0,0,0), fh.edge2());
-            line1.from  = FPoint3(c);
-            line1.to    = FPoint3(a);
-            line2.intersection = IntersectionPoint(Point(0,0,0), fh.edge0());
-            line2.from  = FPoint3(a);
-            line2.to    = FPoint3(b);
-            isDirectionOfInnerFacePart = sa > 0;
-        }
-
+        bool finished = computeIntersectingEdgesInner(sb, sa, fh.edge1(), a, c, b);
+        if (finished) return;
     }
     else if (sc == sa)
     {
-        if (sc==0) // whole line lies on segment
-        {
-            line1.intersection = IntersectionPoint(fh.v2());
-            line2.intersection = IntersectionPoint(fh.v0());
-            O = FPoint(line2.intersection->p());
-            isDirectionOfInnerFacePart = sb < 0;
-            std::cerr<< "use line segment ac below, instead of the computed line segment" << std::endl;
-        }
-        else
-        {
-            if (sb == 0)
-            {
-                TRIANGLE_INTERSECT_DEBUG_PRINTLN(" triangle doesn't cross the plane (only touches it)");
-                intersectionType = IntersectionType::TOUCHING;
-                return; // triangle doesn't cross the plane (only touches it)
-            }
-            line1.intersection = IntersectionPoint(Point(0,0,0), fh.edge0());
-            line1.from  = FPoint3(a);
-            line1.to    = FPoint3(b);
-            line2.intersection = IntersectionPoint(Point(0,0,0), fh.edge1());
-            line2.from  = FPoint3(b);
-            line2.to    = FPoint3(c);
-            isDirectionOfInnerFacePart = sb > 0;
-        }
-
+        bool finished = computeIntersectingEdgesInner(sc, sb, fh.edge2(), b, a, c);
+        if (finished) return;
     } else // sa =/= sb =/= sc =/= sa  : all unequal, so one point must lie in the middle ON the plane
     {
+        auto processOnPlaneVertex = [&](HE_VertexHandle middle, FPoint& prev, FPoint& next, char sign_next, HE_EdgeHandle other)
+        {
+            line1.intersection = IntersectionPoint(middle);
+            TRIANGLE_INTERSECT_DEBUG_PRINTLN("using intersection from given vertex " << middle.idx);
+            O = FPoint(line1.intersection->p());
+            line2.from = FPoint3(next);
+            line2.to   = FPoint3(prev);
+            line2.intersection = IntersectionPoint(Point(0,0,0), other);
+            isDirectionOfInnerFacePart = sign_next > 0;
+        };
+
+
         if (sa == 0)
         {
-            line1.intersection = IntersectionPoint(fh.v0());
-            TRIANGLE_INTERSECT_DEBUG_PRINTLN("using intersection from given vertex " << fh.v0().idx);
-            O = FPoint(line1.intersection->p());
-            line2.from = FPoint3(b);
-            line2.to   = FPoint3(c);
-            line2.intersection = IntersectionPoint(Point(0,0,0), fh.edge1());
-            isDirectionOfInnerFacePart = sb > 0;
+            processOnPlaneVertex(fh.v0(), c, b, sb, fh.edge1());
         }
         else if (sb == 0)
         {
-            line1.intersection = IntersectionPoint(fh.v1());
-            TRIANGLE_INTERSECT_DEBUG_PRINTLN("using intersection from given vertex " << fh.v1().idx);
-            O = FPoint(line1.intersection->p());
-            line2.from  = FPoint3(c);
-            line2.to    = FPoint3(a);
-            line2.intersection = IntersectionPoint(Point(0,0,0), fh.edge2());
-            isDirectionOfInnerFacePart = sc > 0;
+            processOnPlaneVertex(fh.v1(), a, c, sc, fh.edge2());
         }
         else if (sc == 0)
         {
-            line1.intersection = IntersectionPoint(fh.v2());
-            TRIANGLE_INTERSECT_DEBUG_PRINTLN("using intersection from given vertex " << fh.v2().idx);
-            O = FPoint(line1.intersection->p());
-            line2.from  = FPoint3(a);
-            line2.to    = FPoint3(b);
-            line2.intersection = IntersectionPoint(Point(0,0,0), fh.edge0());
-            isDirectionOfInnerFacePart = sa > 0;
+            processOnPlaneVertex(fh.v2(), a, c, sa, fh.edge0());
         } else
         {
             TRIANGLE_INTERSECT_DEBUG_PRINTLN(" uncaught case! end of boolMesh.cpp...");

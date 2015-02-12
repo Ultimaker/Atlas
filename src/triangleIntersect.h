@@ -140,7 +140,7 @@ public:
 
 
 //! type of (non-)intersection between triangles
-ENUM(IntersectionType , LINE_SEGMENT, COPLANAR, TOUCHING, NON_TOUCHING, NON_TOUCHING_PLANES, PARALLEL, UNKNOWN );
+ENUM(IntersectionType , LINE_SEGMENT, COPLANAR, TOUCHING_POINT, NON_TOUCHING, NON_TOUCHING_PLANES, PARALLEL, UNKNOWN );
 
 
 /*!
@@ -161,14 +161,29 @@ struct TriangleIntersection
     bool isDirectionOfInnerPartOfTriangle1; //!< whether the direction  from -> to  is the same direction as the halfedge belonging the part of the first triangle which is below the second triangle
     bool isDirectionOfInnerPartOfTriangle2; //!< whether the direction  from -> to  is the same direction as the halfedge belonging the part of the second triangle which is below the first triangle
 
+    boost::optional<HE_EdgeHandle> edgeOfTriangle1TouchingTriangle2; //!< either no edge or the edge of triangle1 with which the line segment is coincident (and so the triangle1 touches the plane of the other with an edge)
+    boost::optional<HE_EdgeHandle> edgeOfTriangle2TouchingTriangle1; //!< either no edge or the edge of triangle2 with which the line segment is coincident (and so the triangle2 touches the plane of the other with an edge)
+
     IntersectionType intersectionType;
 
+    TriangleIntersection(boost::optional<IntersectionPoint> from_, boost::optional<IntersectionPoint> to_
+        , bool inMesh2, bool inMesh1, HE_EdgeHandle edgeOfTriangle1TouchingTriangle2, HE_EdgeHandle edgeOfTriangle2TouchingTriangle1, IntersectionType intersectionType_)
+    : from(from_)
+    , to(to_)
+    , isDirectionOfInnerPartOfTriangle1(inMesh2)
+    , isDirectionOfInnerPartOfTriangle2(inMesh1)
+    , intersectionType(intersectionType_)
+    , edgeOfTriangle1TouchingTriangle2(edgeOfTriangle1TouchingTriangle2)
+    , edgeOfTriangle2TouchingTriangle1(edgeOfTriangle2TouchingTriangle1)
+    { };
     TriangleIntersection(boost::optional<IntersectionPoint> from_, boost::optional<IntersectionPoint> to_, bool inMesh2, bool inMesh1, IntersectionType intersectionType_)
     : from(from_)
     , to(to_)
     , isDirectionOfInnerPartOfTriangle1(inMesh2)
     , isDirectionOfInnerPartOfTriangle2(inMesh1)
     , intersectionType(intersectionType_)
+    , edgeOfTriangle1TouchingTriangle2(boost::none)
+    , edgeOfTriangle2TouchingTriangle1(boost::none)
     { };
 };
 
