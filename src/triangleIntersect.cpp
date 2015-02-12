@@ -291,6 +291,8 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN("p22 = " << tri2_plane1_ints.line2.intersection
             , std::move(( (x12 < x22)? tri1_plane2_ints : tri2_plane1_ints ).line2.intersection)
             , tri1_plane2_ints.isDirectionOfInnerFacePart
             , tri2_plane1_ints.isDirectionOfInnerFacePart
+            , tri1_plane2_ints.edgeOfTriangleTouchesPlane
+            , tri2_plane1_ints.edgeOfTriangleTouchesPlane
             , IntersectionType::LINE_SEGMENT
         );
 
@@ -385,6 +387,7 @@ void TriangleIntersectionComputation::TrianglePlaneIntersection::computeIntersec
             line2.intersection = IntersectionPoint(same_side_edge.v1());
             O = FPoint(line2.intersection->p());
             isDirectionOfInnerFacePart = sign_other < 0;
+            edgeOfTriangleTouchesPlane = same_side_edge;
             std::cerr<< "use line segment of face, instead of the computed line segment" << std::endl;
         }
         else

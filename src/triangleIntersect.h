@@ -167,7 +167,9 @@ struct TriangleIntersection
     IntersectionType intersectionType;
 
     TriangleIntersection(boost::optional<IntersectionPoint> from_, boost::optional<IntersectionPoint> to_
-        , bool inMesh2, bool inMesh1, HE_EdgeHandle edgeOfTriangle1TouchingTriangle2, HE_EdgeHandle edgeOfTriangle2TouchingTriangle1, IntersectionType intersectionType_)
+        , bool inMesh2, bool inMesh1
+        , boost::optional<HE_EdgeHandle>& edgeOfTriangle1TouchingTriangle2, boost::optional<HE_EdgeHandle>& edgeOfTriangle2TouchingTriangle1
+        , IntersectionType intersectionType_)
     : from(from_)
     , to(to_)
     , isDirectionOfInnerPartOfTriangle1(inMesh2)
@@ -239,6 +241,8 @@ protected:
 
         bool isDirectionOfInnerFacePart; //!< whether the direction of the line segment from the intersection of line1 to the intersection of line2 is in the direction of the halfEdge belonging to part of the face which is below the halfplane
 
+        boost::optional<HE_EdgeHandle> edgeOfTriangleTouchesPlane; //!< whether and which edge of the triangle is touching the plane
+
         bool isCorrect; //!< whether the triangles are in a position such that they intersect
 
         IntersectionType intersectionType; //!< information on the intersection type between the two triangles, if already known.
@@ -249,6 +253,7 @@ protected:
         : isCorrect(false)
         , intersectionType(IntersectionType::UNKNOWN)
         , O(boost::none)
+        , edgeOfTriangleTouchesPlane(boost::none)
         {  };
 
 

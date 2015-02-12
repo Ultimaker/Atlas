@@ -226,137 +226,9 @@ void getFaceEdgeSegments(bool aboveIntersection, std::vector<FractureLinePart>& 
 }
 
 
-/*
-
-void getFaceEdgeSegments_OLD(bool aboveIntersection, std::vector<FractureLinePart>& fracturesOnFace, std::vector<std::pair<IntersectionPoint, IntersectionPoint>>& segments)
-{
-    if (fracturesOnFace.size() == 0) return;
-
-    // TODO: check whether fracture is simple (1 or 2 segments?) and do it the simple way in that case
-
-    HE_FaceHandle face = fracturesOnFace[0].face;
-    #if BOOL_MESH_DEBUG == 1
-    for (FractureLinePart p : fracturesOnFace)
-    {
-        if (p.face != face)
-        {
-            BOOL_MESH_DEBUG_PRINTLN("ERROR! getFaceEdgeSegments called for different faces!");
-        }
-
-        for (Arrow* a : p.fracture.arrows)
-        {
-            Arrow* prev = a->from->last_in;
-            if (prev != nullptr)
-            {
-                auto direction = [](Arrow* prev) { return (prev->data.otherFace_is_second_triangle)?
-                                prev->data.lineSegment.isDirectionOfInnerPartOfTriangle1
-                                : prev->data.lineSegment.isDirectionOfInnerPartOfTriangle2; };
-
-                if (direction(a) != direction(prev))
-                {
-                    BOOL_MESH_DEBUG_PRINTLN("ERROR! subsequent intersections not directed the same way!");
-                    BOOL_MESH_DEBUG_SHOW(direction(a));
-                    BOOL_MESH_DEBUG_SHOW(direction(prev));
-                }
-            }
-        }
-    }
-    #endif
-    struct DirectedPoint
-    {
-        IntersectionPoint p;
-        bool direction;
-        float angle = 666;
-        DirectedPoint(IntersectionPoint p, bool direction) : p(p), direction(direction) { };
-    };
-
-    bool v0_is_included_already = false; auto check_v0 = [&v0_is_included_already, face] (IntersectionPoint& a) { if (a.type == IntersectionPointType::VERTEX && a.vertex == face.v0()) v0_is_included_already = true; };
-    bool v1_is_included_already = false; auto check_v1 = [&v1_is_included_already, face] (IntersectionPoint& a) { if (a.type == IntersectionPointType::VERTEX && a.vertex == face.v1()) v1_is_included_already = true; };
-    bool v2_is_included_already = false; auto check_v2 = [&v2_is_included_already, face] (IntersectionPoint& a) { if (a.type == IntersectionPointType::VERTEX && a.vertex == face.v2()) v2_is_included_already = true; };
-    auto check_vertex = [&check_v0, &check_v1, &check_v2] (IntersectionPoint& a) { check_v0(a); check_v1(a); check_v2(a); };
-
-    std::vector<DirectedPoint> endPoints;
-    for (FractureLinePart p : fracturesOnFace)
-    {
-        for (Arrow* a : p.endPoints)
-        {
-            if (a->data.otherFace_is_second_triangle)
-                endPoints.emplace_back(a->to->data, a->data.lineSegment.isDirectionOfInnerPartOfTriangle1);
-            else
-                endPoints.emplace_back(a->to->data, a->data.lineSegment.isDirectionOfInnerPartOfTriangle2);
-
-            check_vertex(a->to->data);
-        }
-        if (p.start->data.otherFace_is_second_triangle)
-            endPoints.emplace_back(p.start->from->data, ! p.start->data.lineSegment.isDirectionOfInnerPartOfTriangle1);
-        else
-            endPoints.emplace_back(p.start->from->data, ! p.start->data.lineSegment.isDirectionOfInnerPartOfTriangle2);
-        check_vertex(p.start->from->data);
-    }
 
 
-
-    FPoint normal = FPoint(  (face.p1() - face.p0()).cross(face.p2() - face.p0())  ).normalized();
-    Point middle = ( face.p0() + face.p1() + face.p2() ) / 3;
-    FPoint some = FPoint( face.p0() - middle ).normalized();
-
-    auto get_angle = [&normal, &middle, &some] (IntersectionPoint& p)
-    {
-        FPoint b = FPoint( p.p() - middle ).normalized();
-        float aa = some.dot(b);
-        double theta = std::acos(aa);
-        if (some.cross(b) .dot( normal ) < 0)
-            theta = -theta;
-        return theta;
-    };
-    auto compare_angle = [&get_angle] (DirectedPoint& a, DirectedPoint& b)
-    {
-        if (a.angle == 666) a.angle = get_angle(a.p);
-        if (b.angle == 666) b.angle = get_angle(b.p);
-        return a.angle > b.angle; // TODO: other way around?
-    };
-
-
-    std::sort(endPoints.begin(), endPoints.end(), compare_angle);
-
-    float v0_angle = get_angle(face.p0());
-    float v1_angle = get_angle(face.p1());
-    float v2_angle = get_angle(face.p2());
-
-
-    if (endPoints.size() < 2)
-    {
-        std::cerr << "warning! fracture has less than 2 endpoints..." << std::endl;
-        return;
-    }
-
-    int pairing = -1;
-    if (endPoints[0].direction == aboveIntersection) // TODO: other way around??
-        pairing = 0;
-
-    for (int i = 1; i < endPoints.size(); i+=2)
-    {
-        DirectedPoint a = endPoints[(i+pairing)%endPoints.size()];
-        DirectedPoint b = endPoints[(i+1+pairing)%endPoints.size()];
-
-//        std::vector<DirectedPoint> via;
-//        if (!v0_is_included_already && a.angle < v0_angle && v0_angle < b.angle)
-//            via.add(
-
-        segments.emplace_back(a.p, b.p);
-    }
-
-    std::cerr << "TODO: indirection via vertices of face where needed!" << std::endl;
-    // TODO: indirection via vertices of face where needed!
-
-}
-
-*/
-
-
-
-
-void debug_csv(std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> & face2fractures, std::string filename = "WHOLE.csv")
+void BooleanMeshOps::debug_csv(std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> & face2fractures, std::string filename)
 {
     DEBUG_DO(
         std::ofstream csv;
@@ -384,19 +256,21 @@ void debug_csv(std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> 
                 csv << p.x <<", " << p.y << ", " << p.z << std::endl;
             }
 
-            bool aboveIntersection = true; // TODO
-            std::vector<std::pair<IntersectionPoint, IntersectionPoint>> segments;
-            getFaceEdgeSegments(aboveIntersection, mapping.second, segments);
-
-            for (std::pair<IntersectionPoint, IntersectionPoint> segment : segments)
-            {
-                p = segment.first.p() + offset_now;
-                csv << p.x <<", " << p.y << ", " << p.z << std::endl;
-                p = segment.second.p() + offset_now;
-                csv << p.x <<", " << p.y << ", " << p.z << std::endl;
-            }
 
             offset_now += offset;
+        }
+
+        bool aboveIntersection = useAboveFracture(mapping.first);
+
+        std::vector<std::pair<IntersectionPoint, IntersectionPoint>> segments;
+        getFaceEdgeSegments(aboveIntersection, mapping.second, segments);
+
+        for (std::pair<IntersectionPoint, IntersectionPoint> segment : segments)
+        {
+            p = segment.first.p() + offset_now;
+            csv << p.x <<", " << p.y << ", " << p.z << std::endl;
+            p = segment.second.p() + offset_now;
+            csv << p.x <<", " << p.y << ", " << p.z << std::endl;
         }
     }
     csv << p.x <<", " << p.y << ", " << p.z << std::endl;
@@ -425,6 +299,13 @@ void debug_csv(std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> 
 
 
 void BooleanMeshOps::subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& result)
+{
+
+    BooleanMeshOps subtract(keep, subtracted, BoolOpType::DIFFERENCE);
+    return subtract.perform(result);
+}
+
+void BooleanMeshOps::perform(HE_Mesh& result)
 {
 //! is more efficient when keep is smaller than subtracted.
 
@@ -1329,7 +1210,8 @@ void BooleanMeshOps::test_getFacetFractureLinePart(PrintObject* model)
     std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fractures;
     //std::unordered_set<HE_FaceHandle>  walkedFacesFromEndpoints;
 
-    completeFractureLine(otherFace, intersectingFace, *triangleIntersection, face2fractures);
+    BooleanMeshOps subtract(heMesh, heMesh, BoolOpType::DIFFERENCE);
+    subtract.completeFractureLine(otherFace, intersectingFace, *triangleIntersection, face2fractures);
 
 //    FractureLinePart result;
 //    getFacetFractureLinePart(otherFace, intersectingFace, triangleIntersection, result);
@@ -1480,7 +1362,8 @@ void BooleanMeshOps::test_completeFractureLine(PrintObject* model)
     std::cerr << std::endl;
 
     std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fractures;
-    completeFractureLine(otherFace, intersectingFace, *triangleIntersection, face2fractures);
+    BooleanMeshOps subtract(heMesh, heMesh, BoolOpType::DIFFERENCE);
+    subtract.completeFractureLine(otherFace, intersectingFace, *triangleIntersection, face2fractures);
 
 //    FractureLinePart result;
 //    getFacetFractureLinePart(otherFace, intersectingFace, triangleIntersection, result);

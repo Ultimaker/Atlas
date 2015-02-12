@@ -123,6 +123,8 @@ struct FractureLinePart
     }
 };
 
+ENUM(BoolOpType, UNION, INTERSECTION, DIFFERENCE);
+
 class BooleanMeshOps
 {
 public:
@@ -131,16 +133,48 @@ public:
     static void test_subtract(PrintObject* model);
     static void test_getFacetFractureLinePart(PrintObject* model);
     static void test_completeFractureLine(PrintObject* model);
+
 protected:
 
-
     HE_Mesh& keep, subtracted;
-    std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fracturelines_mesh1;
-    std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fracturelines_mesh2;
-    static void getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, TriangleIntersection& first, FractureLinePart& result); //!< adds all intersections connected to the first which intersect with the triangle to the mapping of the triangle
-    static void addIntersectionToGraphAndTodo(Node& connectingNode, TriangleIntersection& triangleIntersection, HE_FaceHandle originalFace, HE_FaceHandle newFace, std::unordered_map<HE_VertexHandle, Node*>& vertex2node, FractureLinePart& result, std::list<Arrow*>& todo);
+    BoolOpType boolOpType;
 
-    static void completeFractureLine(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, TriangleIntersection& first, std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>>& face2fracture); //!< walks along (each) fracture line part recording all fracture line segemnts in the maps, until whole fracture is explored (a fracture line can split)
+    bool useCoplanarFaceIntersection(bool sameNormals)
+    {
+        switch(boolOpType)
+        {
+        case BoolOpType::UNION:         return sameNormals;
+        case BoolOpType::INTERSECTION:  return sameNormals;
+        case BoolOpType::DIFFERENCE:    return !sameNormals;
+        }
+    };
+    bool useAboveFracture(HE_FaceHandle fh)
+    {
+        switch(boolOpType)
+        {
+        case BoolOpType::UNION:         return true;
+        case BoolOpType::INTERSECTION:  return false;
+        case BoolOpType::DIFFERENCE:    return fh.m == &keep;
+        }
+    };
+
+
+    BooleanMeshOps(HE_Mesh& keep, HE_Mesh& subtracted, BoolOpType boolOpType)
+    : keep(keep), subtracted(subtracted), boolOpType(boolOpType)
+    { } ;
+
+
+//    std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fracturelines_mesh1;
+//    std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fracturelines_mesh2;
+    void perform(HE_Mesh& result); //!< subtract one volume from another ([subtracted] from [keep])
+
+    void getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, TriangleIntersection& first, FractureLinePart& result); //!< adds all intersections connected to the first which intersect with the triangle to the mapping of the triangle
+    void addIntersectionToGraphAndTodo(Node& connectingNode, TriangleIntersection& triangleIntersection, HE_FaceHandle originalFace, HE_FaceHandle newFace, std::unordered_map<HE_VertexHandle, Node*>& vertex2node, FractureLinePart& result, std::list<Arrow*>& todo);
+
+    void completeFractureLine(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, TriangleIntersection& first, std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>>& face2fracture); //!< walks along (each) fracture line part recording all fracture line segemnts in the maps, until whole fracture is explored (a fracture line can split)
+
+
+    void debug_csv(std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> & face2fractures, std::string filename = "WHOLE.csv");
 
 };
 
