@@ -54,7 +54,8 @@ struct MeshFaceHandle
     Point& p1() const { return v1().vertex().p; };
     Point& p2() const { return v2().vertex().p; };
 
-    FPoint normal() const { return FPoint( ( p1() - p0() ).cross( p2() - p0() ) ).normalized(); };
+    Point norm() const { return ( p1() - p0() ).cross( p2() - p0() ); };
+    FPoint normal() const { return FPoint( norm() ).normalized(); };
 
     BoundingBox bbox() const { return BoundingBox(p0(), p1()) + p2(); };
 

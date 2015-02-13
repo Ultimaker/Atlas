@@ -187,6 +187,13 @@ struct TriangleIntersection
     , edgeOfTriangle1TouchingTriangle2(boost::none)
     , edgeOfTriangle2TouchingTriangle1(boost::none)
     { };
+
+    void reverse()
+    {
+        std::swap(from, to);
+        isDirectionOfInnerPartOfTriangle1 = ! isDirectionOfInnerPartOfTriangle1;
+        isDirectionOfInnerPartOfTriangle2 = ! isDirectionOfInnerPartOfTriangle2;
+    };
 };
 
 
