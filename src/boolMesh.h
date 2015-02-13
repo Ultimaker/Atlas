@@ -55,6 +55,34 @@ struct IntersectionSegment
     , otherFace(otherFace_)
     , otherFace_is_second_triangle(otherFace_is_second_triangle)
     { };
+    bool isDirectionOfInnerPartOfOtherTriangle()
+    {
+        if (otherFace_is_second_triangle)
+            return lineSegment.isDirectionOfInnerPartOfTriangle2;
+        else
+            return lineSegment.isDirectionOfInnerPartOfTriangle1;
+    }
+    bool isDirectionOfInnerPartOfMainTriangle()
+    {
+        if (otherFace_is_second_triangle)
+            return lineSegment.isDirectionOfInnerPartOfTriangle1;
+        else
+            return lineSegment.isDirectionOfInnerPartOfTriangle2;
+    }
+    boost::optional<HE_EdgeHandle> edgeOfMainTouchingOtherTriangle()
+    {
+        if (otherFace_is_second_triangle)
+            return edgeOfTriangle1TouchingTriangle2;
+        else
+            return edgeOfTriangle2TouchingTriangle1;
+    }
+    boost::optional<HE_EdgeHandle> edgeOfOtherTouchingMainTriangle()
+    {
+        if (otherFace_is_second_triangle)
+            return edgeOfTriangle2TouchingTriangle1;
+        else
+            return edgeOfTriangle1TouchingTriangle2;
+    }
 };
 
 //! intersection line a.k.a. fracture line is a polyline

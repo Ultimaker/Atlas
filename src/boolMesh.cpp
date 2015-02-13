@@ -59,9 +59,7 @@ void getFaceEdgeSegments(bool aboveIntersection, std::vector<FractureLinePart>& 
                 Arrow* prev = a->from->last_in;
                 if (prev != nullptr)
                 {
-                    auto direction = [](Arrow* prev) { return (prev->data.otherFace_is_second_triangle)?
-                                    prev->data.lineSegment.isDirectionOfInnerPartOfTriangle1
-                                    : prev->data.lineSegment.isDirectionOfInnerPartOfTriangle2; };
+                    auto direction = [](Arrow* prev) { return prev->data.isDirectionOfInnerPartOfMainTriangle(); };
 
                     if (direction(a) != direction(prev))
                     {
@@ -96,11 +94,7 @@ void getFaceEdgeSegments(bool aboveIntersection, std::vector<FractureLinePart>& 
 
     auto processArrow = [&] (Arrow* a, bool endPoint)
     {
-        DirectedPoint dp( (endPoint)? a->to->data : a->from->data,
-            (a->data.otherFace_is_second_triangle)?
-            a->data.lineSegment.isDirectionOfInnerPartOfTriangle1 == endPoint
-            : a->data.lineSegment.isDirectionOfInnerPartOfTriangle2 == endPoint
-            );
+        DirectedPoint dp( (endPoint)? a->to->data : a->from->data  ,  a->data.isDirectionOfInnerPartOfMainTriangle() == endPoint );
         switch (dp.p.type)
         {
         case IntersectionPointType::NEW:
@@ -1020,6 +1014,15 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
         case IntersectionPointType::NEW:
             if (new_node->data.edge.face() == originalFace)
             {
+                { // exception for edge-triangle intersection
+                    if ()
+                    {
+
+
+                        break;
+                    }
+
+                }
                 BOOL_MESH_DEBUG_PRINTLN("exiting triangle");
                 result.endPoints.push_back(new_arrow);
             }
