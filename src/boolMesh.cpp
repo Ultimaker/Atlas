@@ -289,7 +289,73 @@ void BooleanMeshOps::debug_csv(std::unordered_map<HE_FaceHandle, std::vector<Fra
 
 
 
-
+std::shared_ptr<TriangleIntersection> BooleanMeshOps::getIntersection(HE_EdgeHandle f1, HE_EdgeHandle f2)
+{
+    std::shared_ptr<TriangleIntersection> ret = TriangleIntersectionComputation::intersect(tri1, tri2)
+    if (ret->edgeOfTriangle1TouchingTriangle2)
+    {
+        HE_EdgeHandle converse = ret->edgeOfTriangle1TouchingTriangle2->converse().face();
+        std::shared_ptr<TriangleIntersection> other_side = TriangleIntersectionComputation::intersect(converse, tri2)
+        if (other_side->intersectionType == IntersectionType::COPLANAR && !useCoplanarFaceIntersection(converse, tri2))
+        {
+            ret->intersectionType = IntersectionType::COPLANAR; // TODO: mark differently?!
+            return ret;
+        }
+        else if (other_side->intersectionType == IntersectionType::LINE_SEGMENT)
+        {
+            if (boolOpType == BoolOpType::DIFFERENCE)
+            {
+                if (other_side->from->compareSource(*ret->to))
+                    other_side->reverse();
+                { //verify direction
+                    if ( ! (other_side->from.compareSource(*ret->from) && other_side->to.compareSource(*ret->to) ) )
+                        BOOL_MESH_DEBUG_PRINTLN("WARNING! edge-triangle intersection doesn't coincide with converse_edge-triangle intersection!");
+                }
+                if (ret->isDirectionOfInnerPartOfTriangle2 != other_side->isDirectionOfInnerPartOfTriangle2)
+                {
+                    ret->intersectionType = IntersectionType::NON_TOUCHING; // edge on face is equivalent to infinitesimally far outside/inside the mesh
+                    return ret;
+                }
+            } else
+            {
+                ret->intersectionType = IntersectionType::NON_TOUCHING; // edge on face is equivalent to infinitesimally far outside/inside the mesh
+                return ret;
+            }
+        } else BOOL_MESH_DEBUG_PRINTLN("WARNING! unexpected intersection type of face connected to an edge-triangle intersection!");
+    }
+    if (ret->edgeOfTriangle2TouchingTriangle1)
+    {
+        HE_EdgeHandle converse = ret->edgeOfTriangle2TouchingTriangle1->converse().face();
+        std::shared_ptr<TriangleIntersection> other_side = TriangleIntersectionComputation::intersect(tri1, converse)
+        if (other_side->intersectionType == IntersectionType::COPLANAR && !useCoplanarFaceIntersection(tri1, converse))
+        {
+            ret->intersectionType = IntersectionType::COPLANAR; // TODO: mark differently?!
+            return ret;
+        }
+        else if (other_side->intersectionType == IntersectionType::LINE_SEGMENT)
+        {
+            if (boolOpType == BoolOpType::DIFFERENCE)
+            {
+                if (other_side->from->compareSource(*ret->to))
+                    other_side->reverse();
+                { //verify direction
+                    if ( ! (other_side->from.compareSource(*ret->from) && other_side->to.compareSource(*ret->to) ) )
+                        BOOL_MESH_DEBUG_PRINTLN("WARNING! edge-triangle intersection doesn't coincide with converse_edge-triangle intersection!");
+                }
+                if (ret->isDirectionOfInnerPartOfTriangle1 != other_side->isDirectionOfInnerPartOfTriangle1)
+                {
+                    ret->intersectionType = IntersectionType::NON_TOUCHING; // edge on face is equivalent to infinitesimally far outside/inside the mesh
+                    return ret;
+                }
+            } else
+            {
+                ret->intersectionType = IntersectionType::NON_TOUCHING; // edge on face is equivalent to infinitesimally far outside/inside the mesh
+                return ret;
+            }
+        } else BOOL_MESH_DEBUG_PRINTLN("WARNING! unexpected intersection type of face connected to an edge-triangle intersection!");
+    }
+    return ret;
+}
 
 
 void BooleanMeshOps::subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& result)
@@ -360,7 +426,7 @@ BOOL_MESH_DEBUG_PRINTLN("finished constructing AABB-tree");
             HE_FaceHandle tri1 = HE_FaceHandle(intersectingBboxFace);
             HE_FaceHandle& tri2 = face;
 
-            std::shared_ptr<TriangleIntersection> triangleIntersection = TriangleIntersectionComputation::intersect(tri1, tri2);
+            std::shared_ptr<TriangleIntersection> triangleIntersection = getIntersection(tri1, tri2);
 
             if (!triangleIntersection->from || !triangleIntersection->to)
                 continue; // they don't intersect!
@@ -742,7 +808,7 @@ void BooleanMeshOps::getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceH
         }
 
         std::vector<std::tuple<HE_FaceHandle, TriangleIntersection>> next_faces;
-        getNextFacesOnFracture(triangle1, current, connectingPoint, checked_faces, next_faces);
+        getNextFacesOnFracture(triangle1, current, checked_faces, next_faces);
         for (std::tuple<HE_FaceHandle, TriangleIntersection> next_face : next_faces)
             addIntersectionToGraphAndTodo(connectingNode, std::get<1>(next_face), triangle1, std::get<0>(next_face), vertex2node, result, todo);
     }
@@ -836,8 +902,10 @@ void BooleanMeshOps::getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceH
 
 
 
-void BooleanMeshOps::getNextFacesOnFracture(HE_FaceHandle triangle1, Arrow* current, IntersectionPoint& connectingPoint, std::unordered_set<HE_FaceHandle>& checked_faces, std::vector<std::tuple<HE_FaceHandle, TriangleIntersection>>& result)
+void BooleanMeshOps::getNextFacesOnFracture(HE_FaceHandle triangle1, Arrow* current, std::unordered_set<HE_FaceHandle>& checked_faces, std::vector<std::tuple<HE_FaceHandle, TriangleIntersection>>& result)
 {
+    IntersectionPoint& connectingPoint = current->to->data;
+
     switch (connectingPoint.getType())
     {
     case IntersectionPointType::NEW: // intersection with edge
@@ -847,7 +915,7 @@ void BooleanMeshOps::getNextFacesOnFracture(HE_FaceHandle triangle1, Arrow* curr
         if (checked_faces.find(newFace) == checked_faces.end())
         {
             checked_faces.insert(newFace);
-            std::shared_ptr<TriangleIntersection> triangleIntersection = TriangleIntersectionComputation::intersect(triangle1, newFace);//, connectingPoint.p());
+            std::shared_ptr<TriangleIntersection> triangleIntersection = getIntersection(triangle1, newFace);//, connectingPoint.p());
             if (triangleIntersection->edgeOfTriangle2TouchingTriangle1)
             {
                 HE_FaceHandle otherFace = triangleIntersection->edgeOfTriangle2TouchingTriangle1->converse().face();
@@ -891,7 +959,7 @@ void BooleanMeshOps::getNextFacesOnFracture(HE_FaceHandle triangle1, Arrow* curr
                 if (checked_faces.find(newFace) == checked_faces.end())
                 {
                     checked_faces.insert(newFace);
-                    std::shared_ptr<TriangleIntersection> triangleIntersection = TriangleIntersectionComputation::intersect(triangle1, newFace);// , connectingPoint.p());
+                    std::shared_ptr<TriangleIntersection> triangleIntersection = getIntersection(triangle1, newFace);// , connectingPoint.p());
                     if (triangleIntersection->intersectionType == IntersectionType::LINE_SEGMENT)
                     {
                         assert(triangleIntersection->from);
@@ -1012,17 +1080,19 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
         switch (new_node->data.type)
         {
         case IntersectionPointType::NEW:
-            if (new_node->data.edge.face() == originalFace)
-            {
-                { // exception for edge-triangle intersection
-                    if ()
-                    {
-
-
-                        break;
-                    }
-
+        {
+            bool edge_case = false;
+            { // exception for edge-triangle intersection
+                if (new_arrow->data.edgeOfMainTouchingOtherTriangle())
+                {
+                    std::shared_ptr<TriangleIntersection> next_triangleIntersection = TriangleIntersectionComputation::intersect(originalFace, new_node->data.edge.converse().face());
+                    if (next_triangleIntersection.intersectionType == IntersectionType::LINE_SEGMENT)
+                        edge_case = true;
                 }
+
+            }
+            if (new_node->data.edge.face() == originalFace && !edge_case)
+            {
                 BOOL_MESH_DEBUG_PRINTLN("exiting triangle");
                 result.endPoints.push_back(new_arrow);
             }
@@ -1031,7 +1101,7 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
                 BOOL_MESH_DEBUG_PRINTLN("normal case, adding new arrow to todo");
                 todo.push_front(new_arrow);
             }
-        break;
+        } break;
         case IntersectionPointType::VERTEX:
             if (originalFace.hasVertex(new_node->data.vertex))
             {
@@ -1247,7 +1317,7 @@ void BooleanMeshOps::test_getFacetFractureLinePart(PrintObject* model)
     for (f = 0; f < heMesh.faces.size(); f++)
     {
         HE_FaceHandle face(heMesh, f);
-        triangleIntersection = TriangleIntersectionComputation::intersect(face, otherFace);
+        triangleIntersection = getIntersection(face, otherFace);
         //BOOL_MESH_DEBUG_PRINTLN((triangleIntersection->intersectionType));
         if (triangleIntersection->intersectionType == IntersectionType::LINE_SEGMENT) break;
     }
@@ -1431,7 +1501,7 @@ void BooleanMeshOps::test_completeFractureLine(PrintObject* model)
         for (f = 0; f < heMesh.faces.size(); f++)
         {
             HE_FaceHandle face(heMesh, f);
-            triangleIntersection = TriangleIntersectionComputation::intersect(face, otherFace);
+            triangleIntersection = getIntersection(face, otherFace);
             //BOOL_MESH_DEBUG_PRINTLN((triangleIntersection->intersectionType));
             if (triangleIntersection->intersectionType == IntersectionType::LINE_SEGMENT) break;
         }

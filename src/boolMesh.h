@@ -93,7 +93,7 @@ struct FractureLinePart
 {
     // when two triangles are coplanar, the intersection is non-linear ( => graph-like)
     // also where a vertex lies exactly on a triangle of the other mesh, the intersection can be non-linear ( => graph-like)
-    HE_FaceHandle face;
+    HE_FaceHandle face; //!< the face on which this fracture line part lies
     Graph<IntersectionPoint, IntersectionSegment> fracture;
     Arrow* start;
     std::vector<Arrow*> endPoints; //!< does this include start?!
@@ -167,8 +167,9 @@ protected:
     HE_Mesh& keep, subtracted;
     BoolOpType boolOpType;
 
-    bool useCoplanarFaceIntersection(bool sameNormals)
+    bool useCoplanarFaceIntersection(HE_FaceHandle fh1, HE_FaceHandle fh2)
     {
+        bool sameNormals = fh1.dot(fh2) > 0;
         switch(boolOpType)
         {
         case BoolOpType::UNION:         return sameNormals;
@@ -201,7 +202,7 @@ protected:
 
     void completeFractureLine(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, TriangleIntersection& first, std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>>& face2fracture); //!< walks along (each) fracture line part recording all fracture line segemnts in the maps, until whole fracture is explored (a fracture line can split)
 
-    void getNextFacesOnFracture(HE_FaceHandle triangle1, Arrow* current, IntersectionPoint& connectingPoint, std::unordered_set<HE_FaceHandle>& checked_faces, std::vector<std::tuple<HE_FaceHandle, TriangleIntersection>>& result);
+    void getNextFacesOnFracture(HE_FaceHandle triangle1, Arrow* current, std::unordered_set<HE_FaceHandle>& checked_faces, std::vector<std::tuple<HE_FaceHandle, TriangleIntersection>>& result);
 
 
     void debug_export_problem(std::shared_ptr<TriangleIntersection> triangleIntersection, HE_FaceHandle newFace, IntersectionPoint& connectingPoint);
@@ -209,6 +210,7 @@ protected:
 
     void debug_csv(std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> & face2fractures, std::string filename = "WHOLE.csv");
 
+    std::shared_ptr<TriangleIntersection> getIntersection(HE_EdgeHandle f1, HE_EdgeHandle f2);
 };
 
 
