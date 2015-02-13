@@ -696,9 +696,7 @@ void BooleanMeshOps::getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceH
 
     if (first.to->belongsToSource(triangle1))
     {
-        std::swap(first.to, first.from);
-        first.isDirectionOfInnerPartOfTriangle1 = ! first.isDirectionOfInnerPartOfTriangle1;
-        first.isDirectionOfInnerPartOfTriangle2 = ! first.isDirectionOfInnerPartOfTriangle2;
+        first.reverse();
     }
 
     Node* first_node = result.fracture.addNode(*first.from);
@@ -822,7 +820,7 @@ void BooleanMeshOps::getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceH
 // b)
 // case: segment coincident with edge of triangle1 ends in triangle2
 // ! must generally also be the starting segment, since starting point lies on edge of triangle1 (thus would have exitted already)
-//      (exception: when we continue after the starting segment, and consecutive segments are also on the same edge of triangle1, ending in triangle2)
+//      (exception: when this case continues after the starting segment, and consecutive segments are also on the same edge of triangle1, ending in triangle2)
 // if the next intersection segment is with triangle1: continue fracture line
 // if the next intersection segment is with its converse: end fracture line
 
@@ -830,71 +828,18 @@ void BooleanMeshOps::getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceH
 // FURTHER CONSIDERATIONS
 //
 // Don't consider the intersection to be an intersection when:
-// - both triangles sharing the edge lie on the same side of the other triangle and we do UNION or INTERSECTION
-// - one triangle of the triangles sharing the edge is coplanar with the other triangle and useCoplanarFaceIntersection(...) == false
+// c- both triangles sharing the edge lie on the same side of the other triangle and we do UNION or INTERSECTION
+// d- one triangle of the triangles sharing the edge is coplanar with the other triangle and useCoplanarFaceIntersection(...) == false
 
-
-
-
-
-
-
-
-
-
-
-// OLD NOTES:
-// ======================================================================================================
 //
-// normal case for finding the next intersection segment following an intersection between two overlapping triangles (no touching occurs)
-// for the previous intersection between triangle1 and triangle2 ending with:
-// a. end point
-//  1. is on edge of triangle1
-//      next intersection is between triangle2 and (either triangle1 or its converse)
-//  2. is on edge of triangle2
-//      next intersection is between triangle1 and (either triangle2 or its converse)
-//  3. is on vertex of triangle1
-//      next intersection is between (any face connected to the vertex) and triangle2
-//  3. is on vertex of triangle2
-//      next intersection is between (any face connected to the vertex) and triangle1
+// IMPLEMENTATION
 //
+// a) none
+// b) where we mark an arrow as endpoint
+// c) right after we compute an intersection
+// d) [idem]
 
-// handling of the case where an edge of triangle1 lies ON another triangle2
-// a. end point
-//  1. is on edge of triangle2
-//      next intersection is between (either triangle2 or its converse) and (either triangle1 or its converse)
-//  2. is on vertex of triangle1
-//      next intersection is between (any face connected to the vertex) and triangle2
-//
-//
-// below: triangle1 is the triangle of which we are creating the fracture line part, and triangle2 is the current intersection
-//
-// 21. handling of edgeOfTriangle2TouchingTriangle1:
-// - mark the converse of triangle2 as checked (the face of the converse of the edge which is on triangle1)
-// a- if the endpoint of the intersection is the vertex of triangle2, the next getNextFacesOnFracture will find all faces connected to either triangle2 or its converse
-// b- if the endpoint of the intersection lies on the edge of triangle1, we exit the triangle
-// c- if the startingpoint of the intersection is the vertex of triangle2        ... we already found this segment! no need to check other faces!
-// d- if the startingpoint of the intersection  lies on the edge of triangle1    ... we already found this segment! no need to check other faces!
-//
-// 12. handling of edgeOfTriangle1TouchingTriangle2
-// we either enter or exit the triangle
-// - we enter the triangle with such an edge:
-//      a1- if the endpoint of the intersection is the vertex of triangle1, we will exit triangle1
-//            , creating a fracture line on triangle2, starting with triangle1, meaning it will be handled by case 21.a
-//          >> will the intersection be stored as startingPoint and endPoint as well?!?!
-//      a2- if the endpoint of the intersection lies on the edge of triangle2
-//            , triangle2 must intersect with triangle1 or its converse
-//            , we should check the face connected to triangle2, just as normal
-//            , but the next face might not intersect with triangle1!!!!!!
-// - we exit the triangle with such an edge: cannot occur! the startingpoint of the intersection was already on the boundary of triangle1, so we have already moved to the next fractureLine
-//
-//
-// 12. handling of edgeOfTriangle1TouchingTriangle2
-// a. end point
-//  1. is on edge of triangle2
-//      next intersection is between triangle2 and either triangle1 or its converse
-//  2. is on vertex of triangle1
-//      next intersection is between
+
 
 
 void BooleanMeshOps::getNextFacesOnFracture(HE_FaceHandle triangle1, Arrow* current, IntersectionPoint& connectingPoint, std::unordered_set<HE_FaceHandle>& checked_faces, std::vector<std::tuple<HE_FaceHandle, TriangleIntersection>>& result)
