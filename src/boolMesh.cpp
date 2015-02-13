@@ -749,108 +749,10 @@ void BooleanMeshOps::getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceH
             BOOL_MESH_DEBUG_PRINTLN(" WARNING! intersecting mesh with itself!");
         }
 
-        switch (connectingPoint.getType())
-        {
-        case IntersectionPointType::NEW: // intersection with edge
-        {
-            HE_FaceHandle newFace = connectingPoint.edge.converse().face();
-            BOOL_MESH_DEBUG_PRINTLN(" NEW case for face " << newFace.idx);
-            if (checked_faces.find(newFace) == checked_faces.end())
-            {
-                checked_faces.insert(newFace);
-                std::shared_ptr<TriangleIntersection> triangleIntersection = TriangleIntersectionComputation::intersect(triangle1, newFace);//, connectingPoint.p());
-                if (! triangleIntersection->from || ! triangleIntersection->to)
-                { // problem!
-                    //BOOL_MESH_DEBUG_DO(
-                        {
-                            BOOL_MESH_DEBUG_PRINTLN("ERROR! : no intersection!!! type = " << (triangleIntersection->intersectionType));
-                            BOOL_MESH_DEBUG_PRINTLN("saving mesh with problem to problem.stl");
-                            Point3 normal = (newFace.p1() - newFace.p0()).cross(newFace.p2() - newFace.p0());
-                            while (normal.testLength(10000))
-                                normal*=2;
-                            while (!normal.testLength(20000))
-                                normal/=2;
-                            HE_Mesh& heMesh = *newFace.m;
-                            int vi = heMesh.vertices.size();
-                            int ei = heMesh.edges.size();
-                            int fi = heMesh.faces.size();
-                            heMesh.vertices.emplace_back(connectingPoint.getLocation(), ei+0);
-                            heMesh.vertices.emplace_back(connectingPoint.getLocation() + normal + Point3(1000,1000,1000), ei+1);
-                            heMesh.vertices.emplace_back(connectingPoint.getLocation() + normal + Point3(-1000,-1000,-1000), ei+2);
-                            heMesh.edges.emplace_back(vi+0,vi+1);
-                            heMesh.edges.emplace_back(vi+1,vi+2);
-                            heMesh.edges.emplace_back(vi+2,vi+0);
-                            heMesh.connectEdgesPrevNext(ei+0,ei+1);
-                            heMesh.connectEdgesPrevNext(ei+1,ei+2);
-                            heMesh.connectEdgesPrevNext(ei+2,ei+0);
-                            heMesh.faces.emplace_back(ei+0,ei+1,ei+2);
-                            heMesh.edges[ei+0].face_idx = fi;
-                            heMesh.edges[ei+1].face_idx = fi;
-                            heMesh.edges[ei+2].face_idx = fi;
-
-                            HE_FaceHandle oldFace = connectingPoint.edge.face();
-                            heMesh.faces[oldFace.idx].edge_idx[0] = 0;
-                            heMesh.faces[oldFace.idx].edge_idx[1] = 0;
-                            heMesh.faces[oldFace.idx].edge_idx[2] = 0;
-
-                            saveMeshToFile<HE_Mesh, HE_VertexHandle, HE_FaceHandle>(heMesh, "problem.stl");
-                            BOOL_MESH_DEBUG_PRINTLN("saving done..");
-                            exit(0);
-                        }
-                    //);
-                }
-                addIntersectionToGraphAndTodo(connectingNode, *triangleIntersection, triangle1, newFace, vertex2node, result, todo);
-            } else
-            {
-//                BOOL_MESH_DEBUG_PRINTLN("face " << newFace.idx <<" checked already!");
-//                BOOL_MESH_DEBUG_PRINTLN("face : " << current->data.lineSegment.to->edge.converse().face().idx);
-//                BOOL_MESH_DEBUG_PRINTLN("prev face (from): " << current->data.lineSegment.from->edge.face().idx);
-//                BOOL_MESH_DEBUG_PRINTLN("prev face (to): " << current->data.lineSegment.to->edge.face().idx);
-//                BOOL_MESH_DEBUG_PRINTLN("prev prev face : " << current->data.lineSegment.from->edge.converse().face().idx);
-            }
-        }
-        break;
-        case IntersectionPointType::VERTEX: // intersection lies exactly on vertex
-            BOOL_MESH_DEBUG_PRINTLN(" VERTEX case ");
-            HE_EdgeHandle first_outEdge = connectingPoint.vertex.someEdge();
-            HE_FaceHandle prevFace = current->data.otherFace;
-            HE_EdgeHandle outEdge = first_outEdge;
-
-            int edge_counter = 0;
-            do {
-                edge_counter++;
-                if (edge_counter > MAX_EDGES_PER_VERTEX)
-                {
-                    std::cerr << "Vertex seems to be connected to over 1000 edges, breaking edges-around-vertex-iteration!" << std::endl;
-                    break;
-                }
-
-                if (outEdge.face() != prevFace)
-                {
-                    HE_FaceHandle newFace = outEdge.face();
-                    if (checked_faces.find(newFace) == checked_faces.end())
-                    {
-                        checked_faces.insert(newFace);
-                        std::shared_ptr<TriangleIntersection> triangleIntersection = TriangleIntersectionComputation::intersect(triangle1, newFace);// , connectingPoint.p());
-                        if (triangleIntersection->intersectionType == IntersectionType::LINE_SEGMENT)
-                        {
-                            assert(triangleIntersection->from);
-                            assert(triangleIntersection->to);
-                            if ( triangleIntersection->from->type == IntersectionPointType::VERTEX
-                                && triangleIntersection->to->type == IntersectionPointType::VERTEX
-                                && triangleIntersection->from->vertex != triangleIntersection->to->vertex)
-                            {
-                                checked_faces.insert(newFace.m->getFaceWithPoints(triangleIntersection->from->vertex, triangleIntersection->to->vertex, newFace));
-                            }
-                            addIntersectionToGraphAndTodo(connectingNode, *triangleIntersection, triangle1, newFace, vertex2node, result, todo);
-                        }
-                    }
-                }
-
-                outEdge = outEdge.converse().next();
-            } while ( outEdge != first_outEdge);
-        break;
-        }
+        std::vector<std::tuple<HE_FaceHandle, TriangleIntersection>> next_faces;
+        getNextFacesOnFracture(triangle1, current, connectingPoint, checked_faces, next_faces);
+        for (std::tuple<HE_FaceHandle, TriangleIntersection> next_face : next_faces)
+            addIntersectionToGraphAndTodo(connectingNode, std::get<1>(next_face), triangle1, std::get<0>(next_face), vertex2node, result, todo);
     }
 
     DEBUG_DO(
@@ -876,119 +778,238 @@ void BooleanMeshOps::getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceH
 
 
 
+// NOTES ON HOW TO HANDLE EDGES WHICH COINCIDE WITH THE INTERSECTION
+// ======================================================================================================
 
-void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, TriangleIntersection& triangleIntersection, HE_FaceHandle originalFace, HE_FaceHandle newFace, std::unordered_map<HE_VertexHandle, Node*>& vertex2node, FractureLinePart& result, std::list<Arrow*>& todo)
+//if a normal intersectionsegment in mesh1
+//    - ends in a vertex:
+//        try all connected faces
+//    - ends in an edge:
+//        try connected face
+//    - ends in other mesh:
+//        stay on same face!
+// same for mesh2
+
+
+//for a segment which is part of an edge in mesh2: if the intersection in mesh1
+//    - ends in a vertex:
+//        try all connected faces                   SAME  :)
+//    - ends in an edge:
+//        try connected face                        SAME  :)
+//    - ends in other mesh:
+//        stay on same face!                        SAME  :)
+//for a segment which is part of an edge in mesh1: if the intersection in mesh1
+//    - ends in a vertex:
+//        try all connected faces                   SAME  :)
+//    - ends on the edge:
+//        impossible!                               IGNORED  :P
+//    - ends in other mesh:
+//        try this face and the connected face!     DIFFERENT!!!!!!!! O_O
+//
+// combine these rules symmetrically for the other mesh!
+//  -> try all combinations of possible triangles of mesh1 and mesh2
+
+
+// how to handle the DIFFERENT case?
+// a) when it occurs in triangle2 (the short-lived)
+// b) when it occurs in triangle1 (the main triangle of which we are creating the fracture line part)
+//
+// a)
+// case: segment coincident with edge of triangle2 ends in triangle1
+// exit triangle1
+// becomes b) case!
+//
+// b)
+// case: segment coincident with edge of triangle1 ends in triangle2
+// ! must generally also be the starting segment, since starting point lies on edge of triangle1 (thus would have exitted already)
+//      (exception: when we continue after the starting segment, and consecutive segments are also on the same edge of triangle1, ending in triangle2)
+// if the next intersection segment is with triangle1: continue fracture line
+// if the next intersection segment is with its converse: end fracture line
+
+//
+// FURTHER CONSIDERATIONS
+//
+// Don't consider the intersection to be an intersection when:
+// - both triangles sharing the edge lie on the same side of the other triangle and we do UNION or INTERSECTION
+// - one triangle of the triangles sharing the edge is coplanar with the other triangle and useCoplanarFaceIntersection(...) == false
+
+
+
+
+
+
+
+
+
+
+
+// OLD NOTES:
+// ======================================================================================================
+//
+// normal case for finding the next intersection segment following an intersection between two overlapping triangles (no touching occurs)
+// for the previous intersection between triangle1 and triangle2 ending with:
+// a. end point
+//  1. is on edge of triangle1
+//      next intersection is between triangle2 and (either triangle1 or its converse)
+//  2. is on edge of triangle2
+//      next intersection is between triangle1 and (either triangle2 or its converse)
+//  3. is on vertex of triangle1
+//      next intersection is between (any face connected to the vertex) and triangle2
+//  3. is on vertex of triangle2
+//      next intersection is between (any face connected to the vertex) and triangle1
+//
+
+// handling of the case where an edge of triangle1 lies ON another triangle2
+// a. end point
+//  1. is on edge of triangle2
+//      next intersection is between (either triangle2 or its converse) and (either triangle1 or its converse)
+//  2. is on vertex of triangle1
+//      next intersection is between (any face connected to the vertex) and triangle2
+//
+//
+// below: triangle1 is the triangle of which we are creating the fracture line part, and triangle2 is the current intersection
+//
+// 21. handling of edgeOfTriangle2TouchingTriangle1:
+// - mark the converse of triangle2 as checked (the face of the converse of the edge which is on triangle1)
+// a- if the endpoint of the intersection is the vertex of triangle2, the next getNextFacesOnFracture will find all faces connected to either triangle2 or its converse
+// b- if the endpoint of the intersection lies on the edge of triangle1, we exit the triangle
+// c- if the startingpoint of the intersection is the vertex of triangle2        ... we already found this segment! no need to check other faces!
+// d- if the startingpoint of the intersection  lies on the edge of triangle1    ... we already found this segment! no need to check other faces!
+//
+// 12. handling of edgeOfTriangle1TouchingTriangle2
+// we either enter or exit the triangle
+// - we enter the triangle with such an edge:
+//      a1- if the endpoint of the intersection is the vertex of triangle1, we will exit triangle1
+//            , creating a fracture line on triangle2, starting with triangle1, meaning it will be handled by case 21.a
+//          >> will the intersection be stored as startingPoint and endPoint as well?!?!
+//      a2- if the endpoint of the intersection lies on the edge of triangle2
+//            , triangle2 must intersect with triangle1 or its converse
+//            , we should check the face connected to triangle2, just as normal
+//            , but the next face might not intersect with triangle1!!!!!!
+// - we exit the triangle with such an edge: cannot occur! the startingpoint of the intersection was already on the boundary of triangle1, so we have already moved to the next fractureLine
+//
+//
+// 12. handling of edgeOfTriangle1TouchingTriangle2
+// a. end point
+//  1. is on edge of triangle2
+//      next intersection is between triangle2 and either triangle1 or its converse
+//  2. is on vertex of triangle1
+//      next intersection is between
+
+
+void BooleanMeshOps::getNextFacesOnFracture(HE_FaceHandle triangle1, Arrow* current, IntersectionPoint& connectingPoint, std::unordered_set<HE_FaceHandle>& checked_faces, std::vector<std::tuple<HE_FaceHandle, TriangleIntersection>>& result)
+{
+    switch (connectingPoint.getType())
+    {
+    case IntersectionPointType::NEW: // intersection with edge
+    {
+        HE_FaceHandle newFace = connectingPoint.edge.converse().face();
+        BOOL_MESH_DEBUG_PRINTLN(" NEW case for face " << newFace.idx);
+        if (checked_faces.find(newFace) == checked_faces.end())
+        {
+            checked_faces.insert(newFace);
+            std::shared_ptr<TriangleIntersection> triangleIntersection = TriangleIntersectionComputation::intersect(triangle1, newFace);//, connectingPoint.p());
+            if (triangleIntersection->edgeOfTriangle2TouchingTriangle1)
+            {
+                HE_FaceHandle otherFace = triangleIntersection->edgeOfTriangle2TouchingTriangle1->converse().face();
+                checked_faces.insert(otherFace);
+            }
+
+            if (! triangleIntersection->from || ! triangleIntersection->to)
+                debug_export_problem(triangleIntersection, newFace, connectingPoint);
+
+            result.emplace_back(newFace, *triangleIntersection);
+
+            //if (current->data.lineSegment)
+        } else
+        {
+//                BOOL_MESH_DEBUG_PRINTLN("face " << newFace.idx <<" checked already!");
+//                BOOL_MESH_DEBUG_PRINTLN("face : " << current->data.lineSegment.to->edge.converse().face().idx);
+//                BOOL_MESH_DEBUG_PRINTLN("prev face (from): " << current->data.lineSegment.from->edge.face().idx);
+//                BOOL_MESH_DEBUG_PRINTLN("prev face (to): " << current->data.lineSegment.to->edge.face().idx);
+//                BOOL_MESH_DEBUG_PRINTLN("prev prev face : " << current->data.lineSegment.from->edge.converse().face().idx);
+        }
+    }
+    break;
+    case IntersectionPointType::VERTEX: // intersection lies exactly on vertex
+        BOOL_MESH_DEBUG_PRINTLN(" VERTEX case ");
+        HE_EdgeHandle first_outEdge = connectingPoint.vertex.someEdge();
+        HE_FaceHandle prevFace = current->data.otherFace;
+        HE_EdgeHandle outEdge = first_outEdge;
+
+        int edge_counter = 0;
+        do {
+            edge_counter++;
+            if (edge_counter > MAX_EDGES_PER_VERTEX)
+            {
+                std::cerr << "Vertex seems to be connected to over 1000 edges, breaking edges-around-vertex-iteration!" << std::endl;
+                break;
+            }
+
+            if (outEdge.face() != prevFace)
+            {
+                HE_FaceHandle newFace = outEdge.face();
+                if (checked_faces.find(newFace) == checked_faces.end())
+                {
+                    checked_faces.insert(newFace);
+                    std::shared_ptr<TriangleIntersection> triangleIntersection = TriangleIntersectionComputation::intersect(triangle1, newFace);// , connectingPoint.p());
+                    if (triangleIntersection->intersectionType == IntersectionType::LINE_SEGMENT)
+                    {
+                        assert(triangleIntersection->from);
+                        assert(triangleIntersection->to);
+                        if ( triangleIntersection->from->type == IntersectionPointType::VERTEX
+                            && triangleIntersection->to->type == IntersectionPointType::VERTEX
+                            && triangleIntersection->from->vertex != triangleIntersection->to->vertex)
+                        {
+                            checked_faces.insert(newFace.m->getFaceWithPoints(triangleIntersection->from->vertex, triangleIntersection->to->vertex, newFace));
+                        }
+                        result.emplace_back(newFace, *triangleIntersection);
+                    }
+                }
+            }
+
+            outEdge = outEdge.converse().next();
+        } while ( outEdge != first_outEdge);
+    break;
+    }
+}
+
+
+
+
+
+
+
+void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, TriangleIntersection& triangleIntersection, HE_FaceHandle originalFace,
+            HE_FaceHandle newFace, std::unordered_map<HE_VertexHandle, Node*>& vertex2node, FractureLinePart& result, std::list<Arrow*>& todo)
 {
     IntersectionPoint& connectingPoint = connectingNode.data;
 
 
     Node* new_node;
 
-    if ( triangleIntersection.to->compareSourceConverse(connectingPoint) )
-    {
-        BOOL_MESH_DEBUG_PRINTLN(connectingPoint.p() <<" =~= "<< triangleIntersection.to->p());
-        BOOL_MESH_DEBUG_PRINTLN("swapping...");
-        std::swap(triangleIntersection.from, triangleIntersection.to);
-        triangleIntersection.isDirectionOfInnerPartOfTriangle1 = ! triangleIntersection.isDirectionOfInnerPartOfTriangle1;
-        triangleIntersection.isDirectionOfInnerPartOfTriangle2 = ! triangleIntersection.isDirectionOfInnerPartOfTriangle2;
-    }
-    if (! triangleIntersection.from->compareSourceConverse(connectingPoint)  )
-    {
-        BOOL_MESH_DEBUG_PRINTLN("WARNING! subsequent intersection segments do not connect at source mesh!");
-        if ( (triangleIntersection.to->p() - connectingPoint.p()).vSize2() < (triangleIntersection.from->p() - connectingPoint.p()).vSize2() )
+    { // make direction of arrows uniform over graph:
+        if ( triangleIntersection.to->compareSourceConverse(connectingPoint) )
         {
             BOOL_MESH_DEBUG_PRINTLN(connectingPoint.p() <<" =~= "<< triangleIntersection.to->p());
-            BOOL_MESH_DEBUG_PRINTLN("swapping...");
-            std::swap(triangleIntersection.from, triangleIntersection.to);
-            triangleIntersection.isDirectionOfInnerPartOfTriangle1 = ! triangleIntersection.isDirectionOfInnerPartOfTriangle1;
-            triangleIntersection.isDirectionOfInnerPartOfTriangle2 = ! triangleIntersection.isDirectionOfInnerPartOfTriangle2;
+            BOOL_MESH_DEBUG_PRINTLN("reversing intersectionDirection...");
+            triangleIntersection.reverse();
+        }
+        if (! triangleIntersection.from->compareSourceConverse(connectingPoint)  )
+        {
+            BOOL_MESH_DEBUG_PRINTLN("WARNING! subsequent intersection segments do not connect at source mesh!");
+            if ( (triangleIntersection.to->p() - connectingPoint.p()).vSize2() < (triangleIntersection.from->p() - connectingPoint.p()).vSize2() )
+            {
+                BOOL_MESH_DEBUG_PRINTLN(connectingPoint.p() <<" =~= "<< triangleIntersection.to->p());
+                BOOL_MESH_DEBUG_PRINTLN("reversing intersectionDirection...");
+                triangleIntersection.reverse();
+            }
         }
     }
+
     if ( ! (connectingPoint.p() - triangleIntersection.from->p()).testLength(inaccuracy)  )
     {
-        BOOL_MESH_DEBUG_PRINTLN("WARNING! large difference between endpoint of first triangle intersection and start point of second! :");
-        BOOL_MESH_DEBUG_SHOW((connectingPoint.p() - triangleIntersection.from->p()).vSize());
-        //BOOL_MESH_DEBUG_DO(
-        {
-            Point3 normal = (newFace.p1() - newFace.p0()).cross(newFace.p2() - newFace.p0());
-            while (normal.testLength(10000))
-            normal*=2;
-            while (!normal.testLength(20000))
-            normal/=2;
-            HE_Mesh& heMesh = *newFace.m;
-            int vi = heMesh.vertices.size();
-            int ei = heMesh.edges.size();
-            int fi = heMesh.faces.size();
-            heMesh.vertices.emplace_back(triangleIntersection.from->p(), ei+0);
-            heMesh.vertices.emplace_back(triangleIntersection.from->p() + normal, ei+1);
-            heMesh.vertices.emplace_back(triangleIntersection.to->p() + Point3(-1000,-1000,-1000), ei+2);
-            heMesh.edges.emplace_back(vi+0,vi+1);
-            heMesh.edges.emplace_back(vi+1,vi+2);
-            heMesh.edges.emplace_back(vi+2,vi+0);
-            heMesh.connectEdgesPrevNext(ei+0,ei+1);
-            heMesh.connectEdgesPrevNext(ei+1,ei+2);
-            heMesh.connectEdgesPrevNext(ei+2,ei+0);
-            heMesh.faces.emplace_back(ei+0,ei+1,ei+2);
-            heMesh.edges[ei+0].face_idx = fi;
-            heMesh.edges[ei+1].face_idx = fi;
-            heMesh.edges[ei+2].face_idx = fi;
-
-
-             vi = heMesh.vertices.size();
-             ei = heMesh.edges.size();
-             fi = heMesh.faces.size();
-            heMesh.vertices.emplace_back(connectingPoint.p(), ei+0);
-            heMesh.vertices.emplace_back(connectingPoint.p() + normal + Point3(1000,1000,1000), ei+1);
-            heMesh.vertices.emplace_back(connectingPoint.p() + normal + Point3(-1000,-1000,-1000), ei+2);
-            heMesh.edges.emplace_back(vi+0,vi+1);
-            heMesh.edges.emplace_back(vi+1,vi+2);
-            heMesh.edges.emplace_back(vi+2,vi+0);
-            heMesh.connectEdgesPrevNext(ei+0,ei+1);
-            heMesh.connectEdgesPrevNext(ei+1,ei+2);
-            heMesh.connectEdgesPrevNext(ei+2,ei+0);
-            heMesh.faces.emplace_back(ei+0,ei+1,ei+2);
-            heMesh.edges[ei+0].face_idx = fi;
-            heMesh.edges[ei+1].face_idx = fi;
-            heMesh.edges[ei+2].face_idx = fi;
-
-
-             vi = heMesh.vertices.size();
-             ei = heMesh.edges.size();
-             fi = heMesh.faces.size();
-            heMesh.vertices.emplace_back(originalFace.p0(), ei+0);
-            heMesh.vertices.emplace_back(originalFace.p1(), ei+1);
-            heMesh.vertices.emplace_back(originalFace.p2(), ei+2);
-            heMesh.edges.emplace_back(vi+0,vi+1);
-            heMesh.edges.emplace_back(vi+1,vi+2);
-            heMesh.edges.emplace_back(vi+2,vi+0);
-            heMesh.connectEdgesPrevNext(ei+0,ei+1);
-            heMesh.connectEdgesPrevNext(ei+1,ei+2);
-            heMesh.connectEdgesPrevNext(ei+2,ei+0);
-            heMesh.faces.emplace_back(ei+0,ei+1,ei+2);
-            heMesh.edges[ei+0].face_idx = fi;
-            heMesh.edges[ei+1].face_idx = fi;
-            heMesh.edges[ei+2].face_idx = fi;
-
-             vi = heMesh.vertices.size();
-             ei = heMesh.edges.size();
-             fi = heMesh.faces.size();
-            heMesh.vertices.emplace_back(newFace.p0(), ei+0);
-            heMesh.vertices.emplace_back(newFace.p1(), ei+1);
-            heMesh.vertices.emplace_back(newFace.p2(), ei+2);
-            heMesh.edges.emplace_back(vi+0,vi+1);
-            heMesh.edges.emplace_back(vi+1,vi+2);
-            heMesh.edges.emplace_back(vi+2,vi+0);
-            heMesh.connectEdgesPrevNext(ei+0,ei+1);
-            heMesh.connectEdgesPrevNext(ei+1,ei+2);
-            heMesh.connectEdgesPrevNext(ei+2,ei+0);
-            heMesh.faces.emplace_back(ei+0,ei+1,ei+2);
-            heMesh.edges[ei+0].face_idx = fi;
-            heMesh.edges[ei+1].face_idx = fi;
-            heMesh.edges[ei+2].face_idx = fi;
-
-            saveMeshToFile<HE_Mesh, HE_VertexHandle, HE_FaceHandle>(heMesh, "large_difference.stl");
-        }
-        //);
+        debug_export_difference_mesh(originalFace, connectingPoint, triangleIntersection, newFace);
     }
 
     { //update old point:
@@ -998,39 +1019,46 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
     }
 
     bool new_point_is_already_done = false;
-    if      (triangleIntersection.to->getType() == IntersectionPointType::VERTEX)
-    {
-        std::unordered_map<HE_VertexHandle, Node*>::const_iterator
-            node = vertex2node.find(triangleIntersection.to->vertex);
 
-        if (node == vertex2node.end()) // vertex is not yet present in graph
+    { // find / construct the new_node
+        switch (triangleIntersection.to->getType())
         {
-            new_node = result.fracture.addNode(*triangleIntersection.to);
-            vertex2node.insert( { {triangleIntersection.to->vertex, new_node} } );
+        case IntersectionPointType::VERTEX:
+        {
+            std::unordered_map<HE_VertexHandle, Node*>::const_iterator
+                node = vertex2node.find(triangleIntersection.to->vertex); // also checks whether we connect to the starting node?!?!
 
-        } else
-        {
-            new_node = node->second;
-            new_point_is_already_done = true;
-            // dont push to todo! it is already there!
-            BOOL_MESH_DEBUG_PRINTLN("vertex is already in graph!");
+            if (node == vertex2node.end()) // vertex is not yet present in graph
+            {
+                new_node = result.fracture.addNode(*triangleIntersection.to);
+                vertex2node.insert( { {triangleIntersection.to->vertex, new_node} } );
 
-            PointD middle = PointD(new_node->data.p()) + PointD(triangleIntersection.to->p());
-            new_node->data.p() = (middle / 2).downCast();
-        }
-    } else
-    {
-        if ( triangleIntersection.to->compareSourceConverse( result.start->from->data ) )
-        {
-            BOOL_MESH_DEBUG_PRINTLN("connecting to starting node...");
-            new_node = result.start->from;
+            } else
+            {
+                new_node = node->second;
+                new_point_is_already_done = true;
+                // dont push to todo! it is already there!
+                BOOL_MESH_DEBUG_PRINTLN("vertex is already in graph!");
 
-            PointD middle = PointD(new_node->data.p()) + PointD(triangleIntersection.to->p());
-            new_node->data.p() = (middle / 2).downCast();
-        } else
+                PointD middle = PointD(new_node->data.p()) + PointD(triangleIntersection.to->p());
+                new_node->data.p() = (middle / 2).downCast();
+            }
+        } break;
+        case IntersectionPointType::NEW:
         {
-            BOOL_MESH_DEBUG_PRINTLN("normal case: adding node...");
-            new_node = result.fracture.addNode(*triangleIntersection.to);
+            if ( triangleIntersection.to->compareSourceConverse( result.start->from->data ) )
+            {
+                BOOL_MESH_DEBUG_PRINTLN("connecting to starting node...");
+                new_node = result.start->from;
+
+                PointD sum = PointD(new_node->data.p()) + PointD(triangleIntersection.to->p()); // compute middle
+                new_node->data.p() = (sum / 2).downCast();
+            } else
+            {
+                BOOL_MESH_DEBUG_PRINTLN("normal case: adding node...");
+                new_node = result.fracture.addNode(*triangleIntersection.to);
+            }
+        } break;
         }
     }
 
@@ -1071,6 +1099,93 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
 }
 
 
+void BooleanMeshOps::debug_export_difference_mesh(HE_FaceHandle originalFace, IntersectionPoint& connectingPoint, TriangleIntersection& triangleIntersection, HE_FaceHandle newFace)
+{
+
+    BOOL_MESH_DEBUG_PRINTLN("WARNING! large difference between endpoint of first triangle intersection and start point of second! :");
+    BOOL_MESH_DEBUG_SHOW((connectingPoint.p() - triangleIntersection.from->p()).vSize());
+    //BOOL_MESH_DEBUG_DO(
+    {
+        Point3 normal = (newFace.p1() - newFace.p0()).cross(newFace.p2() - newFace.p0());
+        while (normal.testLength(10000))
+        normal*=2;
+        while (!normal.testLength(20000))
+        normal/=2;
+        HE_Mesh& heMesh = *newFace.m;
+        int vi = heMesh.vertices.size();
+        int ei = heMesh.edges.size();
+        int fi = heMesh.faces.size();
+        heMesh.vertices.emplace_back(triangleIntersection.from->p(), ei+0);
+        heMesh.vertices.emplace_back(triangleIntersection.from->p() + normal, ei+1);
+        heMesh.vertices.emplace_back(triangleIntersection.to->p() + Point3(-1000,-1000,-1000), ei+2);
+        heMesh.edges.emplace_back(vi+0,vi+1);
+        heMesh.edges.emplace_back(vi+1,vi+2);
+        heMesh.edges.emplace_back(vi+2,vi+0);
+        heMesh.connectEdgesPrevNext(ei+0,ei+1);
+        heMesh.connectEdgesPrevNext(ei+1,ei+2);
+        heMesh.connectEdgesPrevNext(ei+2,ei+0);
+        heMesh.faces.emplace_back(ei+0,ei+1,ei+2);
+        heMesh.edges[ei+0].face_idx = fi;
+        heMesh.edges[ei+1].face_idx = fi;
+        heMesh.edges[ei+2].face_idx = fi;
+
+
+         vi = heMesh.vertices.size();
+         ei = heMesh.edges.size();
+         fi = heMesh.faces.size();
+        heMesh.vertices.emplace_back(connectingPoint.p(), ei+0);
+        heMesh.vertices.emplace_back(connectingPoint.p() + normal + Point3(1000,1000,1000), ei+1);
+        heMesh.vertices.emplace_back(connectingPoint.p() + normal + Point3(-1000,-1000,-1000), ei+2);
+        heMesh.edges.emplace_back(vi+0,vi+1);
+        heMesh.edges.emplace_back(vi+1,vi+2);
+        heMesh.edges.emplace_back(vi+2,vi+0);
+        heMesh.connectEdgesPrevNext(ei+0,ei+1);
+        heMesh.connectEdgesPrevNext(ei+1,ei+2);
+        heMesh.connectEdgesPrevNext(ei+2,ei+0);
+        heMesh.faces.emplace_back(ei+0,ei+1,ei+2);
+        heMesh.edges[ei+0].face_idx = fi;
+        heMesh.edges[ei+1].face_idx = fi;
+        heMesh.edges[ei+2].face_idx = fi;
+
+
+         vi = heMesh.vertices.size();
+         ei = heMesh.edges.size();
+         fi = heMesh.faces.size();
+        heMesh.vertices.emplace_back(originalFace.p0(), ei+0);
+        heMesh.vertices.emplace_back(originalFace.p1(), ei+1);
+        heMesh.vertices.emplace_back(originalFace.p2(), ei+2);
+        heMesh.edges.emplace_back(vi+0,vi+1);
+        heMesh.edges.emplace_back(vi+1,vi+2);
+        heMesh.edges.emplace_back(vi+2,vi+0);
+        heMesh.connectEdgesPrevNext(ei+0,ei+1);
+        heMesh.connectEdgesPrevNext(ei+1,ei+2);
+        heMesh.connectEdgesPrevNext(ei+2,ei+0);
+        heMesh.faces.emplace_back(ei+0,ei+1,ei+2);
+        heMesh.edges[ei+0].face_idx = fi;
+        heMesh.edges[ei+1].face_idx = fi;
+        heMesh.edges[ei+2].face_idx = fi;
+
+         vi = heMesh.vertices.size();
+         ei = heMesh.edges.size();
+         fi = heMesh.faces.size();
+        heMesh.vertices.emplace_back(newFace.p0(), ei+0);
+        heMesh.vertices.emplace_back(newFace.p1(), ei+1);
+        heMesh.vertices.emplace_back(newFace.p2(), ei+2);
+        heMesh.edges.emplace_back(vi+0,vi+1);
+        heMesh.edges.emplace_back(vi+1,vi+2);
+        heMesh.edges.emplace_back(vi+2,vi+0);
+        heMesh.connectEdgesPrevNext(ei+0,ei+1);
+        heMesh.connectEdgesPrevNext(ei+1,ei+2);
+        heMesh.connectEdgesPrevNext(ei+2,ei+0);
+        heMesh.faces.emplace_back(ei+0,ei+1,ei+2);
+        heMesh.edges[ei+0].face_idx = fi;
+        heMesh.edges[ei+1].face_idx = fi;
+        heMesh.edges[ei+2].face_idx = fi;
+
+        saveMeshToFile<HE_Mesh, HE_VertexHandle, HE_FaceHandle>(heMesh, "large_difference.stl");
+    }
+    //);
+}
 
 
 
@@ -1081,9 +1196,42 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
 
 
 
+void BooleanMeshOps::debug_export_problem(std::shared_ptr<TriangleIntersection> triangleIntersection, HE_FaceHandle newFace, IntersectionPoint& connectingPoint)
+{ // problem!
+    BOOL_MESH_DEBUG_PRINTLN("ERROR! : no intersection!!! type = " << (triangleIntersection->intersectionType));
+    BOOL_MESH_DEBUG_PRINTLN("saving mesh with problem to problem.stl");
+    Point3 normal = (newFace.p1() - newFace.p0()).cross(newFace.p2() - newFace.p0());
+    while (normal.testLength(10000))
+        normal*=2;
+    while (!normal.testLength(20000))
+        normal/=2;
+    HE_Mesh& heMesh = *newFace.m;
+    int vi = heMesh.vertices.size();
+    int ei = heMesh.edges.size();
+    int fi = heMesh.faces.size();
+    heMesh.vertices.emplace_back(connectingPoint.getLocation(), ei+0);
+    heMesh.vertices.emplace_back(connectingPoint.getLocation() + normal + Point3(1000,1000,1000), ei+1);
+    heMesh.vertices.emplace_back(connectingPoint.getLocation() + normal + Point3(-1000,-1000,-1000), ei+2);
+    heMesh.edges.emplace_back(vi+0,vi+1);
+    heMesh.edges.emplace_back(vi+1,vi+2);
+    heMesh.edges.emplace_back(vi+2,vi+0);
+    heMesh.connectEdgesPrevNext(ei+0,ei+1);
+    heMesh.connectEdgesPrevNext(ei+1,ei+2);
+    heMesh.connectEdgesPrevNext(ei+2,ei+0);
+    heMesh.faces.emplace_back(ei+0,ei+1,ei+2);
+    heMesh.edges[ei+0].face_idx = fi;
+    heMesh.edges[ei+1].face_idx = fi;
+    heMesh.edges[ei+2].face_idx = fi;
 
+    HE_FaceHandle oldFace = connectingPoint.edge.face();
+    heMesh.faces[oldFace.idx].edge_idx[0] = 0;
+    heMesh.faces[oldFace.idx].edge_idx[1] = 0;
+    heMesh.faces[oldFace.idx].edge_idx[2] = 0;
 
-
+    saveMeshToFile<HE_Mesh, HE_VertexHandle, HE_FaceHandle>(heMesh, "problem.stl");
+    BOOL_MESH_DEBUG_PRINTLN("saving done..");
+    exit(0);
+}
 
 
 

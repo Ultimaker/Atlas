@@ -173,6 +173,11 @@ protected:
 
     void completeFractureLine(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, TriangleIntersection& first, std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>>& face2fracture); //!< walks along (each) fracture line part recording all fracture line segemnts in the maps, until whole fracture is explored (a fracture line can split)
 
+    void getNextFacesOnFracture(HE_FaceHandle triangle1, Arrow* current, IntersectionPoint& connectingPoint, std::unordered_set<HE_FaceHandle>& checked_faces, std::vector<std::tuple<HE_FaceHandle, TriangleIntersection>>& result);
+
+
+    void debug_export_problem(std::shared_ptr<TriangleIntersection> triangleIntersection, HE_FaceHandle newFace, IntersectionPoint& connectingPoint);
+    void debug_export_difference_mesh(HE_FaceHandle originalFace, IntersectionPoint& connectingPoint, TriangleIntersection& triangleIntersection, HE_FaceHandle newFace);
 
     void debug_csv(std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> & face2fractures, std::string filename = "WHOLE.csv");
 
