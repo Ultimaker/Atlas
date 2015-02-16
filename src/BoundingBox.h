@@ -85,18 +85,18 @@ struct BoundingBox
     }
 
     /*!
-    Returns true if the two binding boxes have a voljume as intersection.
+    Returns true if the two binding boxes have any as intersection.
 
-    If the intersection consists of a plane, line or vertex it returns false.
+    If the intersection consists of a plane, line or point it also returns true.
     */
-    bool intersectsWith(const BoundingBox& b)  const // TODO : what if a.xmax == b.xmin???
+    bool intersectsWith(const BoundingBox& b)  const
     {
         return !(
-            (min.x >= b.max.x || max.x <= b.min.x)
+            (min.x > b.max.x || max.x < b.min.x)
             ||
-            (min.y >= b.max.y || max.y <= b.min.y)
+            (min.y > b.max.y || max.y < b.min.y)
             ||
-            (min.z >= b.max.z || max.z <= b.min.z)
+            (min.z > b.max.z || max.z < b.min.z)
             );
     };
 

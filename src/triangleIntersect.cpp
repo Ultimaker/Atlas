@@ -94,13 +94,6 @@ std::shared_ptr<TriangleIntersection> TriangleIntersectionComputation::intersect
     auto resizeNormal = [](FPoint& n) { while (n.vSize2() > 100000 )    n *= .5; };
 
 
-    if (n1==n2)
-    {
-        TRIANGLE_INTERSECT_DEBUG_PRINTLN("parallel triangles! (or coplanar) ");
-        return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, IntersectionType::PARALLEL); // parallel triangles! (also in the coplanar case we don't do anything)
-    }
-
-
     float d1 = n1.dot(a1) * -1;
     TRIANGLE_INTERSECT_DEBUG_SHOW(d1);
     float d2 = n2.dot(a2) * -1;
@@ -125,6 +118,18 @@ std::shared_ptr<TriangleIntersection> TriangleIntersectionComputation::intersect
     TRIANGLE_INTERSECT_DEBUG_SHOW(int(sa2));
     TRIANGLE_INTERSECT_DEBUG_SHOW(int(sb2));
     TRIANGLE_INTERSECT_DEBUG_SHOW(int(sc2));
+
+
+    if (n1 == n2 || n1 == -n2)
+    {
+        if (sa1 == 0)
+        {
+            TRIANGLE_INTERSECT_DEBUG_PRINTLN("coplanar triangles!");
+            return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, IntersectionType::COPLANAR); // parallel triangles! (also in the coplanar case we don't do anything)
+        }
+        TRIANGLE_INTERSECT_DEBUG_PRINTLN("parallel triangles!");
+        return std::make_shared<TriangleIntersection>(boost::none, boost::none, false, false, IntersectionType::PARALLEL); // parallel triangles! (also in the coplanar case we don't do anything)
+    }
 
     if (sa1 == sb1 && sb1 == sc1)
     {
@@ -311,6 +316,24 @@ TRIANGLE_INTERSECT_DEBUG_PRINTLN("p22 = " << tri2_plane1_ints.line2.intersection
             }
 
     }
+    if (ret->from->type == IntersectionPointType::NEW)
+    {
+             if ( ( ret->from->p() - fh1.p0() ) .testLength(MELD_DISTANCE)) ret->from = IntersectionPoint(fh1.v0());
+        else if ( ( ret->from->p() - fh1.p1() ) .testLength(MELD_DISTANCE)) ret->from = IntersectionPoint(fh1.v1());
+        else if ( ( ret->from->p() - fh1.p2() ) .testLength(MELD_DISTANCE)) ret->from = IntersectionPoint(fh1.v2());
+        else if ( ( ret->from->p() - fh2.p0() ) .testLength(MELD_DISTANCE)) ret->from = IntersectionPoint(fh2.v0());
+        else if ( ( ret->from->p() - fh2.p1() ) .testLength(MELD_DISTANCE)) ret->from = IntersectionPoint(fh2.v1());
+        else if ( ( ret->from->p() - fh2.p2() ) .testLength(MELD_DISTANCE)) ret->from = IntersectionPoint(fh2.v2());
+    }
+    if (ret->to->type == IntersectionPointType::NEW)
+    {
+             if ( ( ret->to->p() - fh1.p0() ) .testLength(MELD_DISTANCE)) ret->to = IntersectionPoint(fh1.v0());
+        else if ( ( ret->to->p() - fh1.p1() ) .testLength(MELD_DISTANCE)) ret->to = IntersectionPoint(fh1.v1());
+        else if ( ( ret->to->p() - fh1.p2() ) .testLength(MELD_DISTANCE)) ret->to = IntersectionPoint(fh1.v2());
+        else if ( ( ret->to->p() - fh2.p0() ) .testLength(MELD_DISTANCE)) ret->to = IntersectionPoint(fh2.v0());
+        else if ( ( ret->to->p() - fh2.p1() ) .testLength(MELD_DISTANCE)) ret->to = IntersectionPoint(fh2.v1());
+        else if ( ( ret->to->p() - fh2.p2() ) .testLength(MELD_DISTANCE)) ret->to = IntersectionPoint(fh2.v2());
+    }
 
     TRIANGLE_INTERSECT_DEBUG_PRINTLN("finished!");
 
@@ -388,7 +411,7 @@ void TriangleIntersectionComputation::TrianglePlaneIntersection::computeIntersec
             O = FPoint(line2.intersection->p());
             isDirectionOfInnerFacePart = sign_other < 0;
             edgeOfTriangleTouchesPlane = same_side_edge;
-            std::cerr<< "use line segment of face, instead of the computed line segment" << std::endl;
+            TRIANGLE_INTERSECT_DEBUG_PRINTLN("use line segment of face, instead of the computed line segment");
         }
         else
         {

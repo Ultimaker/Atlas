@@ -80,6 +80,8 @@ public:
     }
 };
 
+bool loadModelSTL(FVMesh* mesh, const char* filename, FMatrix3x3& matrix);
+
 bool loadFVMeshFromFile(PrintObject* object, const char* filename, FMatrix3x3& matrix);
 
 bool saveFVMeshToFile(FVMesh& mesh, const char* filename);

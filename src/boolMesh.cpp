@@ -18,6 +18,9 @@
 
 #include <boost/iterator/transform_iterator.hpp>
 
+
+bool debug_show_triangle_edges_connected_to_fracture_line = true;
+
 /*!
 get the segments belonging to the edges of the face which belong to the part above/below the fracture lines
 
@@ -256,15 +259,18 @@ void BooleanMeshOps::debug_csv(std::unordered_map<HE_FaceHandle, std::vector<Fra
 
         bool aboveIntersection = useAboveFracture(mapping.first);
 
-        std::vector<std::pair<IntersectionPoint, IntersectionPoint>> segments;
-        getFaceEdgeSegments(aboveIntersection, mapping.second, segments);
-
-        for (std::pair<IntersectionPoint, IntersectionPoint> segment : segments)
+        if (debug_show_triangle_edges_connected_to_fracture_line)
         {
-            p = segment.first.p() + offset_now;
-            csv << p.x <<", " << p.y << ", " << p.z << std::endl;
-            p = segment.second.p() + offset_now;
-            csv << p.x <<", " << p.y << ", " << p.z << std::endl;
+            std::vector<std::pair<IntersectionPoint, IntersectionPoint>> segments;
+            getFaceEdgeSegments(aboveIntersection, mapping.second, segments);
+
+            for (std::pair<IntersectionPoint, IntersectionPoint> segment : segments)
+            {
+                p = segment.first.p() + offset_now;
+                csv << p.x <<", " << p.y << ", " << p.z << std::endl;
+                p = segment.second.p() + offset_now;
+                csv << p.x <<", " << p.y << ", " << p.z << std::endl;
+            }
         }
     }
     csv << p.x <<", " << p.y << ", " << p.z << std::endl;
@@ -289,16 +295,17 @@ void BooleanMeshOps::debug_csv(std::unordered_map<HE_FaceHandle, std::vector<Fra
 
 
 
-std::shared_ptr<TriangleIntersection> BooleanMeshOps::getIntersection(HE_EdgeHandle f1, HE_EdgeHandle f2)
+std::shared_ptr<TriangleIntersection> BooleanMeshOps::getIntersection(HE_FaceHandle tri1, HE_FaceHandle tri2)
 {
-    std::shared_ptr<TriangleIntersection> ret = TriangleIntersectionComputation::intersect(tri1, tri2)
+    std::shared_ptr<TriangleIntersection> ret = TriangleIntersectionComputation::intersect(tri1, tri2);
     if (ret->edgeOfTriangle1TouchingTriangle2)
     {
-        HE_EdgeHandle converse = ret->edgeOfTriangle1TouchingTriangle2->converse().face();
-        std::shared_ptr<TriangleIntersection> other_side = TriangleIntersectionComputation::intersect(converse, tri2)
+        HE_FaceHandle converse = ret->edgeOfTriangle1TouchingTriangle2->converse().face();
+        std::shared_ptr<TriangleIntersection> other_side = TriangleIntersectionComputation::intersect(converse, tri2);
         if (other_side->intersectionType == IntersectionType::COPLANAR && !useCoplanarFaceIntersection(converse, tri2))
         {
-            ret->intersectionType = IntersectionType::COPLANAR; // TODO: mark differently?!
+            // ret->intersectionType = IntersectionType::COPLANAR; // TODO: mark differently?!
+            BOOL_MESH_DEBUG_PRINTLN("NOT discarding edge connected to coplanar face");
             return ret;
         }
         else if (other_side->intersectionType == IntersectionType::LINE_SEGMENT)
@@ -308,28 +315,31 @@ std::shared_ptr<TriangleIntersection> BooleanMeshOps::getIntersection(HE_EdgeHan
                 if (other_side->from->compareSource(*ret->to))
                     other_side->reverse();
                 { //verify direction
-                    if ( ! (other_side->from.compareSource(*ret->from) && other_side->to.compareSource(*ret->to) ) )
+                    if ( ! (other_side->from->compareSource(*ret->from) && other_side->to->compareSource(*ret->to) ) )
                         BOOL_MESH_DEBUG_PRINTLN("WARNING! edge-triangle intersection doesn't coincide with converse_edge-triangle intersection!");
                 }
                 if (ret->isDirectionOfInnerPartOfTriangle2 != other_side->isDirectionOfInnerPartOfTriangle2)
                 {
                     ret->intersectionType = IntersectionType::NON_TOUCHING; // edge on face is equivalent to infinitesimally far outside/inside the mesh
+                    BOOL_MESH_DEBUG_PRINTLN("discarding edge-triangle intersection");
                     return ret;
                 }
             } else
             {
                 ret->intersectionType = IntersectionType::NON_TOUCHING; // edge on face is equivalent to infinitesimally far outside/inside the mesh
+                BOOL_MESH_DEBUG_PRINTLN("discarding edge-triangle intersection");
                 return ret;
             }
-        } else BOOL_MESH_DEBUG_PRINTLN("WARNING! unexpected intersection type of face connected to an edge-triangle intersection!");
+        } else BOOL_MESH_DEBUG_PRINTLN("WARNING! unexpected intersection type of face connected to an edge-triangle intersection! : " << other_side->intersectionType);
     }
     if (ret->edgeOfTriangle2TouchingTriangle1)
     {
-        HE_EdgeHandle converse = ret->edgeOfTriangle2TouchingTriangle1->converse().face();
-        std::shared_ptr<TriangleIntersection> other_side = TriangleIntersectionComputation::intersect(tri1, converse)
+        HE_FaceHandle converse = ret->edgeOfTriangle2TouchingTriangle1->converse().face();
+        std::shared_ptr<TriangleIntersection> other_side = TriangleIntersectionComputation::intersect(tri1, converse);
         if (other_side->intersectionType == IntersectionType::COPLANAR && !useCoplanarFaceIntersection(tri1, converse))
         {
-            ret->intersectionType = IntersectionType::COPLANAR; // TODO: mark differently?!
+            //ret->intersectionType = IntersectionType::COPLANAR; // TODO: mark differently?!
+            BOOL_MESH_DEBUG_PRINTLN("NOT discarding edge connected to coplanar face");
             return ret;
         }
         else if (other_side->intersectionType == IntersectionType::LINE_SEGMENT)
@@ -339,20 +349,22 @@ std::shared_ptr<TriangleIntersection> BooleanMeshOps::getIntersection(HE_EdgeHan
                 if (other_side->from->compareSource(*ret->to))
                     other_side->reverse();
                 { //verify direction
-                    if ( ! (other_side->from.compareSource(*ret->from) && other_side->to.compareSource(*ret->to) ) )
+                    if ( ! (other_side->from->compareSource(*ret->from) && other_side->to->compareSource(*ret->to) ) )
                         BOOL_MESH_DEBUG_PRINTLN("WARNING! edge-triangle intersection doesn't coincide with converse_edge-triangle intersection!");
                 }
                 if (ret->isDirectionOfInnerPartOfTriangle1 != other_side->isDirectionOfInnerPartOfTriangle1)
                 {
                     ret->intersectionType = IntersectionType::NON_TOUCHING; // edge on face is equivalent to infinitesimally far outside/inside the mesh
+                    BOOL_MESH_DEBUG_PRINTLN("discarding edge-triangle intersection");
                     return ret;
                 }
             } else
             {
                 ret->intersectionType = IntersectionType::NON_TOUCHING; // edge on face is equivalent to infinitesimally far outside/inside the mesh
+                BOOL_MESH_DEBUG_PRINTLN("discarding edge-triangle intersection");
                 return ret;
             }
-        } else BOOL_MESH_DEBUG_PRINTLN("WARNING! unexpected intersection type of face connected to an edge-triangle intersection!");
+        } else BOOL_MESH_DEBUG_PRINTLN("WARNING! unexpected intersection type of face connected to an edge-triangle intersection! : " << other_side->intersectionType);
     }
     return ret;
 }
@@ -428,7 +440,8 @@ BOOL_MESH_DEBUG_PRINTLN("finished constructing AABB-tree");
 
             std::shared_ptr<TriangleIntersection> triangleIntersection = getIntersection(tri1, tri2);
 
-            if (!triangleIntersection->from || !triangleIntersection->to)
+//            if (!triangleIntersection->from || !triangleIntersection->to)
+            if (triangleIntersection->intersectionType != IntersectionType::LINE_SEGMENT)
                 continue; // they don't intersect!
             else
             {
@@ -457,7 +470,7 @@ BOOL_MESH_DEBUG_PRINTLN("face intersection already contained in some fracture li
 
 
 
-
+                BOOL_MESH_DEBUG_PRINTLN("next fracture line.....................");
                 completeFractureLine(tri1, face, *triangleIntersection, face2fractures);
 
 //                for (auto mapping : face2fracture_here)
@@ -570,7 +583,9 @@ Start from an intersection segment [first] between faces [triangle1] and [triang
 */
 void BooleanMeshOps::completeFractureLine(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, TriangleIntersection& first, std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>>& face2fractures)
 {
-    BOOL_MESH_DEBUG_PRINTLN("completeFractureLine");
+
+    BOOL_MESH_DEBUG_PRINTLN("\n\n");
+    BOOL_MESH_DEBUG_PRINTLN("starting completeFractureLine");
     BOOL_MESH_DEBUG_SHOW(triangle1.m << ","<<triangle1.idx);
     BOOL_MESH_DEBUG_SHOW(triangle2.m << ","<<triangle2.idx);
 
@@ -639,6 +654,7 @@ void BooleanMeshOps::completeFractureLine(HE_FaceHandle& triangle1, HE_FaceHandl
 
     while (!todo.empty())
     {
+        BOOL_MESH_DEBUG_PRINTLN("next_face fracture line part...");
         FractureLinePart& current_frac = *todo.back();
         todo.pop_back();
 
@@ -713,6 +729,9 @@ void BooleanMeshOps::completeFractureLine(HE_FaceHandle& triangle1, HE_FaceHandl
 
         }
     }
+    BOOL_MESH_DEBUG_PRINTLN("end completeFractureLine");
+    BOOL_MESH_DEBUG_PRINTLN("\n\n");
+
 }
 
 spaceType inaccuracy = 20; //!< the margin of error between the endpoint of the first triangle and the startpoint of the second
@@ -740,8 +759,8 @@ void BooleanMeshOps::getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceH
 //        csv.close();
 //    );
 
+    BOOL_MESH_DEBUG_PRINTLN("\n\n");
     BOOL_MESH_DEBUG_PRINTLN(" starting getFacetFractureLinePart");
-    BOOL_MESH_DEBUG_PRINTLN("\n\n\n\n\n\n\n\n");
 
 
     typedef Graph<IntersectionPoint, IntersectionSegment>::Node Node;
@@ -790,6 +809,7 @@ void BooleanMeshOps::getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceH
     long counter = 0;
     while (!todo.empty())
     {
+        BOOL_MESH_DEBUG_PRINTLN("next segment on face fracture line part...");
         counter++;
         if (counter == MAX_EDGES_PER_VERTEX)
         {
@@ -923,7 +943,7 @@ void BooleanMeshOps::getNextFacesOnFracture(HE_FaceHandle triangle1, Arrow* curr
             }
 
             if (! triangleIntersection->from || ! triangleIntersection->to)
-                debug_export_problem(triangleIntersection, newFace, connectingPoint);
+                debug_export_problem(triangle1, triangleIntersection, newFace, connectingPoint);
 
             result.emplace_back(newFace, *triangleIntersection);
 
@@ -936,8 +956,7 @@ void BooleanMeshOps::getNextFacesOnFracture(HE_FaceHandle triangle1, Arrow* curr
 //                BOOL_MESH_DEBUG_PRINTLN("prev face (to): " << current->data.lineSegment.to->edge.face().idx);
 //                BOOL_MESH_DEBUG_PRINTLN("prev prev face : " << current->data.lineSegment.from->edge.converse().face().idx);
         }
-    }
-    break;
+    } break;
     case IntersectionPointType::VERTEX: // intersection lies exactly on vertex
         BOOL_MESH_DEBUG_PRINTLN(" VERTEX case ");
         HE_EdgeHandle first_outEdge = connectingPoint.vertex.someEdge();
@@ -1086,14 +1105,19 @@ void BooleanMeshOps::addIntersectionToGraphAndTodo(Node& connectingNode, Triangl
                 if (new_arrow->data.edgeOfMainTouchingOtherTriangle())
                 {
                     std::shared_ptr<TriangleIntersection> next_triangleIntersection = TriangleIntersectionComputation::intersect(originalFace, new_node->data.edge.converse().face());
-                    if (next_triangleIntersection.intersectionType == IntersectionType::LINE_SEGMENT)
+                    if (next_triangleIntersection->intersectionType == IntersectionType::LINE_SEGMENT)
+                    {
                         edge_case = true;
+                        BOOL_MESH_DEBUG_PRINTLN("edge-triangle edgecase: continuing fracture line part on edge of main triangle");
+                    }
                 }
 
             }
             if (new_node->data.edge.face() == originalFace && !edge_case)
             {
                 BOOL_MESH_DEBUG_PRINTLN("exiting triangle");
+                if (new_arrow->data.lineSegment.intersectionType == IntersectionType::COPLANAR)
+                    BOOL_MESH_DEBUG_PRINTLN("ERROR! ERROR! new_arrow->data.intersectionType == IntersectionType::COPLANAR");
                 result.endPoints.push_back(new_arrow);
             }
             else
@@ -1212,39 +1236,64 @@ void BooleanMeshOps::debug_export_difference_mesh(HE_FaceHandle originalFace, In
 
 
 
+/*!
+exports a mesh with an arrow-like face pointing at connectingPoint (in the same direction is newFace) and omitting the previous face in connectingPoint
+also adds the face for which we are currently computing the fracture line part
+*/
 
-
-void BooleanMeshOps::debug_export_problem(std::shared_ptr<TriangleIntersection> triangleIntersection, HE_FaceHandle newFace, IntersectionPoint& connectingPoint)
+void BooleanMeshOps::debug_export_problem(HE_FaceHandle triangle1, std::shared_ptr<TriangleIntersection> triangleIntersection, HE_FaceHandle newFace, IntersectionPoint& connectingPoint)
 { // problem!
     BOOL_MESH_DEBUG_PRINTLN("ERROR! : no intersection!!! type = " << (triangleIntersection->intersectionType));
+    connectingPoint.debugOutput();
     BOOL_MESH_DEBUG_PRINTLN("saving mesh with problem to problem.stl");
-    Point3 normal = (newFace.p1() - newFace.p0()).cross(newFace.p2() - newFace.p0());
+    Point3 normal = newFace.norm();
     while (normal.testLength(10000))
         normal*=2;
     while (!normal.testLength(20000))
         normal/=2;
     HE_Mesh& heMesh = *newFace.m;
-    int vi = heMesh.vertices.size();
-    int ei = heMesh.edges.size();
-    int fi = heMesh.faces.size();
-    heMesh.vertices.emplace_back(connectingPoint.getLocation(), ei+0);
-    heMesh.vertices.emplace_back(connectingPoint.getLocation() + normal + Point3(1000,1000,1000), ei+1);
-    heMesh.vertices.emplace_back(connectingPoint.getLocation() + normal + Point3(-1000,-1000,-1000), ei+2);
-    heMesh.edges.emplace_back(vi+0,vi+1);
-    heMesh.edges.emplace_back(vi+1,vi+2);
-    heMesh.edges.emplace_back(vi+2,vi+0);
-    heMesh.connectEdgesPrevNext(ei+0,ei+1);
-    heMesh.connectEdgesPrevNext(ei+1,ei+2);
-    heMesh.connectEdgesPrevNext(ei+2,ei+0);
-    heMesh.faces.emplace_back(ei+0,ei+1,ei+2);
-    heMesh.edges[ei+0].face_idx = fi;
-    heMesh.edges[ei+1].face_idx = fi;
-    heMesh.edges[ei+2].face_idx = fi;
-
-    HE_FaceHandle oldFace = connectingPoint.edge.face();
-    heMesh.faces[oldFace.idx].edge_idx[0] = 0;
-    heMesh.faces[oldFace.idx].edge_idx[1] = 0;
-    heMesh.faces[oldFace.idx].edge_idx[2] = 0;
+    {
+        int vi = heMesh.vertices.size();
+        int ei = heMesh.edges.size();
+        int fi = heMesh.faces.size();
+        heMesh.vertices.emplace_back(connectingPoint.getLocation(), ei+0);
+        heMesh.vertices.emplace_back(connectingPoint.getLocation() + normal + Point3(1000,1000,1000), ei+1);
+        heMesh.vertices.emplace_back(connectingPoint.getLocation() + normal + Point3(-1000,-1000,-1000), ei+2);
+        heMesh.edges.emplace_back(vi+0,vi+1);
+        heMesh.edges.emplace_back(vi+1,vi+2);
+        heMesh.edges.emplace_back(vi+2,vi+0);
+        heMesh.connectEdgesPrevNext(ei+0,ei+1);
+        heMesh.connectEdgesPrevNext(ei+1,ei+2);
+        heMesh.connectEdgesPrevNext(ei+2,ei+0);
+        heMesh.faces.emplace_back(ei+0,ei+1,ei+2);
+        heMesh.edges[ei+0].face_idx = fi;
+        heMesh.edges[ei+1].face_idx = fi;
+        heMesh.edges[ei+2].face_idx = fi;
+    }
+    {
+        int vi = heMesh.vertices.size();
+        int ei = heMesh.edges.size();
+        int fi = heMesh.faces.size();
+        heMesh.vertices.emplace_back(triangle1.p0(), ei+0);
+        heMesh.vertices.emplace_back(triangle1.p1(), ei+1);
+        heMesh.vertices.emplace_back(triangle1.p2(), ei+2);
+        heMesh.edges.emplace_back(vi+0,vi+1);
+        heMesh.edges.emplace_back(vi+1,vi+2);
+        heMesh.edges.emplace_back(vi+2,vi+0);
+        heMesh.connectEdgesPrevNext(ei+0,ei+1);
+        heMesh.connectEdgesPrevNext(ei+1,ei+2);
+        heMesh.connectEdgesPrevNext(ei+2,ei+0);
+        heMesh.faces.emplace_back(ei+0,ei+1,ei+2);
+        heMesh.edges[ei+0].face_idx = fi;
+        heMesh.edges[ei+1].face_idx = fi;
+        heMesh.edges[ei+2].face_idx = fi;
+    }
+    {
+        HE_FaceHandle oldFace = connectingPoint.edge.face();
+        heMesh.faces[oldFace.idx].edge_idx[0] = 0;
+        heMesh.faces[oldFace.idx].edge_idx[1] = 0;
+        heMesh.faces[oldFace.idx].edge_idx[2] = 0;
+    }
 
     saveMeshToFile<HE_Mesh, HE_VertexHandle, HE_FaceHandle>(heMesh, "problem.stl");
     BOOL_MESH_DEBUG_PRINTLN("saving done..");
@@ -1312,12 +1361,14 @@ void BooleanMeshOps::test_getFacetFractureLinePart(PrintObject* model)
 
     HE_FaceHandle otherFace(other, 0);
 
+    BooleanMeshOps subtract(heMesh, other, BoolOpType::DIFFERENCE);
+
     int f;
     std::shared_ptr<TriangleIntersection> triangleIntersection;
     for (f = 0; f < heMesh.faces.size(); f++)
     {
         HE_FaceHandle face(heMesh, f);
-        triangleIntersection = getIntersection(face, otherFace);
+        triangleIntersection = subtract.getIntersection(face, otherFace);
         //BOOL_MESH_DEBUG_PRINTLN((triangleIntersection->intersectionType));
         if (triangleIntersection->intersectionType == IntersectionType::LINE_SEGMENT) break;
     }
@@ -1376,7 +1427,6 @@ void BooleanMeshOps::test_getFacetFractureLinePart(PrintObject* model)
     std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fractures;
     //std::unordered_set<HE_FaceHandle>  walkedFacesFromEndpoints;
 
-    BooleanMeshOps subtract(heMesh, heMesh, BoolOpType::DIFFERENCE);
     subtract.completeFractureLine(otherFace, intersectingFace, *triangleIntersection, face2fractures);
 
 //    FractureLinePart result;
@@ -1398,6 +1448,36 @@ void BooleanMeshOps::test_getFacetFractureLinePart(PrintObject* model)
 //    csv.close();
 }
 
+
+#include "modelFile/modelFile.h"
+
+void BooleanMeshOps::test_completeFractureLine()
+{
+    FMatrix3x3 transformation; // identity matrix
+    bool success;
+
+    FVMesh keep_fv(nullptr);
+    success = loadModelSTL(&keep_fv, "/home/Dropbox/3D_models/Atlas_keep.stl", transformation);
+    if (!success)
+    {
+        std::cerr << "loading model failed" << std::endl;
+        exit(0);
+    }
+    HE_Mesh keep(keep_fv);
+
+
+    FVMesh subtracted_fv(nullptr);
+    success = loadModelSTL(&subtracted_fv, "/home/Dropbox/3D_models/Atlas_subtracted.stl", transformation);
+    if (!success)
+    {
+        std::cerr << "loading model failed" << std::endl;
+        exit(0);
+    }
+    HE_Mesh subtracted(subtracted_fv);
+
+    test_completeFractureLine(keep, subtracted);
+
+}
 void BooleanMeshOps::test_completeFractureLine(PrintObject* model)
 {
     std::remove("CRAP.csv");
@@ -1438,6 +1518,12 @@ void BooleanMeshOps::test_completeFractureLine(PrintObject* model)
 
     other.bbox = other.computeBbox();
 
+    test_completeFractureLine(heMesh, other);
+}
+
+void BooleanMeshOps::test_completeFractureLine(HE_Mesh& heMesh, HE_Mesh& other)
+{
+    BooleanMeshOps subtract(heMesh, other, BoolOpType::DIFFERENCE);
 
     std::ofstream out("test_completeFractureLine.stl");
 
@@ -1501,7 +1587,7 @@ void BooleanMeshOps::test_completeFractureLine(PrintObject* model)
         for (f = 0; f < heMesh.faces.size(); f++)
         {
             HE_FaceHandle face(heMesh, f);
-            triangleIntersection = getIntersection(face, otherFace);
+            triangleIntersection = subtract.getIntersection(face, otherFace);
             //BOOL_MESH_DEBUG_PRINTLN((triangleIntersection->intersectionType));
             if (triangleIntersection->intersectionType == IntersectionType::LINE_SEGMENT) break;
         }
@@ -1528,7 +1614,6 @@ void BooleanMeshOps::test_completeFractureLine(PrintObject* model)
     std::cerr << std::endl;
 
     std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fractures;
-    BooleanMeshOps subtract(heMesh, heMesh, BoolOpType::DIFFERENCE);
     subtract.completeFractureLine(otherFace, intersectingFace, *triangleIntersection, face2fractures);
 
 //    FractureLinePart result;
@@ -1546,6 +1631,38 @@ void BooleanMeshOps::test_completeFractureLine(PrintObject* model)
 }
 
 
+void BooleanMeshOps::test_subtract()
+{
+    std::remove("CRAP.csv");
+    std::remove("WHOLE.csv");
+    std::remove("WHOLE_keep.csv");
+    std::remove("WHOLE_subtracted.csv");
+
+    std::cerr << "=============================================\n" << std::endl;
+    FMatrix3x3 transformation; // identity matrix
+    bool success;
+
+    FVMesh keep_fv(nullptr);
+    success = loadModelSTL(&keep_fv, "/home/tim/Dropbox/3D_models/Atlas_keep.stl", transformation);
+    if (!success)
+    {
+        std::cerr << "loading keep model failed" << std::endl;
+        exit(0);
+    }
+    HE_Mesh keep(keep_fv);
+
+
+    FVMesh subtracted_fv(nullptr);
+    success = loadModelSTL(&subtracted_fv, "/home/tim/Dropbox/3D_models/Atlas_subtracted.stl", transformation);
+    if (!success)
+    {
+        std::cerr << "loading subtracted model failed" << std::endl;
+        exit(0);
+    }
+    HE_Mesh subtracted(subtracted_fv);
+
+    test_subtract(keep, subtracted);
+}
 void BooleanMeshOps::test_subtract(PrintObject* model)
 {
     std::remove("CRAP.csv");
@@ -1590,7 +1707,10 @@ void BooleanMeshOps::test_subtract(PrintObject* model)
 
     other.bbox = other.computeBbox();
 
-
+    test_subtract(heMesh, other);
+}
+void BooleanMeshOps::test_subtract(HE_Mesh& heMesh, HE_Mesh& other)
+{
     std::ofstream out("test_subtract.stl");
 
     out << "solid name" << std::endl;

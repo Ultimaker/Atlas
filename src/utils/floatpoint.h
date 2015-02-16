@@ -31,8 +31,10 @@ public:
     FPoint3& operator -= (const FPoint3& p) { x -= p.x; y -= p.y; z -= p.z; return *this; }
     FPoint3& operator *= (const float f) { x *= f; y *= f; z *= f; return *this; }
 
-    bool operator==(FPoint3& p) const { return x==p.x&&y==p.y&&z==p.z; }
-    bool operator!=(FPoint3& p) const { return x!=p.x||y!=p.y||z!=p.z; }
+    FPoint3 operator-() const { return *this * -1; }
+
+    bool operator==(const FPoint3& p) const { return x==p.x&&y==p.y&&z==p.z; }
+    bool operator!=(const FPoint3& p) const { return x!=p.x||y!=p.y||z!=p.z; }
 
     template<class CharT, class TraitsT>
     friend

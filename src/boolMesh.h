@@ -72,16 +72,16 @@ struct IntersectionSegment
     boost::optional<HE_EdgeHandle> edgeOfMainTouchingOtherTriangle()
     {
         if (otherFace_is_second_triangle)
-            return edgeOfTriangle1TouchingTriangle2;
+            return lineSegment.edgeOfTriangle1TouchingTriangle2;
         else
-            return edgeOfTriangle2TouchingTriangle1;
+            return lineSegment.edgeOfTriangle2TouchingTriangle1;
     }
     boost::optional<HE_EdgeHandle> edgeOfOtherTouchingMainTriangle()
     {
         if (otherFace_is_second_triangle)
-            return edgeOfTriangle2TouchingTriangle1;
+            return lineSegment.edgeOfTriangle2TouchingTriangle1;
         else
-            return edgeOfTriangle1TouchingTriangle2;
+            return lineSegment.edgeOfTriangle1TouchingTriangle2;
     }
 };
 
@@ -158,10 +158,6 @@ class BooleanMeshOps
 public:
     static void subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& result); //!< subtract one volume from another ([subtracted] from [keep])
 
-    static void test_subtract(PrintObject* model);
-    static void test_getFacetFractureLinePart(PrintObject* model);
-    static void test_completeFractureLine(PrintObject* model);
-
 protected:
 
     HE_Mesh& keep, subtracted;
@@ -169,7 +165,7 @@ protected:
 
     bool useCoplanarFaceIntersection(HE_FaceHandle fh1, HE_FaceHandle fh2)
     {
-        bool sameNormals = fh1.dot(fh2) > 0;
+        bool sameNormals = fh1.normal().dot(fh2.normal()) > 0;
         switch(boolOpType)
         {
         case BoolOpType::UNION:         return sameNormals;
@@ -195,6 +191,8 @@ protected:
 
 //    std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fracturelines_mesh1;
 //    std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> face2fracturelines_mesh2;
+    std::shared_ptr<TriangleIntersection> getIntersection(HE_FaceHandle f1, HE_FaceHandle f2);
+
     void perform(HE_Mesh& result); //!< subtract one volume from another ([subtracted] from [keep])
 
     void getFacetFractureLinePart(HE_FaceHandle& triangle1, HE_FaceHandle& triangle2, TriangleIntersection& first, FractureLinePart& result); //!< adds all intersections connected to the first which intersect with the triangle to the mapping of the triangle
@@ -205,12 +203,24 @@ protected:
     void getNextFacesOnFracture(HE_FaceHandle triangle1, Arrow* current, std::unordered_set<HE_FaceHandle>& checked_faces, std::vector<std::tuple<HE_FaceHandle, TriangleIntersection>>& result);
 
 
-    void debug_export_problem(std::shared_ptr<TriangleIntersection> triangleIntersection, HE_FaceHandle newFace, IntersectionPoint& connectingPoint);
+
+public:
+    static void test_subtract();
+    static void test_subtract(PrintObject* model);
+    static void test_subtract(HE_Mesh& keep, HE_Mesh& subtracted);
+    static void test_getFacetFractureLinePart(PrintObject* model);
+    static void test_completeFractureLine();
+    static void test_completeFractureLine(PrintObject* model);
+    static void test_completeFractureLine(HE_Mesh& keep, HE_Mesh& subtracted);
+
+private:
+    void debug_export_problem(HE_FaceHandle triangle1, std::shared_ptr<TriangleIntersection> triangleIntersection, HE_FaceHandle newFace, IntersectionPoint& connectingPoint);
     void debug_export_difference_mesh(HE_FaceHandle originalFace, IntersectionPoint& connectingPoint, TriangleIntersection& triangleIntersection, HE_FaceHandle newFace);
 
     void debug_csv(std::unordered_map<HE_FaceHandle, std::vector<FractureLinePart>> & face2fractures, std::string filename = "WHOLE.csv");
 
-    std::shared_ptr<TriangleIntersection> getIntersection(HE_EdgeHandle f1, HE_EdgeHandle f2);
+
+
 };
 
 

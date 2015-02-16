@@ -21,6 +21,7 @@
 					<Add option="-Wno-sign-compare" />
 					<Add option="-Wno-trigraphs" />
 					<Add directory="include" />
+					<Add directory="../poly2tri/poly2tri" />
 				</Compiler>
 				<Linker>
 					<Add option="-lboost_thread" />
@@ -28,6 +29,7 @@
 					<Add option="-lpthread" />
 					<Add option="-lCGAL_Core" />
 					<Add option="-lCGAL" />
+					<Add library="../poly2tri/bin/Debug/libpoly2tri.so" />
 				</Linker>
 			</Target>
 			<Target title="Release">
@@ -60,6 +62,8 @@
 		<Unit filename="src/Kernel.h" />
 		<Unit filename="src/MACROS.cpp" />
 		<Unit filename="src/MACROS.h" />
+		<Unit filename="src/Triangulation3D.cpp" />
+		<Unit filename="src/Triangulation3D.h" />
 		<Unit filename="src/boolMesh.cpp" />
 		<Unit filename="src/boolMesh.h" />
 		<Unit filename="src/commandSocket.cpp" />
@@ -109,6 +113,7 @@
 		<Unit filename="src/supportGeneration.h" />
 		<Unit filename="src/triangleIntersect.cpp" />
 		<Unit filename="src/triangleIntersect.h" />
+		<Unit filename="src/utils/PlaneEquation.h" />
 		<Unit filename="src/utils/floatpoint.h" />
 		<Unit filename="src/utils/gettime.cpp" />
 		<Unit filename="src/utils/gettime.h" />
