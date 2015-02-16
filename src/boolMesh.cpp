@@ -298,73 +298,191 @@ void BooleanMeshOps::debug_csv(std::unordered_map<HE_FaceHandle, std::vector<Fra
 std::shared_ptr<TriangleIntersection> BooleanMeshOps::getIntersection(HE_FaceHandle tri1, HE_FaceHandle tri2)
 {
     std::shared_ptr<TriangleIntersection> ret = TriangleIntersectionComputation::intersect(tri1, tri2);
-    if (ret->edgeOfTriangle1TouchingTriangle2)
+    if (ret->intersectionType != IntersectionType::LINE_SEGMENT)
+        return ret;
+    /*
+    possible cases when edgeOfTriangle1TouchingTriangle2 or vice versa:
+
+
+    legend:
+    - /     =faces
+    o       =intersection line (top view!)
+    x       =model inside
+
+    A
+    1---o---1
+     xx/x\xx
+      2   2
+
+    B
+     xxx xxx
+    1---o---1
+       /x\
+      2   2
+
+    C
+    1----o----1
+     xxx/ \xxx
+      x/   \x
+      2     2
+
+    D                    |x
+    1----o----2          |x                         |x
+     xxx/x\xxx        ---o---    =   ---o---     +  o
+       /x x\          xxx|xxx        xxx xxx        |x
+      2     1            |x
+
+
+    include edge?         A | B | C | D
+    1 union 2           | x | x | x | v
+    1 intersection 2    | x | x | x | v
+    1 - 2               | x | x | x | v
+    2 - 1               | x | x | x | v
+
+    */
+    if (ret->edgeOfTriangle1TouchingTriangle2 || ret->edgeOfTriangle2TouchingTriangle1)
     {
-        HE_FaceHandle converse = ret->edgeOfTriangle1TouchingTriangle2->converse().face();
-        std::shared_ptr<TriangleIntersection> other_side = TriangleIntersectionComputation::intersect(converse, tri2);
-        if (other_side->intersectionType == IntersectionType::COPLANAR && !useCoplanarFaceIntersection(converse, tri2))
+        std::shared_ptr<TriangleIntersection> other_intersection_12;
+        HE_FaceHandle* converse_12;
+        if (ret->edgeOfTriangle1TouchingTriangle2)
         {
-            // ret->intersectionType = IntersectionType::COPLANAR; // TODO: mark differently?!
-            BOOL_MESH_DEBUG_PRINTLN("NOT discarding edge connected to coplanar face");
-            return ret;
+            converse_12 = new HE_FaceHandle(ret->edgeOfTriangle1TouchingTriangle2->converse().face());
+            other_intersection_12 = TriangleIntersectionComputation::intersect(*converse_12, tri2);
+            if (other_intersection_12->intersectionType != IntersectionType::COPLANAR)
+            { // align direction
+                if (other_intersection_12->from->compareSource(*ret->to))
+                    other_intersection_12->reverse();
+                if ( ! (other_intersection_12->from->compareSource(*ret->from) && other_intersection_12->to->compareSource(*ret->to) ) )
+                    BOOL_MESH_DEBUG_PRINTLN("WARNING! edge-triangle intersection doesn't coincide with converse_edge-triangle intersection!");
+            }
         }
-        else if (other_side->intersectionType == IntersectionType::LINE_SEGMENT)
+        std::shared_ptr<TriangleIntersection> other_intersection_21;
+        HE_FaceHandle* converse_21;
+        if (ret->edgeOfTriangle2TouchingTriangle1)
         {
-            if (boolOpType == BoolOpType::DIFFERENCE)
+            converse_21 = new HE_FaceHandle(ret->edgeOfTriangle2TouchingTriangle1->converse().face());
+            other_intersection_21 = TriangleIntersectionComputation::intersect(tri1, *converse_21);
+            if (other_intersection_21->intersectionType != IntersectionType::COPLANAR)
+            { // align direction
+                if (other_intersection_21->from->compareSource(*ret->to))
+                    other_intersection_21->reverse();
+                if ( ! (other_intersection_21->from->compareSource(*ret->from) && other_intersection_21->to->compareSource(*ret->to) ) )
+                    BOOL_MESH_DEBUG_PRINTLN("WARNING! edge-triangle intersection doesn't coincide with converse_edge-triangle intersection!");
+            }
+        }
+
+
+        enum class Op { UNION = 0, INTERSECTION = 1, DIFF_12 = 2, DIFF_21 = 3 , WTF = 4};
+        auto getOp =  [tri1, tri2, this](BoolOpType op)
+        {
+            switch (op)
             {
-                if (other_side->from->compareSource(*ret->to))
-                    other_side->reverse();
-                { //verify direction
-                    if ( ! (other_side->from->compareSource(*ret->from) && other_side->to->compareSource(*ret->to) ) )
-                        BOOL_MESH_DEBUG_PRINTLN("WARNING! edge-triangle intersection doesn't coincide with converse_edge-triangle intersection!");
+            case BoolOpType::UNION: return Op::UNION;
+            case BoolOpType::INTERSECTION: return Op::INTERSECTION;
+            case BoolOpType::DIFFERENCE:
+            if (tri1.m == &keep) return Op::DIFF_12;
+            if (tri2.m == &keep) return Op::DIFF_21;
+            break;
+            }
+            BOOL_MESH_DEBUG_PRINTLN("Error! unknown bool op type.");
+            exit(0);
+            return Op::WTF;
+        };
+        Op op_used = getOp(boolOpType);
+
+        bool* edge_table [4];
+        edge_table[0] = new bool[4] { true,  true,  false, false };
+        edge_table[1] = new bool[4] { false, true,  true , false };
+        edge_table[2] = new bool[4] { false, true,  true , false };
+        edge_table[3] = new bool[4] { false, false, true , true  };
+
+        bool* facet_table [4];
+        facet_table[0] = new bool[4] { false, true,  false, true  };
+        facet_table[1] = new bool[4] { false, true,  false, false };
+        facet_table[2] = new bool[4] { false, false, true,  false };
+        facet_table[3] = new bool[4] { false, false, true,  false };
+
+        if (ret->edgeOfTriangle1TouchingTriangle2 && ret->edgeOfTriangle2TouchingTriangle1)
+        {
+            std::shared_ptr<TriangleIntersection> other_other_intersection =  TriangleIntersectionComputation::intersect(*converse_12, *converse_21);
+            BOOL_MESH_DEBUG_PRINTLN("WHAT TO DO HERE? boolMesh.cpp:" << __LINE__);
+        } else if (ret->edgeOfTriangle1TouchingTriangle2 && !ret->edgeOfTriangle2TouchingTriangle1)
+        {
+            if (other_intersection_12->intersectionType == IntersectionType::COPLANAR)
+            {
+
+                int column = -1;
+                bool sameNormals = converse_12->normal().dot(tri2.normal()) > 0;
+
+                bool intersectionDir_is_edgeDir = ( ret->edgeOfTriangle1TouchingTriangle2->p0() - ret->from->p() ).vSize2() < ( ret->edgeOfTriangle1TouchingTriangle2->p0() - ret->to->p() ).vSize2();
+                bool underFace = ret->isDirectionOfInnerPartOfTriangle1 == intersectionDir_is_edgeDir; // whether non-coplanar face is outside tri2
+                if (sameNormals)
+                {
+                    if (!underFace)
+                        column = 1;
+                    else
+                        column = 3;
+                } else
+                {
+                    if (!underFace)
+                        column = 0;
+                    else
+                        column = 2;
                 }
-                if (ret->isDirectionOfInnerPartOfTriangle2 != other_side->isDirectionOfInnerPartOfTriangle2)
+                bool use_facet = facet_table[static_cast<int>(op_used)][column];
+                bool use_edge = edge_table[static_cast<int>(op_used)][column];
+                if (!use_edge)
                 {
                     ret->intersectionType = IntersectionType::NON_TOUCHING; // edge on face is equivalent to infinitesimally far outside/inside the mesh
                     BOOL_MESH_DEBUG_PRINTLN("discarding edge-triangle intersection");
-                    return ret;
                 }
-            } else
+            } else if (ret->isDirectionOfInnerPartOfTriangle2 != other_intersection_12->isDirectionOfInnerPartOfTriangle2)
             {
                 ret->intersectionType = IntersectionType::NON_TOUCHING; // edge on face is equivalent to infinitesimally far outside/inside the mesh
                 BOOL_MESH_DEBUG_PRINTLN("discarding edge-triangle intersection");
-                return ret;
             }
-        } else BOOL_MESH_DEBUG_PRINTLN("WARNING! unexpected intersection type of face connected to an edge-triangle intersection! : " << other_side->intersectionType);
-    }
-    if (ret->edgeOfTriangle2TouchingTriangle1)
-    {
-        HE_FaceHandle converse = ret->edgeOfTriangle2TouchingTriangle1->converse().face();
-        std::shared_ptr<TriangleIntersection> other_side = TriangleIntersectionComputation::intersect(tri1, converse);
-        if (other_side->intersectionType == IntersectionType::COPLANAR && !useCoplanarFaceIntersection(tri1, converse))
-        {
-            //ret->intersectionType = IntersectionType::COPLANAR; // TODO: mark differently?!
-            BOOL_MESH_DEBUG_PRINTLN("NOT discarding edge connected to coplanar face");
             return ret;
-        }
-        else if (other_side->intersectionType == IntersectionType::LINE_SEGMENT)
+        } else if (!ret->edgeOfTriangle1TouchingTriangle2 && ret->edgeOfTriangle2TouchingTriangle1)
         {
-            if (boolOpType == BoolOpType::DIFFERENCE)
+            if (other_intersection_21->intersectionType == IntersectionType::COPLANAR)
             {
-                if (other_side->from->compareSource(*ret->to))
-                    other_side->reverse();
-                { //verify direction
-                    if ( ! (other_side->from->compareSource(*ret->from) && other_side->to->compareSource(*ret->to) ) )
-                        BOOL_MESH_DEBUG_PRINTLN("WARNING! edge-triangle intersection doesn't coincide with converse_edge-triangle intersection!");
+
+                int column = -1;
+                bool sameNormals = converse_21->normal().dot(tri1.normal()) > 0;
+
+                bool intersectionDir_is_edgeDir = ( ret->edgeOfTriangle2TouchingTriangle1->p0() - ret->from->p() ).vSize2() < ( ret->edgeOfTriangle2TouchingTriangle1->p0() - ret->to->p() ).vSize2();
+                bool underFace = ret->isDirectionOfInnerPartOfTriangle2 == intersectionDir_is_edgeDir; // whether non-coplanar face is outside tri2
+                if (sameNormals)
+                {
+                    if (!underFace)
+                        column = 1;
+                    else
+                        column = 3;
+                } else
+                {
+                    if (!underFace)
+                        column = 0;
+                    else
+                        column = 2;
                 }
-                if (ret->isDirectionOfInnerPartOfTriangle1 != other_side->isDirectionOfInnerPartOfTriangle1)
+                bool use_facet = facet_table[static_cast<int>(op_used)][column];
+                bool use_edge = edge_table[static_cast<int>(op_used)][column];
+                if (!use_edge)
                 {
                     ret->intersectionType = IntersectionType::NON_TOUCHING; // edge on face is equivalent to infinitesimally far outside/inside the mesh
                     BOOL_MESH_DEBUG_PRINTLN("discarding edge-triangle intersection");
-                    return ret;
                 }
-            } else
+            } else if (ret->isDirectionOfInnerPartOfTriangle1 != other_intersection_21->isDirectionOfInnerPartOfTriangle1)
             {
                 ret->intersectionType = IntersectionType::NON_TOUCHING; // edge on face is equivalent to infinitesimally far outside/inside the mesh
                 BOOL_MESH_DEBUG_PRINTLN("discarding edge-triangle intersection");
-                return ret;
             }
-        } else BOOL_MESH_DEBUG_PRINTLN("WARNING! unexpected intersection type of face connected to an edge-triangle intersection! : " << other_side->intersectionType);
+            return ret;
+        } else return ret;
+
+
+        delete converse_12;
+        delete converse_21;
     }
     return ret;
 }
