@@ -30,6 +30,7 @@ HE_EdgeHandle HE_VertexHandle::someEdge()
 }
 
 Point& HE_VertexHandle::p() { return vertex().p; };
+Point HE_VertexHandle::p_const() const { return m->vertices[idx].p; };
 
 HE_Vertex& HE_VertexHandle::vertex()
 {

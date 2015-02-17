@@ -7,6 +7,7 @@
 
 #include "../Kernel.h"
 
+#include <algorithm> // find (in vector)
 
 #include "../MACROS.h" // debug
 // enable/disable debug output
@@ -103,16 +104,27 @@ public:
 
 
 
-    void disconnect(typename std::vector<Arrow>::iterator  a)
+    void disconnect(Arrow* a)
     {
-        a->prev_same_from.next_same_from = a->next_same_from;
-        a->next_same_from.prev_same_from = a->prev_same_from;
+        a->prev_same_from->next_same_from = a->next_same_from;
+        a->next_same_from->prev_same_from = a->prev_same_from;
 
-        a->prev_same_to.next_same_to = a->next_same_to;
-        a->next_same_to.prev_same_to = a->prev_same_to;
+        a->prev_same_to->next_same_to = a->next_same_to;
+        a->next_same_to->prev_same_to = a->prev_same_to;
 
-        arrows.erase(a);
-        delete &*a;
+        arrows.erase(std::find(arrows.begin(), arrows.end(), a));
+        delete a;
+    };
+
+    bool removeNodeIfLonely(Node* n)
+    {
+        if (n->first_in == nullptr && n->first_out == nullptr)
+        {
+            nodes.erase(std::find(nodes.begin(), nodes.end(), n));
+            delete n;
+            return true;
+        }
+        return false;
     };
 
     ~Graph()

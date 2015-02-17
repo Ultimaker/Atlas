@@ -23,7 +23,8 @@
 
 #include "mesh/HalfEdgeMeshVertex.h" // testGetConnectedEdgeGroups
 #include "mesh/HEPMeshVertex.h" // testGetConnectedEdgeGroups
-#include "boolMesh.h" //test_getFacetIntersectionlineSegment
+//#include "boolMesh.h" //test_getFacetIntersectionlineSegment
+#include "boolMeshOps.h" //test_getFacetIntersectionlineSegment
 #include "utils/PlaneEquation.h" // test()
 #include "Triangulation3D.h" // test()
 
@@ -134,8 +135,8 @@ public:
 //        BooleanMeshOps::test_getFacetFractureLinePart(model);
 //        BooleanMeshOps::test_completeFractureLine(model);
 
-//        BooleanMeshOps::test_subtract(model);
-        BooleanMeshOps::test_subtract();
+        boolOps::BooleanMeshOps::test_subtract(model);
+//        boolOps::BooleanMeshOps::test_subtract();
 //        PlaneEquation<FPoint3>::test();
 //        Triangulation3D<FPoint>::test();
         std::cerr << std::endl << " Test finished!" << std::endl << std::endl;

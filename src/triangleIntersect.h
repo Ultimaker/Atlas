@@ -65,6 +65,28 @@ public:
     HE_VertexHandle vertex; //!< the handle of the vertex coincident with the endpoint of the intersection line segment
 
     IntersectionPointType type;
+
+    bool operator==(const IntersectionPoint& other) const
+    {
+        switch (type) {
+        case IntersectionPointType::NEW:
+            if (other.type != IntersectionPointType::NEW) return false;
+            return edge == other.edge && location==other.location;
+        case IntersectionPointType::VERTEX:
+            if (other.type != IntersectionPointType::VERTEX) return false;
+            return vertex == other.vertex;
+        }
+        return false;
+    }
+
+    Point getLocation_const() const//!< the location of the point
+    {
+        switch (type) {
+        case IntersectionPointType::NEW: return location;
+        case IntersectionPointType::VERTEX: return vertex.p_const();
+        }
+        return location;
+    };
     Point& getLocation() //!< the location of the point
     {
         switch (type) {
@@ -74,6 +96,7 @@ public:
         return location;
     };
     Point& p() { return getLocation(); }; //!< the location of the point
+    Point p_const() const { return getLocation_const(); }; //!< the location of the point
     IntersectionPointType getType() { return type; }; //!< the type of endpoint: existing vertex or new point
 
     IntersectionPoint(HE_VertexHandle vertex)               : type(IntersectionPointType::VERTEX), vertex(vertex),    edge(*vertex.m, -1) {};

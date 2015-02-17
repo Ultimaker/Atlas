@@ -41,6 +41,7 @@ struct HE_VertexHandle : public MeshVertexHandle<HE_Vertex, HE_Face, HE_FaceHand
     HE_EdgeHandle someEdge();
 
     Point& p();
+    Point p_const() const;
 
     bool isManifold(FVMeshVertexHandle& correspondingFVMeshVertex);
 
