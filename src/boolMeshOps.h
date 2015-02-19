@@ -6,6 +6,7 @@
 
 #include "triangleIntersect.h"
 
+#include "utils/BucketGrid3D.h"
 
 #include <list> // == double-linked list, used as queue
 
@@ -101,7 +102,32 @@ struct FractureLinePart
 //    }
 };
 
+
 ENUM(BoolOpType, UNION, INTERSECTION, DIFFERENCE);
+
+
+
+struct IntersectionPointHasher
+{
+    static inline uint32_t pointHash(const Point3& point)
+    {
+        Point p = point/MELD_DISTANCE;
+        return p.x ^ (p.y << 10) ^ (p.z << 20);
+    };
+    uint32_t operator()(const std::pair<TriangleIntersection,bool>& p) const
+    {
+        if (p.second)
+            return pointHash(p.first.from->p_const());
+        else
+            return pointHash(p.first.to->p_const());
+    };
+    uint32_t operator()(const IntersectionPoint& p) const
+    {
+        return pointHash(p.p_const());
+    };
+};
+
+
 
 class BooleanMeshOps
 {
@@ -154,10 +180,24 @@ protected:
 
     typedef std::unordered_map<HE_FaceHandle, std::unordered_map<HE_FaceHandle, TriangleIntersection>> Face2Soup;
 
-    void createIntersectionSegmentSoup(Face2Soup& fracture_soup_keep, Face2Soup& fracture_soup_subtracted, AABB_Tree<HE_FaceHandle>& keep_aabb);
+    void createIntersectionSegmentSoup(Face2Soup& fracture_soup_keep, Face2Soup& fracture_soup_subtracted, AABB_Tree<HE_FaceHandle>& keep_aabb, std::unordered_map<HE_FaceHandle, std::unordered_set<HE_FaceHandle>>& coplanarKeepToSubtracted);
 
     void hashMapInsert(std::unordered_map<HE_FaceHandle, std::unordered_map<HE_FaceHandle, TriangleIntersection>>& fractures, HE_FaceHandle tri1, HE_FaceHandle tri2, TriangleIntersection& triangleIntersection);
 
+    void getFace2fractures(
+        const std::unordered_map<HE_FaceHandle, std::unordered_map<HE_FaceHandle, TriangleIntersection>>& fracture_soup_keep,
+        std::unordered_map<HE_FaceHandle, FractureLinePart>& face2fractures_keep,
+        bool keep,
+        const std::unordered_map<HE_FaceHandle, std::unordered_set<HE_FaceHandle>>& coplanarKeepToSubtracted);
+
+    void connectNodesInFracture (
+        std::unordered_map<HE_FaceHandle, TriangleIntersection>& segments,
+        std::unordered_map<IntersectionPoint , Node*, IntersectionPointHasher>& point2fracNode,
+        const std::unordered_map<HE_FaceHandle, std::unordered_set<HE_FaceHandle>>& coplanarKeepToSubtracted,
+        FractureLinePart& frac,
+        const HE_FaceHandle tri_main,
+        const bool keep
+        );
 
 public:
     static void test_subtract();

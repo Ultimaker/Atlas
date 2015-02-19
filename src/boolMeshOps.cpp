@@ -276,51 +276,7 @@ void BooleanMeshOps::debug_csv(std::unordered_map<HE_FaceHandle, FractureLinePar
 
 
 
-int vertex_meld_distance = MELD_DISTANCE;
 
-static inline uint32_t pointHash_simple(const Point3& p)
-{
-    return ((p.x + vertex_meld_distance/2) / vertex_meld_distance) ^ (((p.y + vertex_meld_distance/2) / vertex_meld_distance) << 10) ^ (((p.z + vertex_meld_distance/2) / vertex_meld_distance) << 20);
-}
-
-static inline uint32_t pointHash(const Point3& point)
-{
-    Point p = p/50;
-    return pointHash_simple(p);
-}
-
-struct PointHasher{
-
-    uint32_t operator()(const Point3& p) const { return pointHash(p); };
-
-};
-
-
-
-static inline uint32_t pointHash(const Point3& point, const Point3& relativeHash)
-{
-    Point p = p/50 + relativeHash;
-    return pointHash_simple(p);
-}
-
-static inline Point3 getRealtiveForHash(const Point3& p, const Point3& relativeHash)
-{
-    return p + relativeHash*50;
-}
-
-struct IntersectionPointHasher {
-    uint32_t operator()(const std::pair<TriangleIntersection,bool>& p) const
-    {
-        if (p.second)
-            return pointHash(p.first.from->p_const());
-        else
-            return pointHash(p.first.to->p_const());
-    };
-    uint32_t operator()(const IntersectionPoint& p) const
-    {
-        return pointHash(p.p_const());
-    };
-};
 
 
 
@@ -340,7 +296,11 @@ void BooleanMeshOps::subtract(HE_Mesh& keep, HE_Mesh& subtracted, HE_Mesh& resul
 }
 
 
-void BooleanMeshOps::createIntersectionSegmentSoup(Face2Soup& fracture_soup_keep, Face2Soup& fracture_soup_subtracted, AABB_Tree<HE_FaceHandle>& keep_aabb)
+void BooleanMeshOps::createIntersectionSegmentSoup(
+    Face2Soup& fracture_soup_keep,
+    Face2Soup& fracture_soup_subtracted,
+    AABB_Tree<HE_FaceHandle>& keep_aabb,
+    std::unordered_map<HE_FaceHandle, std::unordered_set<HE_FaceHandle>>& coplanarKeepToSubtracted     )
 {
     BOOL_MESH_OPS_DEBUG_PRINTLN("=====================================");
     BOOL_MESH_OPS_DEBUG_PRINTLN("=== createIntersectionSegmentSoup ===");
@@ -354,8 +314,8 @@ void BooleanMeshOps::createIntersectionSegmentSoup(Face2Soup& fracture_soup_keep
         BoundingBox tribbox = face_subtracted.bbox();
         std::vector<HE_FaceHandle> intersectingBboxFaces;
         keep_aabb.getIntersections(tribbox, intersectingBboxFaces);
-        std::vector<std::pair<BoundingBox, HE_FaceHandle>> intersectingBboxFaces2;
-        keep_aabb.getIntersections(tribbox, intersectingBboxFaces2);
+//        std::vector<std::pair<BoundingBox, HE_FaceHandle>> intersectingBboxFaces2;
+//        keep_aabb.getIntersections(tribbox, intersectingBboxFaces2);
 
         totalTriTriIntersectionComputations += intersectingBboxFaces.size();
 
@@ -368,12 +328,28 @@ void BooleanMeshOps::createIntersectionSegmentSoup(Face2Soup& fracture_soup_keep
             std::shared_ptr<TriangleIntersection> triangleIntersection = getIntersection(tri1, tri2);
 
     //            if (!triangleIntersection->from || !triangleIntersection->to)
-            if (triangleIntersection->intersectionType != IntersectionType::LINE_SEGMENT)
-                continue; // they don't intersect!
-            else
+            if (triangleIntersection->intersectionType == IntersectionType::LINE_SEGMENT)
             {
                 hashMapInsert(fracture_soup_keep, tri1, tri2, *triangleIntersection);
                 hashMapInsert(fracture_soup_subtracted, tri2, tri1, *triangleIntersection);
+            } else if (triangleIntersection->intersectionType == IntersectionType::COPLANAR)
+            {
+                // TODO: move outside?
+                auto coplanarMapInsert = [](std::unordered_map<HE_FaceHandle, std::unordered_set<HE_FaceHandle>>& coplanarKeepToSubtracted, HE_FaceHandle& tri1, HE_FaceHandle& tri2)
+                {
+                    typedef std::unordered_map<HE_FaceHandle, std::unordered_set<HE_FaceHandle>>::iterator iter;
+                    iter found = coplanarKeepToSubtracted.find(tri1);
+                    if ( found == coplanarKeepToSubtracted.end())
+                    {
+                        std::unordered_set<HE_FaceHandle> coplanarTo;
+                        coplanarTo.emplace(tri2);
+                        coplanarKeepToSubtracted.emplace(tri1, coplanarTo);
+                    } else
+                    {
+                        found->second.emplace(tri2);
+                    }
+                };
+                coplanarMapInsert(coplanarKeepToSubtracted, tri1, tri2);
             }
 
         }
@@ -416,30 +392,25 @@ void BooleanMeshOps::hashMapInsert(std::unordered_map<HE_FaceHandle, std::unorde
 
 
 
-struct NeverEqual
-{
-    template<typename T>
-    bool operator()(const T& p1, const T& p2) const { return false; };
-};
 
-
-void findCloseIntersectionPoints(std::unordered_map<Point3, std::pair<TriangleIntersection,bool>, PointHasher, NeverEqual>& point2segment, Point3& p, std::vector<std::pair<TriangleIntersection,bool>>& ret)
-{
-    for (int x = -1; x <= 1; x++)
-        for (int y = -1; y <= 1; y++)
-            for (int z = -1; z <= 1; z++)
-            {
-                int i = point2segment.bucket(getRealtiveForHash(p, Point3(x,y,z)));
-                for ( auto local_it = point2segment.begin(i); local_it!= point2segment.end(i); ++local_it )
-                    ret.push_back(local_it->second);
-            }
-    // fallback strategy: add all points!
-    if (ret.empty())
-    {
-        for ( auto it = point2segment.begin(); it != point2segment.end(); ++it )
-            ret.push_back(it->second);
-    }
-};
+// >>> see utils/BucketGrid3D
+//void findCloseIntersectionPoints(std::unordered_map<Point3, std::pair<TriangleIntersection,bool>, PointHasher, NeverEqual>& point2segment, Point3& p, std::vector<std::pair<TriangleIntersection,bool>>& ret)
+//{
+//    for (int x = -1; x <= 1; x++)
+//        for (int y = -1; y <= 1; y++)
+//            for (int z = -1; z <= 1; z++)
+//            {
+//                int i = point2segment.bucket(getRealtiveForHash(p, Point3(x,y,z)));
+//                for ( auto local_it = point2segment.begin(i); local_it!= point2segment.end(i); ++local_it )
+//                    ret.push_back(local_it->second);
+//            }
+//    // fallback strategy: add all points!
+//    if (ret.empty())
+//    {
+//        for ( auto it = point2segment.begin(); it != point2segment.end(); ++it )
+//            ret.push_back(it->second);
+//    }
+//};
 
 
 
@@ -454,7 +425,8 @@ typedef std::unordered_map<IntersectionPoint , Node*, IntersectionPointHasher> P
 void addVertexPointsToFracture(
     std::unordered_map<HE_FaceHandle, TriangleIntersection>& segments,
     std::unordered_map<IntersectionPoint , Node*, IntersectionPointHasher>& point2fracNode,
-    FractureLinePart& frac
+    FractureLinePart& frac,
+    const HE_FaceHandle tri_keep
     )
 {
     // add all vertex points to graph (without connections)
@@ -471,6 +443,17 @@ void addVertexPointsToFracture(
                 Point zero(0,0,0);
                 Node* node = frac.fracture.addNode(zero);
                 HE_VertexHandle v = intersectionPoint.vertex;
+
+                if (v.m == tri_keep.m) // get closest vertex in the other model
+                {
+                    HE_VertexHandle closest_v = tri_subtracted.v0();
+                    if ( (tri_subtracted.p1() - v.p()).vSize2() < (closest_v.p() - v.p()).vSize2())
+                        closest_v = tri_subtracted.v1();
+                    if ( (tri_subtracted.p2() - v.p()).vSize2() < (closest_v.p() - v.p()).vSize2())
+                        closest_v = tri_subtracted.v2();
+
+                    v = closest_v;
+                }
 
                 int n_connected_segments = 0;
 
@@ -510,7 +493,7 @@ void addUnhandledNonVertexPointsToFracture (
     std::unordered_map<HE_FaceHandle, TriangleIntersection>& segments,
     std::unordered_map<IntersectionPoint , Node*, IntersectionPointHasher>& point2fracNode,
     FractureLinePart& frac,
-    HE_FaceHandle tri_keep
+    const HE_FaceHandle tri_keep
     )
 {
     // add all unhandled non-vertex points (IntersectionPointType::NEW) to graph nodes
@@ -555,7 +538,7 @@ void addUnhandledNonVertexPointsToFracture (
                     n_connected_segments++; // n_connected_segments = 2;
                 } else
                 {
-                    BOOL_MESH_OPS_DEBUG_PRINTLN("ERROR! couldn't find intersectionintersection of connected face!  >> search nearby nodes?"); // TODO use findCloseIntersectionPoints
+                    BOOL_MESH_OPS_DEBUG_PRINTLN("ERROR! couldn't find intersectionintersection of connected face!  >> search nearby nodes?"); // TODO use utils/BucketGrid3D::findCloseObjects
 
                 }
                 node->data /= n_connected_segments; // average over all connected IntersectionPoints
@@ -567,24 +550,26 @@ void addUnhandledNonVertexPointsToFracture (
     }
 };
 
-void connectNodesInFracture (
+void BooleanMeshOps::connectNodesInFracture (
     std::unordered_map<HE_FaceHandle, TriangleIntersection>& segments,
     std::unordered_map<IntersectionPoint , Node*, IntersectionPointHasher>& point2fracNode,
+    const std::unordered_map<HE_FaceHandle, std::unordered_set<HE_FaceHandle>>& coplanarKeepToSubtracted,
     FractureLinePart& frac,
-    HE_FaceHandle tri_keep
+    HE_FaceHandle tri_main,
+    const bool keep
     )
 {
     // connect all nodes (and add nodes for non-vertex IntersectionPoints)
     for (std::pair<HE_FaceHandle, TriangleIntersection> tri_n_line : segments)
     {
-        HE_FaceHandle tri_subtracted = tri_n_line.first;
+        HE_FaceHandle tri_other = tri_n_line.first;
         TriangleIntersection& line = tri_n_line.second;
 
         auto getNode = [&](bool from)
         {
             IntersectionPoint& intersectionPoint = (from)? *line.from : *line.to;
 
-            bool averageGraphNodePosition = false;
+            //bool averageGraphNodePosition = false;
             Point2fracNode::iterator point_n_fracNode_found = point2fracNode.find(intersectionPoint);
             Node* ret = nullptr;
             if (point_n_fracNode_found != point2fracNode.end())
@@ -596,20 +581,171 @@ void connectNodesInFracture (
                 intersectionPoint.debugOutput();
                 //std::exit(0);
                 ret = frac.fracture.addNode(intersectionPoint.p());
-                averageGraphNodePosition = true;
+                //averageGraphNodePosition = true;
             }
             return ret;
         };
         Node* from_node = getNode(true);
         Node* to_node = getNode(false);
 
-        frac.fracture.connect(*from_node, *to_node, line);
+        // TODO: move outside
+        // check edgeCases => edge-triangle intersection
+        auto checkEdgeCases = [&](bool keep)
+        {
+            auto touchingEdge = [&] (TriangleIntersection& i)
+            {
+                if (keep)
+                    return i.edgeOfTriangle2TouchingTriangle1;
+                else
+                    return i.edgeOfTriangle1TouchingTriangle2;
+            };
+
+            if (touchingEdge(line))
+            {
+                /*
+                                         A      B
+                based on equivalence of  ----o=====----   (top view of overlapping faces)
+                A = main face, B = other_connected_face
+                x = inside of model
+                o = top view of edge of B
+
+                A-B                 xxxxx
+                   o-----          o-----
+                    xxxxx
+                _____________   _____________
+                xxxxxxxxxxxxx   xxxxxxxxxxxxx
+
+                B-A                 xxxxx
+                                   o-----
+                _____________   _____________
+                xxxxxxxxxxxxx   xxxxxxxxxxxxx
+                   o-----
+                    xxxxx
+
+                A U B
+                _____________   _____________
+                xxxxxxxxxxxxx   xxxxxxxxxxxxx
+                                    xxxxx
+                   o-----          o-----
+                    xxxxx
+
+                A N B               xxxxx
+                   o-----          o-----
+                    xxxxx
+                _____________   _____________
+                xxxxxxxxxxxxx   xxxxxxxxxxxxx
+
+                */
+                HE_EdgeHandle other_connected_edge = touchingEdge(line)->converse();
+                HE_FaceHandle other_connected_face = other_connected_edge.face();
+                std::unordered_map<HE_FaceHandle, TriangleIntersection>::iterator other_connected_segment_found = segments.find(other_connected_face);
+                if (other_connected_segment_found == segments.end()) // triangle connected to tri_other
+                {
+                    // TODO: move outside
+                    auto other_connected_coplanar = [&](HE_FaceHandle& keep, HE_FaceHandle& subtracted)
+                    {
+                        typedef std::unordered_map<HE_FaceHandle, std::unordered_set<HE_FaceHandle>>::const_iterator iter;
+                        iter coplanars_found = coplanarKeepToSubtracted.find(keep);
+                        if (coplanars_found != coplanarKeepToSubtracted.end())
+                        {
+                            const std::unordered_set<HE_FaceHandle>& coplanars = coplanars_found->second;
+                            BOOL_MESH_OPS_DEBUG_SHOW(&subtracted);
+                            BOOL_MESH_OPS_DEBUG_PRINTLN(subtracted.m << " : " << subtracted.idx);
+                            std::unordered_set<HE_FaceHandle>::const_iterator coplanar = coplanars.find(subtracted);
+                            if (coplanar != coplanars.end())
+                            {
+                                return &*coplanar;
+                            }
+                        }
+                        const HE_FaceHandle* ret = nullptr;
+                        return ret;
+                    };
+                    const HE_FaceHandle* other_connected_coplanar_face = (keep)?
+                        other_connected_coplanar(tri_main, tri_other)
+                        : other_connected_coplanar(tri_other, tri_main);
+
+                    if (other_connected_coplanar_face == nullptr)
+                    {
+                        BOOL_MESH_OPS_DEBUG_PRINTLN("Warning! touching edge without converse edge touching or coplanar! assuming equivalent to non-touching edge. using intersection segment...");
+                    } else
+                    {
+                        BOOL_MESH_OPS_DEBUG_PRINTLN(tri_main.m << " : " << tri_main.idx);
+                        BOOL_MESH_OPS_DEBUG_PRINTLN(other_connected_coplanar_face);
+                        BOOL_MESH_OPS_DEBUG_PRINTLN(other_connected_coplanar_face->m << " : " << other_connected_coplanar_face->idx);
+                        bool sameNormals = tri_main.normal().dot(other_connected_coplanar_face->normal()) > 0;
+                        bool equivToOtherFaceOutside = false;
+                        switch(boolOpType)
+                        {
+                        case BoolOpType::UNION:
+                            equivToOtherFaceOutside = false; break;
+                        case BoolOpType::INTERSECTION:
+                            equivToOtherFaceOutside = true; break;
+                        case BoolOpType::DIFFERENCE:
+                            if (keep)
+                                equivToOtherFaceOutside = true;
+                            else
+                                equivToOtherFaceOutside = !sameNormals;
+                            break;
+                        }
+
+                        bool lineDirIsDirectionOfInnerPartOfCoplanarFace; // note that the inner part of the coplanar face is the whole coplanar face
+                        if ( (other_connected_edge.p0() - line.from->p()).vSize2() < (other_connected_edge.p1() - line.from->p()).vSize2() )
+                            lineDirIsDirectionOfInnerPartOfCoplanarFace = true;
+                        else
+                            lineDirIsDirectionOfInnerPartOfCoplanarFace = false;
+
+                        bool lineDirIsDirectionOfInnerPartOfMainTriangle = lineDirIsDirectionOfInnerPartOfCoplanarFace == equivToOtherFaceOutside == sameNormals;
+
+                        if (lineDirIsDirectionOfInnerPartOfMainTriangle == (keep)? line.isDirectionOfInnerPartOfTriangle1 : line.isDirectionOfInnerPartOfTriangle2)
+                            return true;
+                        else
+                            return false;
+                    }
+
+                } else
+                {
+                    TriangleIntersection other_intersection = other_connected_segment_found->second; // copy so that reverse doesnt affect actual graph in which the direction of the arrow corresponds to the direction of the intersection...
+                    // align intersections
+                    if ( (other_intersection.to->p() - line.from->p()).vSize2() < (other_intersection.to->p() - line.from->p()).vSize2() )
+                        other_intersection.reverse();
+
+                    bool sameCutoff = false; // whether the two faces cut off the same part off from the main triangle (c.q. whether they are on a different side of the main face)
+                    if (keep)
+                        sameCutoff = line.isDirectionOfInnerPartOfTriangle1 == other_intersection.isDirectionOfInnerPartOfTriangle1;
+                    else
+                        sameCutoff = line.isDirectionOfInnerPartOfTriangle2 == other_intersection.isDirectionOfInnerPartOfTriangle2;
+
+                    if (!sameCutoff)
+                        return false; // equivalent to both other faces being infinitesimally far outside or inside the mesh
+                    else
+                    {
+                        // insert only one of the edges!
+                        for (Arrow* a = to_node->first_in; a != nullptr; a = a->next_same_to)
+                            if (a->data == other_connected_segment_found->second) // dont compare to the copy (other_intersection)
+                                return false;
+                        for (Arrow* a = to_node->first_out; a != nullptr; a = a->next_same_from)
+                            if (a->data == other_connected_segment_found->second) // dont compare to the copy (other_intersection)
+                                return false;
+
+                    }
+                }
+            }
+            return true;
+        };
+        bool insertNormally = checkEdgeCases(keep);
+
+        if (insertNormally)
+            frac.fracture.connect(*from_node, *to_node, line);
 
     }
 };
 
 
-void getFace2fractures(std::unordered_map<HE_FaceHandle, std::unordered_map<HE_FaceHandle, TriangleIntersection>>& fracture_soup_keep, std::unordered_map<HE_FaceHandle, FractureLinePart>& face2fractures_keep)
+void BooleanMeshOps::getFace2fractures(
+    const std::unordered_map<HE_FaceHandle, std::unordered_map<HE_FaceHandle, TriangleIntersection>>& fracture_soup_keep,
+    std::unordered_map<HE_FaceHandle, FractureLinePart>& face2fractures_keep,
+    bool keep,
+    const std::unordered_map<HE_FaceHandle, std::unordered_set<HE_FaceHandle>>& coplanarKeepToSubtracted)
 {
     for (std::pair<HE_FaceHandle, std::unordered_map<HE_FaceHandle, TriangleIntersection>> soup: fracture_soup_keep)
     {
@@ -621,8 +757,9 @@ void getFace2fractures(std::unordered_map<HE_FaceHandle, std::unordered_map<HE_F
 
 
         // std::pair<TriangleIntersection,bool> :: intersection segment and a bool saying whether the point is the [from] of the segment
-        typedef std::unordered_map<Point3, std::pair<TriangleIntersection,bool>, PointHasher, NeverEqual> Point2segment;
-        Point2segment point2segment;
+        typedef BucketGrid3D<std::pair<TriangleIntersection,bool>> Point2segment;
+        //typedef std::unordered_map<Point3, std::pair<TriangleIntersection,bool>, PointHasher, NeverEqual> Point2segment;
+        Point2segment point2segment(MELD_DISTANCE);
 
         auto getIntersectionPoint = [](std::pair<TriangleIntersection,bool>& p)
         {
@@ -638,19 +775,24 @@ void getFace2fractures(std::unordered_map<HE_FaceHandle, std::unordered_map<HE_F
                 HE_FaceHandle tri_subtracted = tri_n_line.first;
                 TriangleIntersection& line = tri_n_line.second;
 
-                std::pair<Point2segment::iterator, bool> emplaced_f = point2segment.emplace(line.from->p(), std::pair<TriangleIntersection, bool>(line, true));
-                std::pair<Point2segment::iterator, bool> emplaced_t = point2segment.emplace(line.to->p(), std::pair<TriangleIntersection, bool>(line, false));
-                if (!emplaced_f.second)
-                {
-                    BOOL_MESH_OPS_DEBUG_PRINTLN("ERROR! couldn't insert point in point2segment, cause a point already exists there!");
-                    BOOL_MESH_OPS_DEBUG_PRINTLN("new : " << line.from->p()<< " existing: "<< emplaced_f.first->first);
 
-                }
-                if (!emplaced_t.second)
-                {
-                    BOOL_MESH_OPS_DEBUG_PRINTLN("ERROR! couldn't insert point in point2segment, cause a point already exists there!");
-                    BOOL_MESH_OPS_DEBUG_PRINTLN("new : " << line.to->p()<< " existing: "<< emplaced_t.first->first);
-                }
+                std::pair<TriangleIntersection, bool> p1(line, true);
+                std::pair<TriangleIntersection, bool> p2(line, false);
+                point2segment.insert(line.from->p(), p1);
+                point2segment.insert(line.to->p(), p2);
+//                std::pair<Point2segment::iterator, bool> emplaced_f = point2segment.emplace(line.from->p(), std::pair<TriangleIntersection, bool>(line, true));
+//                std::pair<Point2segment::iterator, bool> emplaced_t = point2segment.emplace(line.to->p(), std::pair<TriangleIntersection, bool>(line, false));
+//                if (!emplaced_f.second)
+//                {
+//                    BOOL_MESH_OPS_DEBUG_PRINTLN("ERROR! couldn't insert point in point2segment, cause a point already exists there!");
+//                    BOOL_MESH_OPS_DEBUG_PRINTLN("new : " << line.from->p()<< " existing: "<< emplaced_f.first->first);
+//
+//                }
+//                if (!emplaced_t.second)
+//                {
+//                    BOOL_MESH_OPS_DEBUG_PRINTLN("ERROR! couldn't insert point in point2segment, cause a point already exists there!");
+//                    BOOL_MESH_OPS_DEBUG_PRINTLN("new : " << line.to->p()<< " existing: "<< emplaced_t.first->first);
+//                }
             }
         }
 
@@ -670,11 +812,11 @@ void getFace2fractures(std::unordered_map<HE_FaceHandle, std::unordered_map<HE_F
 
         { // add all intersections to graph
 
-            addVertexPointsToFracture(segments, point2fracNode, frac);
+            addVertexPointsToFracture(segments, point2fracNode, frac, tri_keep);
 
             addUnhandledNonVertexPointsToFracture(segments, point2fracNode, frac, tri_keep);
 
-            connectNodesInFracture(segments, point2fracNode, frac, tri_keep);
+            connectNodesInFracture(segments, point2fracNode, coplanarKeepToSubtracted, frac, tri_keep, keep);
         }
 
 
@@ -722,15 +864,17 @@ BOOL_MESH_OPS_DEBUG_PRINTLN("finished constructing AABB-tree");
     Face2Soup fracture_soup_keep;
     Face2Soup fracture_soup_subtracted;
 
-    createIntersectionSegmentSoup(fracture_soup_keep, fracture_soup_subtracted, keep_aabb);
+    std::unordered_map<HE_FaceHandle, std::unordered_set<HE_FaceHandle>> coplanarKeepToSubtracted;
+
+    createIntersectionSegmentSoup(fracture_soup_keep, fracture_soup_subtracted, keep_aabb, coplanarKeepToSubtracted);
 
 
     std::unordered_map<HE_FaceHandle, FractureLinePart> face2fractures_keep;
     std::unordered_map<HE_FaceHandle, FractureLinePart> face2fractures_subtracted;
 
+    getFace2fractures(fracture_soup_keep, face2fractures_keep, true, coplanarKeepToSubtracted);
+    getFace2fractures(fracture_soup_subtracted, face2fractures_subtracted, false, coplanarKeepToSubtracted);
 
-    getFace2fractures(fracture_soup_keep, face2fractures_keep);
-    getFace2fractures(fracture_soup_subtracted, face2fractures_subtracted);
 
     auto removeConnection = [](Arrow* a, Graph<Point, TriangleIntersection>& fracture)
     {
@@ -740,9 +884,21 @@ BOOL_MESH_OPS_DEBUG_PRINTLN("finished constructing AABB-tree");
         fracture.removeNodeIfLonely(from);
         fracture.removeNodeIfLonely(to);
     };
-    auto removeEdgeTriangleIntersectionsTouchingMainFace = [](HE_FaceHandle face, FractureLinePart& frac)
+
+    auto removeEdgeTriangleIntersectionsTouchingMainFace = [&](HE_FaceHandle face, FractureLinePart& frac, bool keep)
     {
-        BOOL_MESH_OPS_DEBUG_PRINTLN("TODO! find duplicate edges; remove both if different direction; remove only one if same direction");
+        BOOL_MESH_OPS_DEBUG_PRINTLN("TODO! find duplicate edges; -> edgeOf_otherTriangleTouching_mainTriangle remove both if different direction; remove only one if same direction");
+        auto edge12 = [] (Arrow* a) { return a->data.edgeOfTriangle1TouchingTriangle2; };
+        auto edge21 = [] (Arrow* a) { return a->data.edgeOfTriangle2TouchingTriangle1; };
+        auto touchingEdge = (keep)? edge21 : edge12;
+        //Face2Soup face2Soup = (keep)? fracture_soup_keep : fracture_soup_subtracted;
+        for (Arrow* a : frac.fracture.arrows)
+        {
+            if (touchingEdge(a))
+            {
+                // find opposite arrow
+            }
+        }
     };
     auto checkEdgeTriangleIntersectionsConnectedToCoplanarFaces = [](HE_FaceHandle face, FractureLinePart& frac)
     {
@@ -759,7 +915,7 @@ BOOL_MESH_OPS_DEBUG_PRINTLN("finished constructing AABB-tree");
         HE_FaceHandle face = face_n_frac.first;
         FractureLinePart& frac = face_n_frac.second;
 
-        removeEdgeTriangleIntersectionsTouchingMainFace(face, frac);
+        removeEdgeTriangleIntersectionsTouchingMainFace(face, frac, true);
         checkEdgeTriangleIntersectionsConnectedToCoplanarFaces(face, frac);
 //        removeSuperfluousMainFaceEdgeTriangleIntersections(face, frac);
     }
@@ -768,7 +924,7 @@ BOOL_MESH_OPS_DEBUG_PRINTLN("finished constructing AABB-tree");
         HE_FaceHandle face = face_n_frac.first;
         FractureLinePart& frac = face_n_frac.second;
 
-        removeEdgeTriangleIntersectionsTouchingMainFace(face, frac);
+        removeEdgeTriangleIntersectionsTouchingMainFace(face, frac, false);
         checkEdgeTriangleIntersectionsConnectedToCoplanarFaces(face, frac);
 //        removeSuperfluousMainFaceEdgeTriangleIntersections(face, frac);
     }

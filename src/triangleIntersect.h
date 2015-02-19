@@ -211,6 +211,11 @@ struct TriangleIntersection
     , edgeOfTriangle2TouchingTriangle1(boost::none)
     { };
 
+    bool operator==(const TriangleIntersection& other) const
+    {
+        return intersectionType == other.intersectionType && from == other.from && to == other.to;
+    }
+
     void reverse()
     {
         std::swap(from, to);

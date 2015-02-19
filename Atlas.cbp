@@ -66,6 +66,8 @@
 		<Unit filename="src/Triangulation3D.h" />
 		<Unit filename="src/boolMesh.cpp" />
 		<Unit filename="src/boolMesh.h" />
+		<Unit filename="src/boolMeshOps.cpp" />
+		<Unit filename="src/boolMeshOps.h" />
 		<Unit filename="src/commandSocket.cpp" />
 		<Unit filename="src/commandSocket.h" />
 		<Unit filename="src/errorHandling.h" />
@@ -113,6 +115,8 @@
 		<Unit filename="src/supportGeneration.h" />
 		<Unit filename="src/triangleIntersect.cpp" />
 		<Unit filename="src/triangleIntersect.h" />
+		<Unit filename="src/utils/BucketGrid3D.cpp" />
+		<Unit filename="src/utils/BucketGrid3D.h" />
 		<Unit filename="src/utils/PlaneEquation.h" />
 		<Unit filename="src/utils/floatpoint.h" />
 		<Unit filename="src/utils/gettime.cpp" />

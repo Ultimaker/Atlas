@@ -135,8 +135,8 @@ public:
 //        BooleanMeshOps::test_getFacetFractureLinePart(model);
 //        BooleanMeshOps::test_completeFractureLine(model);
 
-        boolOps::BooleanMeshOps::test_subtract(model);
-//        boolOps::BooleanMeshOps::test_subtract();
+//        boolOps::BooleanMeshOps::test_subtract(model);
+        boolOps::BooleanMeshOps::test_subtract();
 //        PlaneEquation<FPoint3>::test();
 //        Triangulation3D<FPoint>::test();
         std::cerr << std::endl << " Test finished!" << std::endl << std::endl;
